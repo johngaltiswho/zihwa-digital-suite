@@ -125,3 +125,5 @@ Proprietary - All rights reserved
 ---
 
 **Built with ❤️ for India's growing economy**
+
+*Deployed with Vercel*
