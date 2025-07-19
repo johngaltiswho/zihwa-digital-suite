@@ -416,7 +416,7 @@ export default function ContractorApplyPage() {
       {/* Back Link */}
       <section className="py-16">
         <div className="container mx-auto px-4 text-center">
-          <Link href="/contractors">
+          <Link href="/contractors" className="inline-block">
             <Button variant="outline" size="md">
               ← Back to Contractors Page
             </Button>

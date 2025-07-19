@@ -1,7 +1,7 @@
 import { Layout, Button } from '@/components';
 import Link from 'next/link';
 
-export default function ContractorsPage() {
+export default function ContractorsPage(): React.ReactElement {
   return (
     <Layout>
       {/* Header Section */}

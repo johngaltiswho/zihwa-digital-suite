@@ -24,7 +24,7 @@ export const Header: React.FC = () => {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="text-2xl font-bold text-primary">
+          <Link href="/" className="text-2xl font-bold text-primary inline-block">
             <span className="accent-amber">INVERO</span>
           </Link>
 
@@ -49,7 +49,7 @@ export const Header: React.FC = () => {
             >
               Login
             </Link>
-            <Link href="/auth">
+            <Link href="/auth" className="inline-block">
               <Button variant="primary" size="sm">
                 Sign Up
               </Button>
@@ -109,7 +109,7 @@ export const Header: React.FC = () => {
                 >
                   Login
                 </Link>
-                <Link href="/auth">
+                <Link href="/auth" className="inline-block">
                   <Button variant="primary" size="sm" className="w-fit">
                     Sign Up
                   </Button>

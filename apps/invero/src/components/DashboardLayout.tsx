@@ -25,7 +25,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, acti
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <Link href="/" className="text-xl font-bold">
+              <Link href="/" className="text-xl font-bold inline-block">
                 <span className="accent-amber">INVERO</span>
               </Link>
               <div className="text-secondary text-sm">

@@ -1,7 +1,7 @@
 import { Layout, Button } from '@/components';
 import Link from 'next/link';
 
-export default function Home() {
+export default function Home(): React.ReactElement {
   return (
     <Layout>
       {/* Hero Section - Palantir-inspired */}

@@ -14,7 +14,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitl
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-neutral-dark via-neutral-medium to-neutral-dark relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-t from-accent-orange/20 to-transparent"></div>
         <div className="relative z-10 flex flex-col justify-center px-12">
-          <Link href="/" className="text-3xl font-bold text-primary mb-8">
+          <Link href="/" className="text-3xl font-bold text-primary mb-8 inline-block">
             <span className="accent-orange">INVERO</span>
           </Link>
           <h2 className="text-4xl font-bold text-primary mb-6 leading-tight">
@@ -50,7 +50,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitl
         <div className="max-w-md mx-auto w-full">
           {/* Mobile logo */}
           <div className="lg:hidden text-center mb-8">
-            <Link href="/" className="text-3xl font-bold text-primary">
+            <Link href="/" className="text-3xl font-bold text-primary inline-block">
               <span className="accent-orange">INVERO</span>
             </Link>
           </div>
