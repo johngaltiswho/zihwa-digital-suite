@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
 import { AuthLayout } from '@/components/AuthLayout';
 import { Button, Input } from '@/components';
 
@@ -173,13 +172,13 @@ export default function AuthPage() {
         {!isLogin && (
           <p className="text-xs text-secondary text-center">
             By creating an account, you agree to our{' '}
-            <Link href="/terms" className="text-accent-orange hover:text-accent-orange/80">
+            <a href="/terms" className="text-accent-orange hover:text-accent-orange/80">
               Terms of Service
-            </Link>{' '}
+            </a>{' '}
             and{' '}
-            <Link href="/privacy" className="text-accent-orange hover:text-accent-orange/80">
+            <a href="/privacy" className="text-accent-orange hover:text-accent-orange/80">
               Privacy Policy
-            </Link>
+            </a>
           </p>
         )}
       </form>
