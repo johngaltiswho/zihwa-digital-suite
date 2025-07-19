@@ -155,9 +155,9 @@ export default function AuthPage() {
               />
               <span className="ml-2 text-secondary">Remember me</span>
             </label>
-            <Link href="/auth/forgot-password" className="text-accent-orange hover:text-accent-orange/80">
+            <a href="/auth/forgot-password" className="text-accent-orange hover:text-accent-orange/80">
               Forgot password?
-            </Link>
+            </a>
           </div>
         )}
 
