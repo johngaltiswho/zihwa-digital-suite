@@ -72,7 +72,7 @@ const steps = [
   { id: 5, title: 'Documents & Review', description: 'Upload documents and review application' }
 ];
 
-export default function ContractorApplyPage() {
+export default function ContractorApplyPage(): React.ReactElement {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormData>({
     companyName: '', registrationNumber: '', gstin: '', incorporationDate: '', companyType: '', businessAddress: '',

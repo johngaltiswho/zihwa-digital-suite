@@ -5,7 +5,7 @@ import { ContractorDashboardLayout } from '@/components/ContractorDashboardLayou
 import { Button } from '@/components';
 import { mockProjects, mockClients, getClientById, getProjectsByContractor } from '@/data/mockData';
 
-export default function ContractorDashboard() {
+export default function ContractorDashboard(): React.ReactElement {
   // Mock contractor ID - in real app this would come from auth
   const currentContractorId = 'CONTRACTOR_001';
   

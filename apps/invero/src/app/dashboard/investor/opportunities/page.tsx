@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { Button } from '@/components';
 
-export default function InvestmentOpportunities() {
+export default function InvestmentOpportunities(): React.ReactElement {
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [selectedRisk, setSelectedRisk] = useState('all');
 

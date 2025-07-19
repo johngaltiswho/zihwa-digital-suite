@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { AuthLayout } from '@/components/AuthLayout';
 import { Button, Input } from '@/components';
 
-export default function AuthPage() {
+export default function AuthPage(): React.ReactElement {
   const [isLogin, setIsLogin] = useState(true);
   const [userType, setUserType] = useState<'contractor' | 'investor'>('contractor');
   const [formData, setFormData] = useState({

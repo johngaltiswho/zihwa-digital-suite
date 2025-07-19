@@ -5,7 +5,7 @@ import { DashboardLayout } from '@/components/DashboardLayout';
 import { Button } from '@/components';
 import { mockProjects, mockClients, mockContractors, getClientById, getContractorById } from '@/data/mockData';
 
-export default function ProjectMonitoring() {
+export default function ProjectMonitoring(): React.ReactElement {
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'overview' | 'timeline' | 'financials'>('overview');
 

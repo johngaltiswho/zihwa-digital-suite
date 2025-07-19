@@ -5,7 +5,7 @@ import { DashboardLayout } from '@/components/DashboardLayout';
 import { Button } from '@/components';
 import { mockProjects, mockContractors, mockClients, getClientById, getContractorById } from '@/data/mockData';
 
-export default function DueDiligenceDocuments() {
+export default function DueDiligenceDocuments(): React.ReactElement {
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');

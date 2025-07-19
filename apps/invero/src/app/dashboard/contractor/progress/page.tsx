@@ -5,7 +5,7 @@ import { ContractorDashboardLayout } from '@/components/ContractorDashboardLayou
 import { Button, Input } from '@/components';
 import { mockProjects, mockClients, getClientById, getProjectsByContractor } from '@/data/mockData';
 
-export default function ProgressReports() {
+export default function ProgressReports(): React.ReactElement {
   const [selectedProject, setSelectedProject] = useState('');
   const [selectedMilestone, setSelectedMilestone] = useState('');
   const [reportType, setReportType] = useState<'milestone' | 'monthly'>('milestone');

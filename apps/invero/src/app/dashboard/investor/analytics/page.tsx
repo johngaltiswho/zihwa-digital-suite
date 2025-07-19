@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { mockInvestments, mockProjects, getProjectById } from '@/data/mockData';
 
-export default function PerformanceAnalytics() {
+export default function PerformanceAnalytics(): React.ReactElement {
   const [selectedTimeframe, setSelectedTimeframe] = useState('6months');
   const [selectedMetric, setSelectedMetric] = useState('irr');
 

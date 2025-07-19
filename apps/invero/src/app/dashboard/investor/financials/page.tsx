@@ -5,7 +5,7 @@ import { DashboardLayout } from '@/components/DashboardLayout';
 import { Button } from '@/components';
 import { mockInvestments, mockProjects, getProjectById } from '@/data/mockData';
 
-export default function FinancialManagement() {
+export default function FinancialManagement(): React.ReactElement {
   const [selectedTab, setSelectedTab] = useState<'overview' | 'transactions' | 'payouts' | 'tax'>('overview');
   const [selectedTimeframe, setSelectedTimeframe] = useState('12months');
 

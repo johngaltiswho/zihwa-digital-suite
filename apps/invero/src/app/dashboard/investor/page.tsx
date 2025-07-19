@@ -3,7 +3,7 @@
 import React from 'react';
 import { DashboardLayout } from '@/components/DashboardLayout';
 
-export default function InvestorDashboard() {
+export default function InvestorDashboard(): React.ReactElement {
   const portfolioData = {
     totalInvested: '₹2,45,00,000',
     currentValue: '₹2,78,50,000',

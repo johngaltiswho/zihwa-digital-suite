@@ -5,7 +5,7 @@ import { ContractorDashboardLayout } from '@/components/ContractorDashboardLayou
 import { Button } from '@/components';
 import { mockProjects, mockClients, getClientById, getProjectsByContractor } from '@/data/mockData';
 
-export default function ContractorProjects() {
+export default function ContractorProjects(): React.ReactElement {
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const currentContractorId = 'CONTRACTOR_001';
   
