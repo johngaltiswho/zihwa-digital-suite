@@ -356,7 +356,7 @@ export default function ContractorApplyPage() {
           <div className="max-w-4xl mx-auto">
             <div className="bg-neutral-dark p-8 rounded-lg border border-neutral-medium">
               <h2 className="text-2xl font-bold text-primary mb-8">
-                {steps[currentStep - 1].title}
+                {steps[currentStep - 1]?.title || 'Application Step'}
               </h2>
               
               {renderStepContent()}
