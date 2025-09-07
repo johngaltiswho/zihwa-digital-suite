@@ -5,7 +5,7 @@ import { getRegion, listRegions } from "@/lib/medusa-lib/data/regions"
 import ProductTemplate from "@/modules/products/templates"
 
 type Props = {
-  params: Promise<{ countryCode: string; handle: string }>
+  params: Promise<{ handle: string }>
 }
 
 export async function generateStaticParams() {
@@ -53,14 +53,15 @@ export async function generateStaticParams() {
 export async function generateMetadata(props: Props): Promise<Metadata> {
   const params = await props.params
   const { handle } = params
-  const region = await getRegion(params.countryCode)
+  const defaultCountryCode = process.env.NEXT_PUBLIC_DEFAULT_REGION || 'in'
+  const region = await getRegion(defaultCountryCode)
 
   if (!region) {
     notFound()
   }
 
   const product = await listProducts({
-    countryCode: params.countryCode,
+    countryCode: defaultCountryCode,
     queryParams: { handle },
   }).then(({ response }) => response.products[0])
 
@@ -69,10 +70,10 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   }
 
   return {
-    title: `${product.title} | Medusa Store`,
+    title: `${product.title} | Fluvium Store`,
     description: `${product.title}`,
     openGraph: {
-      title: `${product.title} | Medusa Store`,
+      title: `${product.title} | Fluvium Store`,
       description: `${product.title}`,
       images: product.thumbnail ? [product.thumbnail] : [],
     },
@@ -81,14 +82,15 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 
 export default async function ProductPage(props: Props) {
   const params = await props.params
-  const region = await getRegion(params.countryCode)
+  const defaultCountryCode = process.env.NEXT_PUBLIC_DEFAULT_REGION || 'in'
+  const region = await getRegion(defaultCountryCode)
 
   if (!region) {
     notFound()
   }
 
   const pricedProduct = await listProducts({
-    countryCode: params.countryCode,
+    countryCode: defaultCountryCode,
     queryParams: { handle: params.handle },
   }).then(({ response }) => response.products[0])
 
@@ -100,7 +102,7 @@ export default async function ProductPage(props: Props) {
     <ProductTemplate
       product={pricedProduct}
       region={region}
-      countryCode={params.countryCode}
+      countryCode={defaultCountryCode}
     />
   )
 }

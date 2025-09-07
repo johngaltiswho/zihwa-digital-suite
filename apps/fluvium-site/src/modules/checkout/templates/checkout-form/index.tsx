@@ -20,7 +20,13 @@ export default async function CheckoutForm({
   const shippingMethods = await listCartShippingMethods(cart.id)
   const paymentMethods = await listCartPaymentMethods(cart.region?.id ?? "")
 
+  console.log("🛒 Cart ID:", cart.id)
+  console.log("🛒 Cart region:", cart.region?.id)
+  console.log("🚚 Shipping methods:", shippingMethods?.length || 0)
+  console.log("💳 Payment methods:", paymentMethods?.length || 0)
+
   if (!shippingMethods || !paymentMethods) {
+    console.log("❌ Missing shipping or payment methods, not rendering checkout form")
     return null
   }
 

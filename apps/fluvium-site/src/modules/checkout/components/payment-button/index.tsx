@@ -40,7 +40,21 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
         <ManualTestPaymentButton notReady={notReady} data-testid={dataTestId} />
       )
     default:
-      return <Button disabled>Select a payment method</Button>
+      return (
+        <Button 
+          disabled
+          variant="transparent"
+          className="
+            w-full
+            bg-gray-700 
+            text-gray-300 font-semibold
+            px-8 py-4 rounded-xl 
+            border border-gray-600
+          "
+        >
+          Select a payment method
+        </Button>
+      )
   }
 }
 
@@ -139,9 +153,25 @@ const StripePaymentButton = ({
         onClick={handlePayment}
         size="large"
         isLoading={submitting}
+        variant="transparent"
+        className="
+          w-full
+          bg-gradient-to-r from-green-500 to-green-600 
+          hover:from-green-600 hover:to-green-700
+          text-white font-bold text-lg
+          px-8 py-5 rounded-xl 
+          shadow-lg shadow-green-500/25 
+          hover:shadow-xl hover:shadow-green-500/35
+          disabled:from-gray-600 disabled:to-gray-700 
+          disabled:shadow-gray-500/25
+          transition-all duration-200 
+          transform hover:scale-[1.02] 
+          disabled:hover:scale-100
+          border-0
+        "
         data-testid={dataTestId}
       >
-        Place order
+        🛒 Place Order
       </Button>
       <ErrorMessage
         error={errorMessage}
@@ -178,9 +208,25 @@ const ManualTestPaymentButton = ({ notReady }: { notReady: boolean }) => {
         isLoading={submitting}
         onClick={handlePayment}
         size="large"
+        variant="transparent"
+        className="
+          w-full
+          bg-gradient-to-r from-green-500 to-green-600 
+          hover:from-green-600 hover:to-green-700
+          text-white font-bold text-lg
+          px-8 py-5 rounded-xl 
+          shadow-lg shadow-green-500/25 
+          hover:shadow-xl hover:shadow-green-500/35
+          disabled:from-gray-600 disabled:to-gray-700 
+          disabled:shadow-gray-500/25
+          transition-all duration-200 
+          transform hover:scale-[1.02] 
+          disabled:hover:scale-100
+          border-0
+        "
         data-testid="submit-order-button"
       >
-        Place order
+        🛒 Place Order
       </Button>
       <ErrorMessage
         error={errorMessage}

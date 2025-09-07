@@ -43,33 +43,33 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
 
 const ProductInfoTab = ({ product }: ProductTabsProps) => {
   return (
-    <div className="text-small-regular py-8">
-      <div className="grid grid-cols-2 gap-x-8">
-        <div className="flex flex-col gap-y-4">
-          <div>
-            <span className="font-semibold">Material</span>
-            <p>{product.material ? product.material : "-"}</p>
+    <div className="py-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-6">
+          <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700/50">
+            <span className="text-cyan-400 font-semibold text-sm uppercase tracking-wider">Material</span>
+            <p className="text-gray-200 mt-2">{product.material ? product.material : "Not specified"}</p>
           </div>
-          <div>
-            <span className="font-semibold">Country of origin</span>
-            <p>{product.origin_country ? product.origin_country : "-"}</p>
+          <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700/50">
+            <span className="text-cyan-400 font-semibold text-sm uppercase tracking-wider">Country of origin</span>
+            <p className="text-gray-200 mt-2">{product.origin_country ? product.origin_country : "Not specified"}</p>
           </div>
-          <div>
-            <span className="font-semibold">Type</span>
-            <p>{product.type ? product.type.value : "-"}</p>
+          <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700/50">
+            <span className="text-cyan-400 font-semibold text-sm uppercase tracking-wider">Type</span>
+            <p className="text-gray-200 mt-2">{product.type ? product.type.value : "Not specified"}</p>
           </div>
         </div>
-        <div className="flex flex-col gap-y-4">
-          <div>
-            <span className="font-semibold">Weight</span>
-            <p>{product.weight ? `${product.weight} g` : "-"}</p>
+        <div className="space-y-6">
+          <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700/50">
+            <span className="text-cyan-400 font-semibold text-sm uppercase tracking-wider">Weight</span>
+            <p className="text-gray-200 mt-2">{product.weight ? `${product.weight} g` : "Not specified"}</p>
           </div>
-          <div>
-            <span className="font-semibold">Dimensions</span>
-            <p>
+          <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700/50">
+            <span className="text-cyan-400 font-semibold text-sm uppercase tracking-wider">Dimensions</span>
+            <p className="text-gray-200 mt-2">
               {product.length && product.width && product.height
-                ? `${product.length}L x ${product.width}W x ${product.height}H`
-                : "-"}
+                ? `${product.length}L × ${product.width}W × ${product.height}H`
+                : "Not specified"}
             </p>
           </div>
         </div>
@@ -80,33 +80,39 @@ const ProductInfoTab = ({ product }: ProductTabsProps) => {
 
 const ShippingInfoTab = () => {
   return (
-    <div className="text-small-regular py-8">
-      <div className="grid grid-cols-1 gap-y-8">
-        <div className="flex items-start gap-x-2">
-          <FastDelivery />
-          <div>
-            <span className="font-semibold">Fast delivery</span>
-            <p className="max-w-sm">
+    <div className="py-6">
+      <div className="space-y-6">
+        <div className="bg-gray-800/30 rounded-lg p-6 border border-gray-700/50 flex items-start gap-4">
+          <div className="text-cyan-400 mt-1">
+            <FastDelivery />
+          </div>
+          <div className="flex-1">
+            <span className="text-cyan-400 font-semibold text-sm uppercase tracking-wider">Fast delivery</span>
+            <p className="text-gray-200 mt-2 leading-relaxed">
               Your package will arrive in 3-5 business days at your pick up
               location or in the comfort of your home.
             </p>
           </div>
         </div>
-        <div className="flex items-start gap-x-2">
-          <Refresh />
-          <div>
-            <span className="font-semibold">Simple exchanges</span>
-            <p className="max-w-sm">
+        <div className="bg-gray-800/30 rounded-lg p-6 border border-gray-700/50 flex items-start gap-4">
+          <div className="text-cyan-400 mt-1">
+            <Refresh />
+          </div>
+          <div className="flex-1">
+            <span className="text-cyan-400 font-semibold text-sm uppercase tracking-wider">Simple exchanges</span>
+            <p className="text-gray-200 mt-2 leading-relaxed">
               Is the fit not quite right? No worries - we&apos;ll exchange your
               product for a new one.
             </p>
           </div>
         </div>
-        <div className="flex items-start gap-x-2">
-          <Back />
-          <div>
-            <span className="font-semibold">Easy returns</span>
-            <p className="max-w-sm">
+        <div className="bg-gray-800/30 rounded-lg p-6 border border-gray-700/50 flex items-start gap-4">
+          <div className="text-cyan-400 mt-1">
+            <Back />
+          </div>
+          <div className="flex-1">
+            <span className="text-cyan-400 font-semibold text-sm uppercase tracking-wider">Easy returns</span>
+            <p className="text-gray-200 mt-2 leading-relaxed">
               Just return your product and we&apos;ll refund your money. No
               questions asked – we&apos;ll do our best to make sure your return
               is hassle-free.

@@ -12,11 +12,13 @@ export const getPricesForVariant = (variant: any) => {
     calculated_price: convertToLocale({
       amount: variant.calculated_price.calculated_amount,
       currency_code: variant.calculated_price.currency_code,
+      locale: variant.calculated_price.currency_code === 'inr' ? 'en-IN' : 'en-US',
     }),
     original_price_number: variant.calculated_price.original_amount,
     original_price: convertToLocale({
       amount: variant.calculated_price.original_amount,
       currency_code: variant.calculated_price.currency_code,
+      locale: variant.calculated_price.currency_code === 'inr' ? 'en-IN' : 'en-US',
     }),
     currency_code: variant.calculated_price.currency_code,
     price_type: variant.calculated_price.calculated_price.price_list_type,

@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -28,40 +30,7 @@ export default function Contact() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-black via-gray-900 to-black">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-sm border-b border-gray-800/30">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          {/* Logo */}
-          <Link href="/">
-            <Image
-              src="/fluvium-logo-glow-teal.png"
-              alt="Fluvium Logo"
-              width={120}
-              height={48}
-              className="cursor-pointer neon-glow animate-pulse-glow"
-              priority
-            />
-          </Link>
-
-          {/* Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
-            <Link href="/#about" className="text-gray-300 hover:text-white transition-colors duration-300 font-light">About</Link>
-            <Link href="/#offerings" className="text-gray-300 hover:text-white transition-colors duration-300 font-light">Offerings</Link>
-            <Link href="/#humility-db" className="text-gray-300 hover:text-white transition-colors duration-300 font-light">Humility DB</Link>
-            <Link href="/#founder" className="text-gray-300 hover:text-white transition-colors duration-300 font-light">Founder</Link>
-            <button className="neon-border bg-transparent text-white px-6 py-2 text-sm font-light tracking-wider hover:bg-cyan-400/10 transition-all duration-300">
-              Join the Tribe
-            </button>
-          </nav>
-
-          {/* Mobile Menu Button */}
-          <button className="md:hidden text-white">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-        </div>
-      </header>
+      <Header />
 
       {/* Content */}
       <div className="pt-24 px-6 pb-16">
@@ -180,21 +149,11 @@ export default function Contact() {
                     </div>
                     <div>
                       <h3 className="text-white font-light mb-1">Email</h3>
-                      <p className="text-cyan-400 mb-1">hello@fluvium.com</p>
+                      <p className="text-cyan-400 mb-1">info@fluvium.co</p>
                       <p className="text-gray-400 text-sm">We respond within 24 hours</p>
                     </div>
                   </div>
 
-                  <div className="flex items-start space-x-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-black text-xl font-bold flex-shrink-0">
-                      📞
-                    </div>
-                    <div>
-                      <h3 className="text-white font-light mb-1">Phone</h3>
-                      <p className="text-cyan-400 mb-1">(555) 123-FLOW</p>
-                      <p className="text-gray-400 text-sm">Mon-Fri 9AM-7PM, Sat-Sun 9AM-5PM</p>
-                    </div>
-                  </div>
 
                   <div className="flex items-start space-x-4">
                     <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center text-black text-xl font-bold flex-shrink-0">
@@ -203,10 +162,7 @@ export default function Contact() {
                     <div>
                       <h3 className="text-white font-light mb-1">Locations</h3>
                       <p className="text-gray-300 text-sm leading-relaxed">
-                        New York, NY<br />
-                        Los Angeles, CA<br />
-                        Austin, TX<br />
-                        Miami, FL
+                        Bangalore, IN
                       </p>
                       <p className="text-cyan-400 text-sm mt-2">+ Virtual sessions available</p>
                     </div>
@@ -246,17 +202,11 @@ export default function Contact() {
                 <h2 className="text-3xl font-light text-white mb-6">Follow Our Journey</h2>
                 
                 <div className="flex space-x-4">
-                  <a href="#" className="w-12 h-12 bg-gray-800/50 rounded-full flex items-center justify-center text-gray-400 hover:text-cyan-400 hover:bg-gray-700/50 transition-all duration-300">
-                    <span className="text-lg">📘</span>
-                  </a>
-                  <a href="#" className="w-12 h-12 bg-gray-800/50 rounded-full flex items-center justify-center text-gray-400 hover:text-cyan-400 hover:bg-gray-700/50 transition-all duration-300">
+                  <a href="https://www.instagram.com/fluvium" target="_blank" rel="noopener noreferrer" className="w-12 h-12 bg-gray-800/50 rounded-full flex items-center justify-center text-gray-400 hover:text-cyan-400 hover:bg-gray-700/50 transition-all duration-300">
                     <span className="text-lg">📷</span>
                   </a>
-                  <a href="#" className="w-12 h-12 bg-gray-800/50 rounded-full flex items-center justify-center text-gray-400 hover:text-cyan-400 hover:bg-gray-700/50 transition-all duration-300">
-                    <span className="text-lg">🐦</span>
-                  </a>
-                  <a href="#" className="w-12 h-12 bg-gray-800/50 rounded-full flex items-center justify-center text-gray-400 hover:text-cyan-400 hover:bg-gray-700/50 transition-all duration-300">
-                    <span className="text-lg">💼</span>
+                  <a href="https://www.youtube.com/@fluvium4341" target="_blank" rel="noopener noreferrer" className="w-12 h-12 bg-gray-800/50 rounded-full flex items-center justify-center text-gray-400 hover:text-cyan-400 hover:bg-gray-700/50 transition-all duration-300">
+                    <span className="text-lg">📺</span>
                   </a>
                 </div>
                 
@@ -275,6 +225,7 @@ export default function Contact() {
           </div>
         </div>
       </div>
+      <Footer />
     </main>
   );
 }

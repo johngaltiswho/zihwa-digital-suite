@@ -5,10 +5,6 @@
 ### Apps (Loosely Coupled)
 ```
 apps/
-├── invero/              # FinTech platform
-│   ├── src/
-│   ├── package.json     # Independent dependencies
-│   └── .env.local       # App-specific config
 ├── fluvium-site/        # E-commerce brand A
 ├── aacpinfra-site/      # Services brand B
 └── zihwafoods-site/     # E-commerce brand C
@@ -41,7 +37,7 @@ services/
 - Cost: $50-100/month total
 
 ### Phase 2: Selective Separation (6-12 months)
-- Extract Invero first (regulatory needs)
+- Extract apps as needed based on business requirements
 - Keep e-commerce apps together
 - Cost: $150-250/month
 
@@ -70,8 +66,8 @@ services/
 ### Database Strategy
 ```typescript
 // Current: Logical separation
-const inveroDb = createClient(process.env.INVERO_DB_URL)
 const fluviumDb = createClient(process.env.FLUVIUM_DB_URL)
+const aacpDb = createClient(process.env.AACP_DB_URL)
 
 // Future: Physical separation
 // Each app gets its own database instance
@@ -81,7 +77,7 @@ const fluviumDb = createClient(process.env.FLUVIUM_DB_URL)
 ```typescript
 // Current: Shared auth with tenancy
 const auth = createAuth({
-  tenant: 'invero' | 'fluvium' | 'aacp'
+  tenant: 'fluvium' | 'aacp' | 'zihwafoods'
 })
 
 // Future: Separate auth services
@@ -91,13 +87,13 @@ const auth = createAuth({
 ### API Strategy
 ```typescript
 // Current: Namespaced routes
-/api/invero/projects
 /api/fluvium/products
 /api/aacp/services
+/api/zihwafoods/products
 
 // Future: Separate API services
-// https://api.invero.com/projects
 // https://api.fluvium.com/products
+// https://api.aacp.com/services
 ```
 
 ## Cost Analysis
@@ -118,7 +114,7 @@ Per App:
 - Database: $25/month
 - Auth: $10/month
 - Storage: $10/month
-Total: $65/month × 4 apps = $260/month
+Total: $65/month × 3 apps = $195/month
 ```
 
 ### Break-even Analysis
@@ -137,8 +133,8 @@ Separation makes sense when:
 3. Namespace all shared code
 4. Document inter-app dependencies
 
-### Step 2: Extract First App (Invero)
-1. Copy /apps/invero to new repo
+### Step 2: Extract First App
+1. Copy app directory to new repo
 2. Extract needed packages
 3. Update import paths
 4. Deploy to new infrastructure

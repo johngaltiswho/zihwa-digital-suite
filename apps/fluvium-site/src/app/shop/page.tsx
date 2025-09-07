@@ -4,6 +4,7 @@ import Image from "next/image"
 import { listCollections } from "@/lib/medusa-lib/data/collections"
 import { getRegion } from "@/lib/medusa-lib/data/regions"
 import { listProducts } from "@/lib/medusa-lib/data/products"
+import { getProductPrice } from "@/lib/medusa-lib/util/get-product-price"
 
 export const metadata: Metadata = {
   title: "Fluvium Shop - Premium Martial Arts Gear",
@@ -20,11 +21,16 @@ export default async function ShopHome() {
   })
 
   // Get featured products
-  const { products } = await listProducts({
+  const { response } = await listProducts({
     pageParam: 1,
-    queryParams: { limit: 8 },
+    queryParams: { 
+      limit: 8,
+      fields: "*variants.calculated_price,+variants.inventory_quantity,+metadata,+tags"
+    },
     countryCode: process.env.NEXT_PUBLIC_DEFAULT_REGION || 'in',
   })
+  const { products } = response
+
 
   if (!region) {
     return (
@@ -71,10 +77,10 @@ export default async function ShopHome() {
                 <Link
                   key={product.id}
                   href={`/shop/products/${product.handle}`}
-                  className="product-card group"
+                  className="block bg-gray-900 rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 group"
                 >
                   {/* Product Image */}
-                  <div className="product-image">
+                  <div className="w-full aspect-square bg-gray-800 rounded-lg overflow-hidden">
                     {product.images && product.images[0] ? (
                       <Image
                         src={product.images[0].url}
@@ -91,29 +97,48 @@ export default async function ShopHome() {
                   </div>
 
                   {/* Product Info */}
-                  <div className="product-info">
-                    <h3 className="product-title line-clamp-2">
+                  <div className="p-4">
+                    <h3 className="text-white font-light text-lg line-clamp-2 mb-3">
                       {product.title}
                     </h3>
-                    
-                    {product.description && (
-                      <p className="product-description line-clamp-3">
-                        {product.description}
-                      </p>
-                    )}
 
                     <div className="flex items-center justify-between">
-                      {product.variants && product.variants[0] && product.variants[0].calculated_price ? (
-                        <span className="product-price">
-                          ₹{product.variants[0].calculated_price.calculated_amount}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400 text-sm">Price on request</span>
-                      )}
-                      
-                      <button className="shop-button">
-                        View Details
-                      </button>
+                      {(() => {
+                        // Try direct approach first
+                        const variant = product.variants?.[0]
+                        if (variant?.calculated_price?.calculated_amount) {
+                          const amount = variant.calculated_price.calculated_amount / 100
+                          return (
+                            <span className="text-cyan-400 font-semibold text-lg">
+                              ₹{amount.toFixed(0)}
+                            </span>
+                          )
+                        }
+                        
+                        // Fallback to utility function
+                        const priceData = getProductPrice({ product })
+                        if (priceData?.cheapestPrice) {
+                          return (
+                            <span className="text-cyan-400 font-semibold text-lg">
+                              {priceData.cheapestPrice.calculated_price}
+                            </span>
+                          )
+                        }
+                        
+                        // Final fallback to metadata original_price
+                        const originalPrice = product.metadata?.original_price as number
+                        if (originalPrice && typeof originalPrice === 'number' && originalPrice > 0) {
+                          return (
+                            <span className="text-cyan-400 font-semibold text-lg">
+                              ₹{originalPrice}
+                            </span>
+                          )
+                        }
+                        
+                        return (
+                          <span className="text-gray-400 text-sm">Price on request</span>
+                        )
+                      })()}
                     </div>
                   </div>
                 </Link>

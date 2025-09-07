@@ -23,40 +23,44 @@ async function getRegionMap(cacheId: string) {
     !regionMap.keys().next().value ||
     regionMapUpdated < Date.now() - 3600 * 1000
   ) {
-    // Fetch regions from Medusa. We can't use the JS client here because middleware is running on Edge and the client needs a Node environment.
-    const { regions } = await fetch(`${BACKEND_URL}/store/regions`, {
-      headers: {
-        "x-publishable-api-key": PUBLISHABLE_API_KEY!,
-      },
-      next: {
-        revalidate: 3600,
-        tags: [`regions-${cacheId}`],
-      },
-      cache: "force-cache",
-    }).then(async (response) => {
+    try {
+      // Fetch regions from Medusa. We can't use the JS client here because middleware is running on Edge and the client needs a Node environment.
+      const response = await fetch(`${BACKEND_URL}/store/regions`, {
+        headers: {
+          "x-publishable-api-key": PUBLISHABLE_API_KEY!,
+        },
+        cache: "no-store",
+      })
+
       const json = await response.json()
 
       if (!response.ok) {
-        throw new Error(json.message)
+        console.error(`Failed to fetch regions: ${response.status} ${response.statusText}`, json)
+        throw new Error(`Failed to fetch regions: ${response.status} - ${json.message || response.statusText}`)
       }
 
-      return json
-    })
+      const { regions } = json
 
-    if (!regions?.length) {
+      if (!regions?.length) {
+        throw new Error(
+          "No regions found. Please set up regions in your Medusa Admin."
+        )
+      }
+
+      // Create a map of country codes to regions.
+      regions.forEach((region: HttpTypes.StoreRegion) => {
+        region.countries?.forEach((c) => {
+          regionMapCache.regionMap.set(c.iso_2 ?? "", region)
+        })
+      })
+
+      regionMapCache.regionMapUpdated = Date.now()
+    } catch (error) {
+      console.error("Error fetching regions from Medusa backend:", error)
       throw new Error(
-        "No regions found. Please set up regions in your Medusa Admin."
+        `Middleware.ts: Error fetching regions from ${BACKEND_URL}/store/regions. ${error instanceof Error ? error.message : String(error)}`
       )
     }
-
-    // Create a map of country codes to regions.
-    regions.forEach((region: HttpTypes.StoreRegion) => {
-      region.countries?.forEach((c) => {
-        regionMapCache.regionMap.set(c.iso_2 ?? "", region)
-      })
-    })
-
-    regionMapCache.regionMapUpdated = Date.now()
   }
 
   return regionMapCache.regionMap
@@ -104,8 +108,10 @@ async function getCountryCode(
  * Middleware to handle region selection and onboarding status.
  */
 export async function middleware(request: NextRequest) {
-  // Only handle shop routes
-  if (!request.nextUrl.pathname.startsWith('/shop')) {
+  // Skip static files and api routes
+  if (request.nextUrl.pathname.startsWith('/_next') || 
+      request.nextUrl.pathname.startsWith('/api') ||
+      request.nextUrl.pathname.includes('.')) {
     return NextResponse.next()
   }
 
@@ -129,6 +135,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/shop/:path*",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.png$|.*\\.jpg$|.*\\.jpeg$|.*\\.gif$|.*\\.svg$).*)",
   ],
 }

@@ -13,16 +13,33 @@ export interface Technique {
   title: string;
   description: string;
   handle: string;
-  metadata: {
+  thumbnail?: string;
+  youtube_url?: string;
+  youtube_id?: string;
+  difficulty_level?: 'beginner' | 'intermediate' | 'advanced';
+  duration_minutes?: number;
+  instructor_notes?: string;
+  key_points?: string[];
+  prerequisites?: string[];
+  next_techniques?: string[];
+  categories?: Array<{
+    id: string;
+    name: string;
+    handle: string;
+    icon?: string;
+    color_gradient?: string;
+  }>;
+  created_at?: string;
+  metadata?: {
     content_type: 'technique';
-    youtube_url: string;
-    youtube_id: string;
-    difficulty_level: 'beginner' | 'intermediate' | 'advanced';
-    duration_minutes: number;
-    instructor_notes: string;
-    key_points: string[];
-    prerequisites: string[];
-    next_techniques: string[];
+    youtube_url?: string;
+    youtube_id?: string;
+    difficulty_level?: 'beginner' | 'intermediate' | 'advanced';
+    duration_minutes?: number;
+    instructor_notes?: string;
+    key_points?: string[];
+    prerequisites?: string[];
+    next_techniques?: string[];
   };
 }
 
@@ -31,14 +48,29 @@ export interface FlowSession {
   title: string;
   description: string;
   handle: string;
-  metadata: {
+  thumbnail?: string;
+  session_type?: 'guided' | 'meditation' | 'advanced' | 'restorative';
+  duration_minutes?: number;
+  difficulty_level?: 'beginner' | 'all_levels' | 'advanced';
+  audio_url?: string;
+  instructions?: string;
+  key_concepts?: string[];
+  categories?: Array<{
+    id: string;
+    name: string;
+    handle: string;
+    icon?: string;
+    color_gradient?: string;
+  }>;
+  created_at?: string;
+  metadata?: {
     content_type: 'flow';
-    session_type: 'guided' | 'meditation' | 'advanced' | 'restorative';
-    duration_minutes: number;
-    difficulty_level: 'beginner' | 'all_levels' | 'advanced';
-    audio_url: string;
-    instructions: string;
-    key_concepts: string[];
+    session_type?: 'guided' | 'meditation' | 'advanced' | 'restorative';
+    duration_minutes?: number;
+    difficulty_level?: 'beginner' | 'all_levels' | 'advanced';
+    audio_url?: string;
+    instructions?: string;
+    key_concepts?: string[];
   };
 }
 
@@ -47,14 +79,29 @@ export interface MindsetModule {
   title: string;
   description: string;
   handle: string;
-  metadata: {
+  thumbnail?: string;
+  module_type?: 'philosophy' | 'psychology' | 'leadership';
+  duration_minutes?: number;
+  difficulty_level?: 'beginner' | 'intermediate' | 'advanced';
+  content_url?: string;
+  key_concepts?: string[];
+  learning_objectives?: string[];
+  categories?: Array<{
+    id: string;
+    name: string;
+    handle: string;
+    icon?: string;
+    color_gradient?: string;
+  }>;
+  created_at?: string;
+  metadata?: {
     content_type: 'mindset';
-    module_type: 'philosophy' | 'psychology' | 'leadership';
-    duration_minutes: number;
-    difficulty_level: 'beginner' | 'intermediate' | 'advanced';
-    content_url: string;
-    key_concepts: string[];
-    learning_objectives: string[];
+    module_type?: 'philosophy' | 'psychology' | 'leadership';
+    duration_minutes?: number;
+    difficulty_level?: 'beginner' | 'intermediate' | 'advanced';
+    content_url?: string;
+    key_concepts?: string[];
+    learning_objectives?: string[];
   };
 }
 
@@ -69,44 +116,35 @@ export const apiService = {
     offset?: number;
   }): Promise<{ techniques: Technique[] }> {
     const searchParams = new URLSearchParams();
+    if (params?.difficulty_level) searchParams.append('difficulty_level', params.difficulty_level);
+    if (params?.category) searchParams.append('category', params.category);
     if (params?.limit) searchParams.append('limit', params.limit.toString());
     if (params?.offset) searchParams.append('offset', params.offset.toString());
 
-    const response = await fetch(`${API_BASE_URL}/store/products?${searchParams}`, {
+    const response = await fetch(`${API_BASE_URL}/store/humility-db/techniques?${searchParams}`, {
       headers: getHeaders(),
     });
-    if (!response.ok) throw new Error('Failed to fetch techniques');
-    const data = await response.json();
     
-    // Filter to show only digital content (exclude migrated physical products)
-    const techniques = data.products
-      .filter((product: any) => 
-        // Only include products that are NOT migrated from Ecwid (digital content only)
-        product.metadata?.migrated_from !== 'ecwid' &&
-        // Or include Ecwid products that are specifically digital categories
-        (product.metadata?.category === 'Digital Content' || 
-         product.metadata?.category === 'Virtual Privates & Seminars' ||
-         !product.metadata?.migrated_from)
-      )
-      .map((product: any) => ({
-        id: product.id,
-        title: product.title,
-        description: product.description,
-        handle: product.handle,
-        metadata: {
-          content_type: 'technique',
-          youtube_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-          youtube_id: 'dQw4w9WgXcQ',
+    if (!response.ok) {
+      console.error('Failed to fetch techniques:', response.status, response.statusText);
+      // Return fallback data if API fails
+      return {
+        techniques: [{
+          id: 'fallback-1',
+          title: 'Triangle Choke Fundamentals',
+          description: 'Master the basic triangle choke setup from closed guard',
+          handle: 'triangle-choke-fundamentals',
           difficulty_level: 'intermediate',
           duration_minutes: 15,
-          instructor_notes: 'Practice with focus on technique over strength',
-          key_points: ['Hip movement', 'Grip control', 'Timing', 'Pressure'],
-          prerequisites: ['Basic guard position'],
-          next_techniques: ['Advanced variations']
-        }
-      }));
+          key_points: ['Hip angle', 'Arm positioning', 'Leg placement', 'Finishing mechanics'],
+          prerequisites: ['Closed guard basics'],
+          next_techniques: ['Triangle variations']
+        }]
+      };
+    }
     
-    return { techniques };
+    const data = await response.json();
+    return { techniques: data.techniques || [] };
   },
 
   // Fetch all flow sessions

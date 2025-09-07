@@ -98,7 +98,7 @@ export async function signup(_currentState: unknown, formData: FormData) {
 
     await transferCart()
 
-    return createdCustomer
+    redirect("/account")
   } catch (error: any) {
     return error.toString()
   }
@@ -124,6 +124,21 @@ export async function login(_currentState: unknown, formData: FormData) {
     await transferCart()
   } catch (error: any) {
     return error.toString()
+  }
+
+  redirect("/account")
+}
+
+export async function requestPasswordReset(_currentState: unknown, formData: FormData) {
+  const email = formData.get("email") as string
+
+  try {
+    await sdk.auth.resetPassword("customer", "emailpass", {
+      identifier: email,
+    })
+    return "If an account exists with the specified email, it'll receive instructions to reset the password."
+  } catch (error: any) {
+    return "Unable to process request. Please try again."
   }
 }
 

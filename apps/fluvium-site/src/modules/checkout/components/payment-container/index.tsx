@@ -34,26 +34,55 @@ const PaymentContainer: React.FC<PaymentContainerProps> = ({
       value={paymentProviderId}
       disabled={disabled}
       className={clx(
-        "flex flex-col gap-y-2 text-small-regular cursor-pointer py-4 border rounded-rounded px-8 mb-2 hover:shadow-borders-interactive-with-active",
+        "flex flex-col gap-y-2 text-small-regular cursor-pointer py-4 px-6 mb-3 rounded-xl border-2 transition-all duration-200 hover:bg-gray-800/30",
         {
-          "border-ui-border-interactive":
+          "border-cyan-400 bg-cyan-400/10 shadow-lg shadow-cyan-400/20":
             selectedPaymentOptionId === paymentProviderId,
+          "border-gray-600 bg-gray-800/20 hover:border-gray-500":
+            selectedPaymentOptionId !== paymentProviderId && !disabled,
+          "border-gray-700 bg-gray-800/10 cursor-not-allowed opacity-50":
+            disabled,
         }
       )}
     >
       <div className="flex items-center justify-between ">
         <div className="flex items-center gap-x-4">
-          <Radio checked={selectedPaymentOptionId === paymentProviderId} />
-          <Text className="text-base-regular">
+          <div className={clx(
+            "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors duration-200",
+            {
+              "border-cyan-400 bg-cyan-400": selectedPaymentOptionId === paymentProviderId,
+              "border-gray-500": selectedPaymentOptionId !== paymentProviderId
+            }
+          )}>
+            {selectedPaymentOptionId === paymentProviderId && (
+              <div className="w-2 h-2 rounded-full bg-white"></div>
+            )}
+          </div>
+          <Text className={clx(
+            "font-medium text-base",
+            {
+              "text-white": !disabled,
+              "text-gray-400": disabled
+            }
+          )}>
             {paymentInfoMap[paymentProviderId]?.title || paymentProviderId}
           </Text>
           {isManual(paymentProviderId) && isDevelopment && (
             <PaymentTest className="hidden small:block" />
           )}
         </div>
-        <span className="justify-self-end text-ui-fg-base">
-          {paymentInfoMap[paymentProviderId]?.icon}
-        </span>
+        <div className="flex items-center">
+          <span className={clx(
+            "transition-colors duration-200",
+            {
+              "text-cyan-400": selectedPaymentOptionId === paymentProviderId,
+              "text-white": selectedPaymentOptionId !== paymentProviderId && !disabled,
+              "text-gray-400": disabled
+            }
+          )}>
+            {paymentInfoMap[paymentProviderId]?.icon}
+          </span>
+        </div>
       </div>
       {isManual(paymentProviderId) && isDevelopment && (
         <PaymentTest className="small:hidden text-[10px]" />
@@ -107,7 +136,7 @@ export const StripeCardContainer = ({
       {selectedPaymentOptionId === paymentProviderId &&
         (stripeReady ? (
           <div className="my-4 transition-all duration-150 ease-in-out">
-            <Text className="txt-medium-plus text-ui-fg-base mb-1">
+            <Text className="txt-medium-plus text-white mb-1">
               Enter your card details:
             </Text>
             <CardElement

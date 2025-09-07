@@ -68,24 +68,36 @@ export default async function PaginatedProducts({
 
   return (
     <>
-      <ul
-        className="grid grid-cols-2 w-full small:grid-cols-3 medium:grid-cols-4 gap-x-6 gap-y-8"
-        data-testid="products-list"
-      >
-        {products.map((p) => {
-          return (
-            <li key={p.id}>
-              <ProductPreview product={p} region={region} />
-            </li>
-          )
-        })}
-      </ul>
-      {totalPages > 1 && (
-        <Pagination
-          data-testid="product-pagination"
-          page={page}
-          totalPages={totalPages}
-        />
+      {products.length > 0 ? (
+        <>
+          <div
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+            data-testid="products-list"
+          >
+            {products.map((p) => {
+              return (
+                <ProductPreview key={p.id} product={p} region={region} />
+              )
+            })}
+          </div>
+          {totalPages > 1 && (
+            <div className="mt-12 flex justify-center">
+              <Pagination
+                data-testid="product-pagination"
+                page={page}
+                totalPages={totalPages}
+              />
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="text-center py-20">
+          <div className="text-6xl mb-6 opacity-50">🛒</div>
+          <h3 className="text-2xl font-light text-white mb-4">No products found</h3>
+          <p className="text-gray-400 font-light">
+            Try adjusting your search or filter criteria
+          </p>
+        </div>
       )}
     </>
   )

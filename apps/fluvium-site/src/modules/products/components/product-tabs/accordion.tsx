@@ -47,8 +47,8 @@ const Item: React.FC<AccordionItemProps> = ({
     <AccordionPrimitive.Item
       {...props}
       className={clx(
-        "border-grey-20 group border-t last:mb-0 last:border-b",
-        "py-3",
+        "border-gray-700/50 group border-t last:mb-0 last:border-b bg-gray-800/20 rounded-lg mb-4",
+        "py-4 px-4",
         className
       )}
     >
@@ -56,7 +56,7 @@ const Item: React.FC<AccordionItemProps> = ({
         <div className="flex flex-col">
           <div className="flex w-full items-center justify-between">
             <div className="flex items-center gap-4">
-              <Text className="text-ui-fg-subtle text-sm">{title}</Text>
+              <Text className="text-cyan-400 text-sm font-semibold uppercase tracking-wider">{title}</Text>
             </div>
             <AccordionPrimitive.Trigger>
               {customTrigger || <MorphingTrigger />}
@@ -88,10 +88,10 @@ Accordion.Item = Item
 
 const MorphingTrigger = () => {
   return (
-    <div className="text-grey-90 hover:bg-grey-5 active:bg-grey-5 active:text-violet-60 focus:border-violet-60 disabled:text-grey-30 bg-transparent disabled:bg-transparent rounded-rounded group relative p-[6px]">
+    <div className="text-cyan-400 hover:bg-gray-700/50 active:bg-gray-700/50 bg-transparent rounded-lg group relative p-[6px] border border-gray-700/50">
       <div className="h-5 w-5">
-        <span className="bg-grey-50 rounded-circle group-radix-state-open:rotate-90 absolute inset-y-[31.75%] left-[48%] right-1/2 w-[1.5px] duration-300" />
-        <span className="bg-grey-50 rounded-circle group-radix-state-open:rotate-90 group-radix-state-open:left-1/2 group-radix-state-open:right-1/2 absolute inset-x-[31.75%] top-[48%] bottom-1/2 h-[1.5px] duration-300" />
+        <span className="bg-cyan-400 rounded group-radix-state-open:rotate-90 absolute inset-y-[31.75%] left-[48%] right-1/2 w-[1.5px] duration-300" />
+        <span className="bg-cyan-400 rounded group-radix-state-open:rotate-90 group-radix-state-open:left-1/2 group-radix-state-open:right-1/2 absolute inset-x-[31.75%] top-[48%] bottom-1/2 h-[1.5px] duration-300" />
       </div>
     </div>
   )

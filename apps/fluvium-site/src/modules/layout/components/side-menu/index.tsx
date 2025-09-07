@@ -11,9 +11,10 @@ import { HttpTypes } from "@medusajs/types"
 
 const SideMenuItems = {
   Home: "/",
-  Store: "/store",
+  Shop: "/shop-maintenance",
+  Store: "/shop/store", 
   Account: "/account",
-  Cart: "/cart",
+  Cart: "/shop/cart",
 }
 
 const SideMenu = ({ regions }: { regions: HttpTypes.StoreRegion[] | null }) => {
@@ -28,7 +29,7 @@ const SideMenu = ({ regions }: { regions: HttpTypes.StoreRegion[] | null }) => {
               <div className="relative flex h-full">
                 <Popover.Button
                   data-testid="nav-menu-button"
-                  className="relative h-full flex items-center transition-all ease-out duration-200 focus:outline-none hover:text-ui-fg-base"
+                  className="relative h-full flex items-center transition-all ease-out duration-200 focus:outline-none text-white hover:text-cyan-400"
                 >
                   Menu
                 </Popover.Button>
@@ -60,7 +61,7 @@ const SideMenu = ({ regions }: { regions: HttpTypes.StoreRegion[] | null }) => {
                           <li key={name}>
                             <LocalizedClientLink
                               href={href}
-                              className="text-3xl leading-10 hover:text-ui-fg-disabled"
+                              className="text-3xl leading-10 text-white hover:text-cyan-400 transition-colors duration-200"
                               onClick={close}
                               data-testid={`${name.toLowerCase()}-link`}
                             >
@@ -89,8 +90,8 @@ const SideMenu = ({ regions }: { regions: HttpTypes.StoreRegion[] | null }) => {
                           )}
                         />
                       </div>
-                      <Text className="flex justify-between txt-compact-small">
-                        © {new Date().getFullYear()} Medusa Store. All rights
+                      <Text className="flex justify-between txt-compact-small text-gray-400">
+                        © {new Date().getFullYear()} Fluvium. All rights
                         reserved.
                       </Text>
                     </div>

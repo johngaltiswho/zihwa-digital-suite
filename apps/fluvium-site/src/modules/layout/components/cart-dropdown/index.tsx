@@ -12,7 +12,7 @@ import { Button } from "@medusajs/ui"
 import DeleteButton from "@/modules/common/components/delete-button"
 import LineItemOptions from "@/modules/common/components/line-item-options"
 import LineItemPrice from "@/modules/common/components/line-item-price"
-import LocalizedClientLink from "@/modules/common/components/localized-client-link"
+import Link from "next/link"
 import Thumbnail from "@/modules/products/components/thumbnail"
 import { usePathname } from "next/navigation"
 import { Fragment, useEffect, useRef, useState } from "react"
@@ -81,11 +81,11 @@ const CartDropdown = ({
     >
       <Popover className="relative h-full">
         <PopoverButton className="h-full">
-          <LocalizedClientLink
-            className="hover:text-ui-fg-base"
-            href="/cart"
+          <Link
+            className="text-white hover:text-cyan-400 transition-colors duration-200"
+            href="/shop/cart"
             data-testid="nav-cart-link"
-          >{`Cart (${totalItems})`}</LocalizedClientLink>
+          >{`Cart (${totalItems})`}</Link>
         </PopoverButton>
         <Transition
           show={cartDropdownOpen}
@@ -120,8 +120,8 @@ const CartDropdown = ({
                         key={item.id}
                         data-testid="cart-item"
                       >
-                        <LocalizedClientLink
-                          href={`/products/${item.product_handle}`}
+                        <Link
+                          href={`/shop/products/${item.product_handle}`}
                           className="w-24"
                         >
                           <Thumbnail
@@ -129,18 +129,18 @@ const CartDropdown = ({
                             images={item.variant?.product?.images}
                             size="square"
                           />
-                        </LocalizedClientLink>
+                        </Link>
                         <div className="flex flex-col justify-between flex-1">
                           <div className="flex flex-col flex-1">
                             <div className="flex items-start justify-between">
                               <div className="flex flex-col overflow-ellipsis whitespace-nowrap mr-4 w-[180px]">
                                 <h3 className="text-base-regular overflow-hidden text-ellipsis">
-                                  <LocalizedClientLink
-                                    href={`/products/${item.product_handle}`}
+                                  <Link
+                                    href={`/shop/products/${item.product_handle}`}
                                     data-testid="product-link"
                                   >
                                     {item.title}
-                                  </LocalizedClientLink>
+                                  </Link>
                                 </h3>
                                 <LineItemOptions
                                   variant={item.variant}
@@ -191,7 +191,7 @@ const CartDropdown = ({
                       })}
                     </span>
                   </div>
-                  <LocalizedClientLink href="/cart" passHref>
+                  <Link href="/shop/cart">
                     <Button
                       className="w-full"
                       size="large"
@@ -199,7 +199,7 @@ const CartDropdown = ({
                     >
                       Go to cart
                     </Button>
-                  </LocalizedClientLink>
+                  </Link>
                 </div>
               </>
             ) : (
@@ -210,12 +210,9 @@ const CartDropdown = ({
                   </div>
                   <span>Your shopping bag is empty.</span>
                   <div>
-                    <LocalizedClientLink href="/store">
-                      <>
-                        <span className="sr-only">Go to all products page</span>
-                        <Button onClick={close}>Explore products</Button>
-                      </>
-                    </LocalizedClientLink>
+                    <Link href="/shop/store">
+                      <Button onClick={close}>Explore products</Button>
+                    </Link>
                   </div>
                 </div>
               </div>

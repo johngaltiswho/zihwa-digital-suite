@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 
 export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -30,41 +32,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen relative overflow-hidden">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-sm border-b border-gray-800/30">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          {/* Logo */}
-          <div className={`transition-all duration-1000 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-            <Image
-              src="/fluvium-logo-glow-teal.png"
-              alt="Fluvium Logo"
-              width={120}
-              height={48}
-              className="cursor-pointer neon-glow animate-pulse-glow"
-              priority
-            />
-          </div>
-
-          {/* Navigation */}
-          <nav className={`hidden md:flex items-center space-x-8 transition-all duration-1000 delay-200 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-            <a href="#about" className="text-gray-300 hover:text-white transition-colors duration-300 font-light">About</a>
-            <a href="#offerings" className="text-gray-300 hover:text-white transition-colors duration-300 font-light">Offerings</a>
-            <Link href="/humility-db" className="text-gray-300 hover:text-white transition-colors duration-300 font-light">Humility DB</Link>
-            <Link href="/shop" className="text-gray-300 hover:text-white transition-colors duration-300 font-light">Shop</Link>
-            <a href="#founder" className="text-gray-300 hover:text-white transition-colors duration-300 font-light">Founder</a>
-            <button className="neon-border bg-transparent text-white px-6 py-2 text-sm font-light tracking-wider hover:bg-cyan-400/10 transition-all duration-300">
-              Join the Tribe
-            </button>
-          </nav>
-
-          {/* Mobile Menu Button */}
-          <button className="md:hidden text-white">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-        </div>
-      </header>
+      <Header />
 
       {/* Background Video Overlay */}
       <div className=""></div>
@@ -596,134 +564,16 @@ export default function Home() {
               Questions about your journey? We're here to help.
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-              <a href="mailto:hello@fluvium.com" className="text-cyan-400 hover:text-cyan-300 transition-colors duration-300 flex items-center gap-2">
+              <a href="mailto:info@fluvium.co" className="text-cyan-400 hover:text-cyan-300 transition-colors duration-300 flex items-center gap-2">
                 <span className="text-lg">✉</span>
-                hello@fluvium.com
-              </a>
-              <span className="hidden sm:block text-gray-600">•</span>
-              <a href="tel:+1234567890" className="text-cyan-400 hover:text-cyan-300 transition-colors duration-300 flex items-center gap-2">
-                <span className="text-lg">📞</span>
-                (123) 456-7890
+                info@fluvium.co
               </a>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Footer Section */}
-      <footer className="bg-gradient-to-t from-black to-gray-900 border-t border-gray-800/50">
-        <div className="max-w-6xl mx-auto px-6 py-16">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-            
-            {/* Logo & Brand */}
-            <div className="md:col-span-1">
-              <div className="mb-6">
-                <div className="mb-4">
-                  <Image
-                    src="/logo-light.png"
-                    alt="Fluvium Logo"
-                    width={60}
-                    height={60}
-                    className="mb-2"
-                  />
-                </div>
-                <h3 className="text-2xl font-light tracking-wide text-white mb-2">
-                  <span className="neon-glow">Fluvium</span>
-                </h3>
-                <p className="text-gray-400 text-sm font-light">
-                  Dream to Live Free
-                </p>
-              </div>
-              <p className="text-gray-400 text-sm font-light leading-relaxed">
-                Where ancient warrior wisdom meets modern leadership. 
-                Your journey to flow begins here.
-              </p>
-            </div>
-
-            {/* City/Location Availability */}
-            <div className="md:col-span-1">
-              <h4 className="text-white font-light mb-4">Locations</h4>
-              <div className="space-y-2">
-                <p className="text-gray-400 text-sm font-light">New York, NY</p>
-                <p className="text-gray-400 text-sm font-light">Los Angeles, CA</p>
-                <p className="text-gray-400 text-sm font-light">Austin, TX</p>
-                <p className="text-gray-400 text-sm font-light">Miami, FL</p>
-                <p className="text-cyan-400 text-sm font-light mt-3">
-                  + Virtual Sessions Available
-                </p>
-              </div>
-            </div>
-
-            {/* Newsletter Signup */}
-            <div className="md:col-span-1">
-              <h4 className="text-white font-light mb-4">Stay Connected</h4>
-              <p className="text-gray-400 text-sm font-light mb-4">
-                Get insights, class updates, and exclusive content.
-              </p>
-              <div className="space-y-3">
-                <input 
-                  type="email" 
-                  placeholder="Enter your email"
-                  className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-4 py-3 text-white text-sm font-light focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/50 transition-all duration-300"
-                />
-                <button className="w-full bg-gradient-to-r from-cyan-400 to-purple-500 text-black px-4 py-3 text-sm font-medium tracking-wider hover:from-cyan-500 hover:to-purple-600 transition-all duration-300 rounded-lg">
-                  Subscribe
-                </button>
-              </div>
-            </div>
-
-            {/* Social Links & Terms */}
-            <div className="md:col-span-1">
-              <h4 className="text-white font-light mb-4">Connect</h4>
-              
-              {/* Social Links */}
-              <div className="flex space-x-4 mb-6">
-                <a href="#" className="w-10 h-10 bg-gray-800/50 rounded-full flex items-center justify-center text-gray-400 hover:text-cyan-400 hover:bg-gray-700/50 transition-all duration-300">
-                  <span className="text-lg">📘</span>
-                </a>
-                <a href="#" className="w-10 h-10 bg-gray-800/50 rounded-full flex items-center justify-center text-gray-400 hover:text-cyan-400 hover:bg-gray-700/50 transition-all duration-300">
-                  <span className="text-lg">📷</span>
-                </a>
-                <a href="#" className="w-10 h-10 bg-gray-800/50 rounded-full flex items-center justify-center text-gray-400 hover:text-cyan-400 hover:bg-gray-700/50 transition-all duration-300">
-                  <span className="text-lg">🐦</span>
-                </a>
-                <a href="#" className="w-10 h-10 bg-gray-800/50 rounded-full flex items-center justify-center text-gray-400 hover:text-cyan-400 hover:bg-gray-700/50 transition-all duration-300">
-                  <span className="text-lg">💼</span>
-                </a>
-              </div>
-
-              {/* Terms & Links */}
-              <div className="space-y-2">
-                <Link href="/privacy-policy" className="block text-gray-400 hover:text-cyan-400 text-sm font-light transition-colors duration-300">
-                  Privacy Policy
-                </Link>
-                <Link href="/terms-of-service" className="block text-gray-400 hover:text-cyan-400 text-sm font-light transition-colors duration-300">
-                  Terms of Service
-                </Link>
-                <Link href="/membership-agreement" className="block text-gray-400 hover:text-cyan-400 text-sm font-light transition-colors duration-300">
-                  Membership Agreement
-                </Link>
-                <Link href="/contact" className="block text-gray-400 hover:text-cyan-400 text-sm font-light transition-colors duration-300">
-                  Contact Us
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom Bar */}
-          <div className="border-t border-gray-800/50 pt-8 mt-12 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-gray-500 text-sm font-light mb-4 md:mb-0">
-              © 2024 Fluvium. All rights reserved.
-            </p>
-            <div className="flex items-center space-x-6">
-              <p className="text-gray-500 text-sm font-light">
-                Made with intention
-              </p>
-              <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </main>
   );
 }

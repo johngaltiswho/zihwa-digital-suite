@@ -44,23 +44,23 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             name={name}
             placeholder=" "
             required={required}
-            className="pt-4 pb-1 block w-full h-11 px-4 mt-0 bg-ui-bg-field border rounded-md appearance-none focus:outline-none focus:ring-0 focus:shadow-borders-interactive-with-active border-ui-border-base hover:bg-ui-bg-field-hover"
+            className="peer pt-4 pb-1 block w-full h-11 px-4 mt-0 bg-gray-800/50 border border-gray-600 rounded-md appearance-none focus:outline-none focus:ring-1 focus:ring-cyan-400 focus:border-cyan-400 text-white placeholder-transparent hover:bg-gray-800/70 transition-colors"
             {...props}
             ref={inputRef}
           />
           <label
             htmlFor={name}
             onClick={() => inputRef.current?.focus()}
-            className="flex items-center justify-center mx-3 px-1 transition-all absolute duration-300 top-3 -z-1 origin-0 text-ui-fg-subtle"
+            className="absolute left-3 -top-2.5 bg-gray-900 px-2 text-sm text-gray-400 transition-all duration-300 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-placeholder-shown:top-3 peer-placeholder-shown:bg-transparent peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-cyan-400 peer-focus:bg-gray-900 cursor-text"
           >
             {label}
-            {required && <span className="text-rose-500">*</span>}
+            {required && <span className="text-rose-500 ml-1">*</span>}
           </label>
           {type === "password" && (
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="text-ui-fg-subtle px-4 focus:outline-none transition-all duration-150 outline-none focus:text-ui-fg-base absolute right-0 top-3"
+              className="text-gray-400 px-4 focus:outline-none transition-all duration-150 outline-none focus:text-gray-300 hover:text-gray-300 absolute right-0 top-3"
             >
               {showPassword ? <Eye /> : <EyeOff />}
             </button>

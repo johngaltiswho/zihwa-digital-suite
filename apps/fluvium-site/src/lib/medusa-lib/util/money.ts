@@ -15,12 +15,15 @@ export const convertToLocale = ({
   maximumFractionDigits,
   locale = "en-US",
 }: ConvertToLocaleParams) => {
+  // Convert from cents/paise to main currency unit by dividing by 100
+  const convertedAmount = amount / 100
+
   return currency_code && !isEmpty(currency_code)
     ? new Intl.NumberFormat(locale, {
         style: "currency",
         currency: currency_code,
         minimumFractionDigits,
         maximumFractionDigits,
-      }).format(amount)
-    : amount.toString()
+      }).format(convertedAmount)
+    : convertedAmount.toString()
 }

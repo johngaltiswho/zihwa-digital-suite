@@ -27,42 +27,51 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
   }
 
   return (
-    <>
-      <div
-        className="content-container flex flex-col small:flex-row small:items-start py-6 relative"
-        data-testid="product-container"
-      >
-        <div className="flex flex-col small:sticky small:top-48 small:py-0 small:max-w-[300px] w-full py-8 gap-y-6">
-          <ProductInfo product={product} />
-          <ProductTabs product={product} />
+    <div className="min-h-screen bg-black text-white">
+      {/* Product Detail Section */}
+      <div className="max-w-6xl mx-auto px-6 py-16">
+        <div
+          className="grid grid-cols-1 lg:grid-cols-2 gap-12"
+          data-testid="product-container"
+        >
+          {/* Product Images */}
+          <div className="order-1 lg:order-1">
+            <ImageGallery images={product?.images || []} />
+          </div>
+
+          {/* Product Info & Actions */}
+          <div className="order-2 lg:order-2 flex flex-col gap-8">
+            <ProductInfo product={product} />
+            
+            <Suspense
+              fallback={
+                <ProductActions
+                  disabled={true}
+                  product={product}
+                  region={region}
+                />
+              }
+            >
+              <ProductActionsWrapper id={product.id} region={region} />
+            </Suspense>
+
+            <ProductTabs product={product} />
+          </div>
         </div>
-        <div className="block w-full relative">
-          <ImageGallery images={product?.images || []} />
-        </div>
-        <div className="flex flex-col small:sticky small:top-48 small:py-0 small:max-w-[300px] w-full py-8 gap-y-12">
-          <ProductOnboardingCta />
-          <Suspense
-            fallback={
-              <ProductActions
-                disabled={true}
-                product={product}
-                region={region}
-              />
-            }
-          >
-            <ProductActionsWrapper id={product.id} region={region} />
+      </div>
+
+      {/* Related Products */}
+      <div className="bg-gray-900 py-16">
+        <div
+          className="max-w-6xl mx-auto px-6"
+          data-testid="related-products-container"
+        >
+          <Suspense fallback={<SkeletonRelatedProducts />}>
+            <RelatedProducts product={product} countryCode={countryCode} />
           </Suspense>
         </div>
       </div>
-      <div
-        className="content-container my-16 small:my-32"
-        data-testid="related-products-container"
-      >
-        <Suspense fallback={<SkeletonRelatedProducts />}>
-          <RelatedProducts product={product} countryCode={countryCode} />
-        </Suspense>
-      </div>
-    </>
+    </div>
   )
 }
 
