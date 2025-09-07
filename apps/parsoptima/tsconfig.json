@@ -5,7 +5,9 @@
       {
         "name": "next"
       }
-    ]
+    ],
+    "skipLibCheck": true,
+    "declaration": false
   },
   "include": [
     "**/*.ts",
