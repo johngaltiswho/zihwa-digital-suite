@@ -51,40 +51,104 @@ export default function Home() {
       <section className="hero">
         <div className="container">
           <div className="hero-content">
-            <h1>Pars Optima Enterprises LLP</h1>
-            <p className="tagline">Efficient FMCG Distribution Across South India</p>
-            <p className="description">
-              Pars Optima Enterprises LLP is a trusted FMCG distributor, serving General Trade, 
-              Modern Trade, and HoReCa across Bangalore, Hosur, and Hyderabad.
-            </p>
-            <Link href="/contact" className="cta-button">Get In Touch</Link>
+            <div className="hero-text">
+              <h1>Drive Brand Success Across South India</h1>
+              <p className="tagline">Strategic FMCG Distribution & Supply Chain Solutions</p>
+              <p className="description">
+                Pars Optima Enterprises connects leading brands with thousands of retailers through 
+                our advanced distribution network. From General Trade to Modern Trade and HoReCa - 
+                we ensure maximum market penetration and sustainable growth.
+              </p>
+              <div className="hero-stats">
+                <div className="stat">
+                  <div className="stat-number">200+</div>
+                  <div className="stat-label">Daily Deliveries</div>
+                </div>
+                <div className="stat">
+                  <div className="stat-number">3</div>
+                  <div className="stat-label">Strategic Cities</div>
+                </div>
+                <div className="stat">
+                  <div className="stat-number">7+</div>
+                  <div className="stat-label">Partner Brands</div>
+                </div>
+              </div>
+              <div className="cta-buttons">
+                <Link href="/contact" className="cta-button primary">
+                  Become a Partner
+                </Link>
+                <Link href="/operations" className="cta-button secondary">
+                  Our Capabilities
+                </Link>
+              </div>
+            </div>
+            <div className="hero-visual">
+              <div className="supply-chain-graphic">
+                <div className="distribution-flow">
+                  <div className="flow-step manufacturer">
+                    <div className="step-icon">🏭</div>
+                    <span>Manufacturers</span>
+                  </div>
+                  <div className="flow-arrow">→</div>
+                  <div className="flow-step distributor active">
+                    <div className="step-icon">🚚</div>
+                    <span>Pars Optima</span>
+                  </div>
+                  <div className="flow-arrow">→</div>
+                  <div className="flow-step retailers">
+                    <div className="step-icon">🏪</div>
+                    <span>Retailers</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* About Us Section */}
-      <section id="about" className="section" style={{backgroundColor: '#f8f9fa'}}>
+      {/* Core Capabilities Section */}
+      <section className="section" style={{backgroundColor: '#f8f9fa'}}>
         <div className="container">
-          <h2 className="section-title">About Us</h2>
+          <h2 className="section-title">Why Leading Brands Choose Us</h2>
           <p className="section-subtitle">
-            We specialize in FMCG distribution, delivering leading brands with reliability and scale. 
-            Our network handles ~200 deliveries daily through a fleet of 10+ vehicles, reaching 
-            thousands of retailers and businesses.
+            Strategic distribution expertise that drives measurable growth across South Indian markets
           </p>
-          <div className="grid-2">
-            <div className="card">
-              <h3>Scale & Reliability</h3>
+          <div className="grid-3">
+            <div className="capability-card">
+              <div className="capability-icon">📈</div>
+              <h3>Market Penetration</h3>
               <p>
-                With over 200 daily deliveries and a growing network of retailers, we ensure 
-                consistent supply chain management across our operational regions.
+                Deep reach across General Trade, Modern Trade, and HoReCa channels with 
+                thousands of active retail touchpoints in strategic locations.
               </p>
+              <div className="capability-stats">
+                <span>200+ Daily Orders</span>
+                <span>3 Strategic Cities</span>
+              </div>
             </div>
-            <div className="card">
-              <h3>Extended Reach</h3>
+            <div className="capability-card">
+              <div className="capability-icon">🚚</div>
+              <h3>Logistics Excellence</h3>
               <p>
-                Through our integration with sister company Stalks N Spice, we provide extended 
-                reach and comprehensive distribution solutions across South India.
+                Advanced fleet management with 10+ modern vehicles ensuring reliable, 
+                timely deliveries and optimal inventory management.
               </p>
+              <div className="capability-stats">
+                <span>10+ Vehicle Fleet</span>
+                <span>Same-day Delivery</span>
+              </div>
+            </div>
+            <div className="capability-card">
+              <div className="capability-icon">🤝</div>
+              <h3>Partnership Focus</h3>
+              <p>
+                Dedicated account management and strategic market insights that help 
+                brands achieve sustainable growth and market expansion.
+              </p>
+              <div className="capability-stats">
+                <span>Expert Team</span>
+                <span>24/7 Support</span>
+              </div>
             </div>
           </div>
         </div>
