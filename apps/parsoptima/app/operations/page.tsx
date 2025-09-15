@@ -222,16 +222,16 @@ export default function Operations() {
           <h2 className="section-title">Strategic Partnerships</h2>
           <div className="grid-2">
             <div className="card">
-              <h3>🤝 Sister Company Integration</h3>
+              <h3>🤝 Financial Partnerships</h3>
               <p>
-                <strong>Stalks N Spice Partnership:</strong> Our strategic integration with Stalks N Spice 
-                extends our operational capabilities and market reach. This partnership enables:
+                <strong>NBFC Lending Solutions:</strong> Our partnerships with leading NBFCs 
+                enable comprehensive financial support for our customers. This includes:
               </p>
               <ul style={{marginTop: '1rem', paddingLeft: '1.5rem'}}>
-                <li>Enhanced distribution network coverage</li>
-                <li>Shared logistics and warehousing resources</li>
-                <li>Cross-channel expertise and market insights</li>
-                <li>Comprehensive supply chain solutions</li>
+                <li>Flexible lending solutions for inventory management</li>
+                <li>Insurance coverage for business protection</li>
+                <li>Cash flow optimization programs</li>
+                <li>Growth financing options</li>
               </ul>
             </div>
             

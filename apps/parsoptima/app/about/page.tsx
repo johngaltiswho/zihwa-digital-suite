@@ -86,12 +86,11 @@ export default function About() {
           <h2 className="section-title">Extended Network</h2>
           <div className="grid-2">
             <div className="card">
-              <h3>Sister Company Integration</h3>
+              <h3>Financial Solutions</h3>
               <p>
-                Through our strategic partnership with <strong>Stalks N Spice</strong>, 
-                we provide extended reach and comprehensive distribution solutions. 
-                This integration allows us to offer enhanced coverage and specialized 
-                services across different market segments.
+                We have partnered with leading NBFCs to offer lending solutions and 
+                comprehensive insurance facilities to our customers. This enables better 
+                cash flow management and supports business growth across our network.
               </p>
             </div>
             <div className="card">

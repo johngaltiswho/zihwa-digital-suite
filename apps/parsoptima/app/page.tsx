@@ -2,13 +2,74 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    company: '',
+    email: '',
+    phone: '',
+    message: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   
-  const handleContactSubmit = (e: React.FormEvent) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert('Thank you for your message! We will get back to you soon.');
+    setIsSubmitting(true);
+    setSubmitStatus('idle');
+
+    try {
+      // Validate required fields
+      if (!formData.name || !formData.email || !formData.message) {
+        alert('Please fill in all required fields (Name, Email, and Message).');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        alert('Please enter a valid email address.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // For now, we'll log the data and show success message
+      // In a real implementation, you would send this to your backend/email service
+      console.log('Form submission:', formData);
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setSubmitStatus('success');
+      setFormData({
+        name: '',
+        company: '',
+        email: '',
+        phone: '',
+        message: ''
+      });
+      
+      alert('Thank you for your message! We will get back to you within 24 hours.');
+      
+    } catch (error) {
+      console.error('Form submission error:', error);
+      setSubmitStatus('error');
+      alert('There was an error sending your message. Please try again or contact us directly at info@parsoptima.com');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -17,7 +78,16 @@ export default function Home() {
       <header className="header">
         <div className="container">
           <nav className="nav">
-            <Link href="/" className="logo">Pars Optima Enterprises LLP</Link>
+            <Link href="/" className="logo">
+              <Image 
+                src="/Logo_NoBG.png" 
+                alt="Pars Optima Enterprises LLP" 
+                width={200} 
+                height={50}
+                priority
+                className="logo-image"
+              />
+            </Link>
             <ul className="nav-links">
               <li><Link href="/about">About Us</Link></li>
               <li><Link href="/brands">Our Brands</Link></li>
@@ -140,14 +210,15 @@ export default function Home() {
             </div>
             <div className="capability-card">
               <div className="capability-icon">🤝</div>
-              <h3>Partnership Focus</h3>
+              <h3>Financial Solutions</h3>
               <p>
-                Dedicated account management and strategic market insights that help 
-                brands achieve sustainable growth and market expansion.
+                We have partnered with leading NBFCs to offer lending solutions and 
+                comprehensive insurance facilities to our customers, enabling better 
+                cash flow management and business growth.
               </p>
               <div className="capability-stats">
-                <span>Expert Team</span>
-                <span>24/7 Support</span>
+                <span>NBFC Lending</span>
+                <span>Insurance Coverage</span>
               </div>
             </div>
           </div>
@@ -218,44 +289,90 @@ export default function Home() {
         <div className="container">
           <h2 className="section-title">Contact Us</h2>
           <p className="section-subtitle">
-            Get in touch for partnership opportunities or distribution inquiries
+            Get in touch for partnership opportunities, distribution inquiries, or to learn about our NBFC lending and insurance solutions
           </p>
           
           <form className="contact-form" onSubmit={handleContactSubmit}>
             <div className="form-group">
-              <label htmlFor="name">Name</label>
-              <input type="text" id="name" name="name" required />
+              <label htmlFor="name">Name *</label>
+              <input 
+                type="text" 
+                id="name" 
+                name="name" 
+                value={formData.name}
+                onChange={handleInputChange}
+                required 
+                disabled={isSubmitting}
+              />
             </div>
             <div className="form-group">
               <label htmlFor="company">Company</label>
-              <input type="text" id="company" name="company" />
+              <input 
+                type="text" 
+                id="company" 
+                name="company" 
+                value={formData.company}
+                onChange={handleInputChange}
+                disabled={isSubmitting}
+              />
             </div>
             <div className="form-group">
-              <label htmlFor="email">Email</label>
-              <input type="email" id="email" name="email" required />
+              <label htmlFor="email">Email *</label>
+              <input 
+                type="email" 
+                id="email" 
+                name="email" 
+                value={formData.email}
+                onChange={handleInputChange}
+                required 
+                disabled={isSubmitting}
+              />
             </div>
             <div className="form-group">
               <label htmlFor="phone">Phone</label>
-              <input type="tel" id="phone" name="phone" />
+              <input 
+                type="tel" 
+                id="phone" 
+                name="phone" 
+                value={formData.phone}
+                onChange={handleInputChange}
+                disabled={isSubmitting}
+              />
             </div>
             <div className="form-group">
-              <label htmlFor="message">Message</label>
-              <textarea id="message" name="message" required></textarea>
+              <label htmlFor="message">Message *</label>
+              <textarea 
+                id="message" 
+                name="message" 
+                value={formData.message}
+                onChange={handleInputChange}
+                required
+                disabled={isSubmitting}
+                rows={5}
+              ></textarea>
             </div>
-            <button type="submit" className="cta-button">Send Message</button>
+            <button 
+              type="submit" 
+              className="cta-button"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Sending...' : 'Send Message'}
+            </button>
           </form>
 
           <div className="contact-info">
             <div className="contact-card">
-              <h3>Head Office</h3>
-              <p>Bangalore, Karnataka</p>
+              <h3>Bangalore Office</h3>
+              <p>164, 2nd Main Rd, Sun City Layout</p>
+              <p>JP Nagar 7th Phase, Bengaluru</p>
+              <p>Kothnur, Karnataka 560078</p>
               <p>Email: info@parsoptima.com</p>
-              <p>Phone: +91-XXXX-XXXXXX</p>
             </div>
             <div className="contact-card">
-              <h3>Warehouse Locations</h3>
-              <p>Bangalore • Hosur • Hyderabad</p>
-              <p>Strategic locations for efficient distribution across South India</p>
+              <h3>Hosur Office</h3>
+              <p>420/1, Hosur - Thally Road</p>
+              <p>Kalkondapalli, Krishnagiri</p>
+              <p>Tamil Nadu 635114, India</p>
             </div>
             <div className="contact-card">
               <h3>Business Hours</h3>

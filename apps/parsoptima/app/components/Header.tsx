@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -10,7 +11,16 @@ export default function Header() {
     <header className="header">
       <div className="container">
         <nav className="nav">
-          <Link href="/" className="logo">Pars Optima Enterprises LLP</Link>
+          <Link href="/" className="logo">
+            <Image 
+              src="/Logo_NoBG.png" 
+              alt="Pars Optima Enterprises LLP" 
+              width={200} 
+              height={50}
+              priority
+              className="logo-image"
+            />
+          </Link>
           <ul className="nav-links">
             <li><Link href="/about">About Us</Link></li>
             <li><Link href="/brands">Our Brands</Link></li>

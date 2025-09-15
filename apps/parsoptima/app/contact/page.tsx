@@ -22,7 +22,7 @@ export default function Contact() {
             <p className="tagline">Let's Discuss Your Distribution Needs</p>
             <p className="description">
               Get in touch with our team for partnership opportunities, distribution inquiries, 
-              or any questions about our services. We're here to help grow your business.
+              NBFC lending solutions, insurance facilities, or any questions about our services.
             </p>
           </div>
         </div>
@@ -42,7 +42,7 @@ export default function Contact() {
               <div className="contact-methods">
                 <div className="contact-method">
                   <h3>📧 Email</h3>
-                  <p><a href="mailto:parsoptima@yahoo.com">parsoptima@yahoo.com</a></p>
+                  <p><a href="mailto:info@parsoptima.com">info@parsoptima.com</a></p>
                 </div>
                 
                 <div className="contact-method">
@@ -52,9 +52,10 @@ export default function Contact() {
                 </div>
 
                 <div className="contact-method">
-                  <h3>🏢 Head Office</h3>
-                  <p>Pars Optima Enterprises LLP</p>
-                  <p>Bangalore, Karnataka, India</p>
+                  <h3>🏢 Bangalore Office</h3>
+                  <p>164, 2nd Main Rd, Sun City Layout</p>
+                  <p>JP Nagar 7th Phase, Bengaluru</p>
+                  <p>Kothnur, Karnataka 560078</p>
                 </div>
               </div>
             </div>
@@ -68,15 +69,15 @@ export default function Contact() {
           <h2 className="section-title">Our Locations</h2>
           <div className="grid-3">
             <div className="card">
-              <h3>🏭 Bangalore Warehouse</h3>
-              <p><strong>Address:</strong> Industrial Area, Bangalore</p>
-              <p><strong>Services:</strong> Main distribution hub</p>
+              <h3>🏭 Bangalore Office</h3>
+              <p><strong>Address:</strong> 164, 2nd Main Rd, Sun City Layout, JP Nagar 7th Phase, Bengaluru, Kothnur, Karnataka 560078</p>
+              <p><strong>Services:</strong> Main distribution hub, NBFC lending, Insurance</p>
               <p><strong>Coverage:</strong> Bangalore & surrounding areas</p>
             </div>
             <div className="card">
-              <h3>🏭 Hosur Facility</h3>
-              <p><strong>Address:</strong> Industrial Zone, Hosur</p>
-              <p><strong>Services:</strong> Regional distribution center</p>
+              <h3>🏭 Hosur Office</h3>
+              <p><strong>Address:</strong> 420/1, Hosur - Thally Road, Kalkondapalli, Krishnagiri, Tamil Nadu 635114</p>
+              <p><strong>Services:</strong> Regional distribution center, Financial services</p>
               <p><strong>Coverage:</strong> Tamil Nadu border regions</p>
             </div>
             <div className="card">
@@ -127,6 +128,14 @@ export default function Contact() {
               <div className="faq-item">
                 <p><strong>Delivery areas?</strong></p>
                 <p>Bangalore, Hosur, Hyderabad and surrounding regions.</p>
+              </div>
+              <div className="faq-item">
+                <p><strong>NBFC lending services?</strong></p>
+                <p>We offer flexible lending solutions through partner NBFCs for inventory and growth financing.</p>
+              </div>
+              <div className="faq-item">
+                <p><strong>Insurance coverage?</strong></p>
+                <p>Comprehensive insurance facilities available for business protection and risk management.</p>
               </div>
             </div>
           </div>

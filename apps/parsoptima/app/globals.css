@@ -77,9 +77,17 @@ body {
 }
 
 .logo {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: var(--primary-green);
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.logo-image {
+  height: 60px;
+  width: 200px;
+  object-fit: cover;
+  object-position: center;
+  filter: brightness(1.1) contrast(1.1);
 }
 
 .nav-links {
@@ -283,6 +291,24 @@ body {
   transform: translateY(-3px);
 }
 
+.brand-logo {
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  filter: grayscale(0.3) opacity(0.8);
+  transition: filter 0.3s;
+}
+
+.brand-logo:hover {
+  filter: grayscale(0) opacity(1);
+}
+
+.brand-name {
+  font-weight: 600;
+  color: var(--primary-green);
+  font-size: 1.1rem;
+}
+
 /* Detailed Brand Cards */
 .brands-detailed-grid {
   display: grid;
@@ -365,6 +391,21 @@ body {
 .form-group textarea {
   resize: vertical;
   min-height: 120px;
+}
+
+.form-group input:disabled,
+.form-group textarea:disabled {
+  background-color: var(--gray-light);
+  color: var(--gray-dark);
+  cursor: not-allowed;
+  border-color: var(--gray-medium);
+}
+
+.cta-button:disabled {
+  background-color: var(--gray-medium);
+  color: var(--gray-dark);
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 /* Contact Info */
