@@ -1,0 +1,197 @@
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Stalks N Spice Brand Colors and Design System */
+:root {
+  --sns-primary: #ea580c; /* Vibrant orange for spices */
+  --sns-primary-dark: #c2410c;
+  --sns-secondary: #16a34a; /* Fresh green for herbs */
+  --sns-secondary-dark: #15803d;
+  --sns-accent: #dc2626; /* Warm red for heat/chili */
+  --sns-accent-light: #f87171;
+  --sns-neutral: #1f2937; /* Rich dark gray */
+  --sns-light: #fafaf9; /* Warm white background */
+  --sns-cream: #fef7ed; /* Cream background */
+  --sns-gold: #f59e0b; /* Gold accents */
+}
+
+/* Base styles */
+* {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.6;
+  color: var(--sns-neutral);
+  background-color: var(--sns-light);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Playfair Display', serif;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/* Custom components */
+.sns-container {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+.sns-button-primary {
+  @apply inline-flex items-center justify-center px-6 py-3 text-base font-semibold text-white bg-orange-600 hover:bg-orange-700 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2;
+}
+
+.sns-button-secondary {
+  @apply inline-flex items-center justify-center px-6 py-3 text-base font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2;
+}
+
+.sns-button-outline {
+  @apply inline-flex items-center justify-center px-6 py-3 text-base font-semibold text-orange-600 bg-white border-2 border-orange-600 hover:bg-orange-50 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2;
+}
+
+.sns-card {
+  @apply bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:border-orange-200 transition-all duration-300 transform hover:-translate-y-1;
+}
+
+.sns-card-gradient {
+  @apply bg-gradient-to-br from-white to-orange-50/50 rounded-xl shadow-lg border border-orange-100 overflow-hidden hover:shadow-2xl hover:from-orange-50 hover:to-orange-100/50 transition-all duration-300 transform hover:-translate-y-2;
+}
+
+.sns-text-primary {
+  @apply text-gray-900 font-medium;
+}
+
+.sns-text-secondary {
+  @apply text-gray-600;
+}
+
+.sns-text-accent {
+  @apply text-orange-600 font-semibold;
+}
+
+/* Enhanced animations */
+.spice-gradient {
+  background: linear-gradient(135deg, #ea580c 0%, #16a34a 50%, #dc2626 100%);
+  background-size: 200% 200%;
+  animation: gradient-shift 4s ease infinite;
+}
+
+.spice-gradient-subtle {
+  background: linear-gradient(135deg, #fed7aa 0%, #dcfce7 50%, #fecaca 100%);
+}
+
+.hover-spice {
+  @apply transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-orange-200/25;
+}
+
+.hover-lift {
+  @apply transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl;
+}
+
+.glow-orange {
+  box-shadow: 0 0 20px rgba(234, 88, 12, 0.3);
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #ea580c, #dc2626);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Keyframe animations */
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(234, 88, 12, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(234, 88, 12, 0.8);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Enhanced form styles */
+.sns-input {
+  @apply w-full px-4 py-3 text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200;
+}
+
+/* Section spacing */
+.sns-section {
+  @apply py-16 lg:py-20;
+}
+
+.sns-section-header {
+  @apply text-center mb-12 lg:mb-16;
+}
+
+.sns-section-title {
+  @apply text-4xl lg:text-5xl font-bold text-gray-900 mb-4;
+}
+
+.sns-section-subtitle {
+  @apply text-xl text-gray-600 max-w-2xl mx-auto;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ea580c;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #c2410c;
+}
+
+/* Loading states */
+.loading-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}

@@ -52,7 +52,7 @@ export const config: VendureConfig = {
         synchronize: true, // Set to true for initial setup, false for production
         migrations: [path.join(__dirname, './migrations/*.+(js|ts)')],
         logging: false,
-        ssl: false,
+        ssl: process.env.DB_HOST?.includes('supabase.co') ? { rejectUnauthorized: false } : false,
     },
     paymentOptions: {
         paymentMethodHandlers: [dummyPaymentHandler],

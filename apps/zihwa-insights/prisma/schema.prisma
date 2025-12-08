@@ -1,0 +1,281 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  name      String?
+  role      UserRole @default(CONSULTANT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  companyAccesses CompanyAccess[]
+  createdDeadlines ComplianceDeadline[] @relation("CreatedBy")
+  assignedDeadlines ComplianceDeadline[] @relation("AssignedTo")
+
+  @@map("users")
+}
+
+model Company {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  gstNumber   String?
+  panNumber   String?
+  tanNumber   String?
+  cinNumber   String?
+  pfNumber    String?
+  esiNumber   String?
+  ptNumber    String?
+  address     String?
+  phone       String?
+  email       String?
+  website     String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  userAccesses        CompanyAccess[]
+  complianceDeadlines ComplianceDeadline[]
+  documents           Document[]
+  employees           Employee[]
+
+  @@map("companies")
+}
+
+model CompanyAccess {
+  id        String   @id @default(cuid())
+  userId    String
+  companyId String
+  role      CompanyRole @default(VIEWER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, companyId])
+  @@map("company_accesses")
+}
+
+model ComplianceDeadline {
+  id          String           @id @default(cuid())
+  title       String
+  description String?
+  type        ComplianceType
+  dueDate     DateTime
+  status      DeadlineStatus   @default(PENDING)
+  priority    Priority         @default(MEDIUM)
+  frequency   Frequency?       // For recurring deadlines
+  companyId   String
+  createdById String
+  assignedToId String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  completedAt DateTime?
+
+  // Relations
+  company    Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy  User    @relation("CreatedBy", fields: [createdById], references: [id])
+  assignedTo User?   @relation("AssignedTo", fields: [assignedToId], references: [id])
+
+  @@map("compliance_deadlines")
+}
+
+model Document {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  category    DocumentCategory
+  fileUrl     String       // Supabase storage URL
+  fileName    String
+  fileSize    Int
+  mimeType    String
+  companyId   String
+  uploadedById String?
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Relations
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("documents")
+}
+
+model Employee {
+  id                String         @id @default(cuid())
+  employeeId        String
+  firstName         String
+  lastName          String
+  email             String?
+  phone             String?
+  designation       String?
+  department        String?
+  joiningDate       DateTime?
+  status            EmployeeStatus @default(ACTIVE)
+  grossSalary       Int?
+  netSalary         Int?
+  bankAccountNumber String?
+  ifscCode          String?
+  companyId         String
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  elBalance         Float          @default(0)
+  slBalance         Float          @default(0)
+  lastLeaveAccrual  DateTime?
+
+  company           Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  attendanceRecords AttendanceRecord[]
+  payrollRecords    PayrollRecord[]
+
+  @@unique([companyId, employeeId])
+  @@map("employees")
+}
+
+model AttendanceRecord {
+  id          String           @id @default(cuid())
+  employeeId  String
+  date        DateTime
+  status      AttendanceStatus @default(PRESENT)
+  checkIn     DateTime?
+  checkOut    DateTime?
+  notes       String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  // Relations
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, date])
+  @@map("attendance_records")
+}
+
+model PayrollRecord {
+  id          String        @id @default(cuid())
+  employeeId  String
+  month       Int
+  year        Int
+  grossAmount Int
+  netAmount   Int
+  bonus       Int?          @default(0)
+  deductions  Int?          @default(0)
+  status      PayrollStatus @default(PENDING)
+  processedAt DateTime?
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Relations
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, month, year])
+  @@map("payroll_records")
+}
+
+model Vendor {
+  id             String   @id @default(cuid())
+  name           String
+  bankName       String
+  accountNumber  String
+  ifsc           String
+  branch         String
+  description    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("vendors")
+}
+
+// Enums
+enum UserRole {
+  ADMIN
+  CONSULTANT
+  ACCOUNTANT
+}
+
+enum CompanyRole {
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum ComplianceType {
+  TAX_FILING
+  GST_RETURN
+  TDS_RETURN
+  FSSAI_LICENSE
+  PF_RETURN
+  ESI_RETURN
+  AUDIT
+  OTHER
+}
+
+enum DeadlineStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  OVERDUE
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum Frequency {
+  MONTHLY
+  QUARTERLY
+  HALF_YEARLY
+  YEARLY
+  ONE_TIME
+}
+
+enum DocumentCategory {
+  KYC
+  CERTIFICATE
+  FINANCIAL_STATEMENT
+  EMPLOYEE_RECORD
+  COMPLIANCE_DOC
+  CONTRACT
+  OTHER
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+  TERMINATED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  REMOTE
+  LEAVE
+  EL
+  SL
+}
+
+enum PayrollStatus {
+  PENDING
+  PROCESSING
+  PAID
+}
