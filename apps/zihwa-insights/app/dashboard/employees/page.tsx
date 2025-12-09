@@ -83,6 +83,11 @@ type PayrollRecordWithEmployee = {
     firstName: string
     lastName: string
     department?: string | null
+    companyId?: string | null
+    company?: {
+      id: string
+      name: string
+    } | null
   }
 }
 
@@ -181,6 +186,7 @@ export default function EmployeesPage() {
   const [attendanceMonth, setAttendanceMonth] = useState(defaultMonth)
   const [attendanceCompanyFilter, setAttendanceCompanyFilter] = useState('all')
   const [payrollMonth, setPayrollMonth] = useState(defaultMonth)
+  const [payrollCompanyFilter, setPayrollCompanyFilter] = useState('all')
 
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | EmployeeStatus>('all')
@@ -201,18 +207,6 @@ export default function EmployeesPage() {
   })
   const [savingEmployee, setSavingEmployee] = useState(false)
 
-  const [payrollForm, setPayrollForm] = useState({
-    employeeId: '',
-    month: new Date().getMonth() + 1,
-    year: new Date().getFullYear(),
-    grossAmount: '',
-    netAmount: '',
-    bonus: '',
-    deductions: '',
-    status: 'PENDING' as PayrollStatus,
-    notes: '',
-  })
-  const [savingPayroll, setSavingPayroll] = useState(false)
   const [bulkCompanyId, setBulkCompanyId] = useState('')
   const [bulkFile, setBulkFile] = useState<File | null>(null)
   const [bulkUploading, setBulkUploading] = useState(false)
@@ -237,6 +231,7 @@ export default function EmployeesPage() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingAttendanceRow, setEditingAttendanceRow] = useState<string | null>(null)
   const [pendingAttendance, setPendingAttendance] = useState<Map<string, AttendanceStatus>>(new Map())
+  const [generatingPayroll, setGeneratingPayroll] = useState(false)
 
   const fetchEmployees = async () => {
     setEmployeeLoading(true)
@@ -541,46 +536,6 @@ export default function EmployeesPage() {
     }
   }
 
-  const handleSavePayroll = async () => {
-    if (!payrollForm.employeeId || !payrollForm.month || !payrollForm.year || !payrollForm.grossAmount || !payrollForm.netAmount) {
-      alert('Select employee and amounts')
-      return
-    }
-    setSavingPayroll(true)
-    try {
-      const payload = {
-        ...payrollForm,
-        grossAmount: Number(payrollForm.grossAmount),
-        netAmount: Number(payrollForm.netAmount),
-        bonus: payrollForm.bonus ? Number(payrollForm.bonus) : 0,
-        deductions: payrollForm.deductions ? Number(payrollForm.deductions) : 0,
-      }
-      const res = await fetch('/api/employees/payroll', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-      const data = await res.json()
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to save payroll')
-      }
-      await fetchPayroll(payrollMonth)
-      setPayrollForm((prev) => ({
-        ...prev,
-        grossAmount: '',
-        netAmount: '',
-        bonus: '',
-        deductions: '',
-        notes: '',
-      }))
-    } catch (error) {
-      console.error(error)
-      alert(error instanceof Error ? error.message : 'Failed to save payroll record')
-    } finally {
-      setSavingPayroll(false)
-    }
-  }
-
   const filteredEmployees = useMemo(() => {
     const term = searchTerm.trim().toLowerCase()
     return employees
@@ -633,14 +588,17 @@ export default function EmployeesPage() {
     if (attendanceCompanyFilter === 'all') return filteredEmployees
     return filteredEmployees.filter((employee) => employee.company?.id === attendanceCompanyFilter)
   }, [attendanceCompanyFilter, filteredEmployees])
-
+  const filteredPayrollRecords = useMemo(() => {
+    if (payrollCompanyFilter === 'all') return payrollRecords
+    return payrollRecords.filter((record) => record.employee?.companyId === payrollCompanyFilter)
+  }, [payrollCompanyFilter, payrollRecords])
 
   const payrollSummary = useMemo(() => {
-    const totalGross = payrollRecords.reduce((sum, record) => sum + record.grossAmount, 0)
-    const totalNet = payrollRecords.reduce((sum, record) => sum + record.netAmount, 0)
-    const paid = payrollRecords.filter((record) => record.status === 'PAID').length
+    const totalGross = filteredPayrollRecords.reduce((sum, record) => sum + record.grossAmount, 0)
+    const totalNet = filteredPayrollRecords.reduce((sum, record) => sum + record.netAmount, 0)
+    const paid = filteredPayrollRecords.filter((record) => record.status === 'PAID').length
     return { totalGross, totalNet, paid }
-  }, [payrollRecords])
+  }, [filteredPayrollRecords])
 
   const statusBadge = (status: EmployeeStatus) => {
     const map: Record<EmployeeStatus, string> = {
@@ -759,6 +717,49 @@ export default function EmployeesPage() {
     }
   }
 
+  const handleGeneratePayroll = async () => {
+    if (payrollCompanyFilter === 'all') {
+      alert('Select a company to generate payroll.')
+      return
+    }
+    if (!payrollMonth) {
+      alert('Select a month before generating payroll.')
+      return
+    }
+    const [yearStr, monthStr] = payrollMonth.split('-')
+    const monthNumber = Number(monthStr)
+    const yearNumber = Number(yearStr)
+    if (!monthNumber || !yearNumber) {
+      alert('Invalid month selected.')
+      return
+    }
+    setGeneratingPayroll(true)
+    try {
+      const response = await fetch('/api/employees/payroll/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyId: payrollCompanyFilter,
+          month: monthNumber,
+          year: yearNumber,
+        }),
+      })
+      const data = await response.json()
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to generate payroll')
+      }
+      await fetchPayroll(payrollMonth)
+      alert(
+        `Payroll generated. Created: ${data.summary.created}, Updated: ${data.summary.updated}, Skipped: ${data.summary.skipped}.`
+      )
+    } catch (error) {
+      console.error(error)
+      alert(error instanceof Error ? error.message : 'Failed to generate payroll')
+    } finally {
+      setGeneratingPayroll(false)
+    }
+  }
+
   if (loading && employees.length === 0) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -837,7 +838,7 @@ export default function EmployeesPage() {
           </div>
           <div className="mt-3 text-3xl font-semibold text-gray-900">{formatCurrency(payrollSummary.totalNet)}</div>
           <p className="text-xs text-gray-500 mt-1">
-            {payrollRecords.length} records · {payrollSummary.paid} paid
+            {filteredPayrollRecords.length} records · {payrollSummary.paid} paid
           </p>
         </div>
         <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
@@ -1404,23 +1405,49 @@ export default function EmployeesPage() {
       )}
       {tab === 'payroll' && (
         <section className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2 space-y-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <div className="text-sm font-semibold text-gray-900">Payroll processing</div>
                   <p className="text-sm text-gray-500">Track gross-to-net per cycle and payout readiness.</p>
                 </div>
-                <input
-                  type="month"
-                  value={payrollMonth}
-                  onChange={async (event) => {
-                    const value = event.target.value
-                    setPayrollMonth(value)
-                    await fetchPayroll(value)
-                  }}
-                  className="h-10 rounded-md border border-gray-200 px-3 text-sm text-gray-700 focus:border-gray-300 focus:outline-none"
-                />
+                <div className="flex flex-wrap items-center gap-3">
+                  <input
+                    type="month"
+                    value={payrollMonth}
+                    onChange={async (event) => {
+                      const value = event.target.value
+                      setPayrollMonth(value)
+                      await fetchPayroll(value)
+                    }}
+                    className="h-10 rounded-md border border-gray-200 px-3 text-sm text-gray-700 focus:border-gray-300 focus:outline-none"
+                  />
+                  <select
+                    value={payrollCompanyFilter}
+                    onChange={(event) => setPayrollCompanyFilter(event.target.value)}
+                    className="h-10 rounded-md border border-gray-200 px-3 text-sm text-gray-700 focus:border-gray-300 focus:outline-none"
+                  >
+                    <option value="all">All companies</option>
+                    {companies.map((company) => (
+                      <option key={company.id} value={company.id}>
+                        {company.name}
+                      </option>
+                    ))}
+                  </select>
+                  <Button
+                    onClick={handleGeneratePayroll}
+                    disabled={payrollCompanyFilter === 'all' || generatingPayroll}
+                  >
+                    {generatingPayroll ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Generating
+                      </>
+                    ) : (
+                      'Generate payroll'
+                    )}
+                  </Button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -1435,7 +1462,7 @@ export default function EmployeesPage() {
                 <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-4">
                   <p className="text-xs uppercase text-gray-400">Paid employees</p>
                   <p className="mt-1 text-2xl font-semibold text-gray-900">
-                    {payrollSummary.paid}/{payrollRecords.length}
+                    {payrollSummary.paid}/{filteredPayrollRecords.length}
                   </p>
                 </div>
               </div>
@@ -1453,10 +1480,10 @@ export default function EmployeesPage() {
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Loading payroll
                   </div>
-                ) : payrollRecords.length === 0 ? (
+                ) : filteredPayrollRecords.length === 0 ? (
                   <div className="py-12 text-center text-sm text-gray-500">No payroll records for this cycle.</div>
                 ) : (
-                  payrollRecords.map((record) => {
+                  filteredPayrollRecords.map((record) => {
                     const name = `${record.employee.firstName} ${record.employee.lastName}`
                     return (
                       <div key={record.id} className="grid grid-cols-5 border-t border-gray-50 px-4 py-3 text-sm">
@@ -1489,179 +1516,6 @@ export default function EmployeesPage() {
                   })
                 )}
               </div>
-            </div>
-
-            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-                <CreditCard className="h-4 w-4 text-gray-500" />
-                Create payroll record
-              </div>
-              <p className="mt-1 text-sm text-gray-500">Run payroll for a single employee and sync payouts.</p>
-
-              <div className="mt-4 space-y-4">
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Employee</label>
-                  <select
-                    value={payrollForm.employeeId}
-                    onChange={(event) =>
-                      setPayrollForm((prev) => ({
-                        ...prev,
-                        employeeId: event.target.value,
-                      }))
-                    }
-                    className="h-10 w-full rounded-md border border-gray-200 px-3 text-sm text-gray-700 focus:border-gray-300 focus:outline-none"
-                  >
-                    <option value="">Select employee</option>
-                    {employees.map((employee) => (
-                      <option key={employee.id} value={employee.id}>
-                        {employee.fullName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-700">Month</label>
-                    <select
-                      value={payrollForm.month}
-                      onChange={(event) =>
-                        setPayrollForm((prev) => ({
-                          ...prev,
-                          month: Number(event.target.value),
-                        }))
-                      }
-                      className="h-10 w-full rounded-md border border-gray-200 px-3 text-sm text-gray-700 focus:border-gray-300 focus:outline-none"
-                    >
-                      {Array.from({ length: 12 }).map((_, index) => {
-                        const month = index + 1
-                        return (
-                          <option key={month} value={month}>
-                            {getMonthLabel(2024, month).split(' ')[0]}
-                          </option>
-                        )
-                      })}
-                    </select>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-700">Year</label>
-                    <Input
-                      type="number"
-                      value={payrollForm.year}
-                      onChange={(event) =>
-                        setPayrollForm((prev) => ({
-                          ...prev,
-                          year: Number(event.target.value),
-                        }))
-                      }
-                      min={2022}
-                      max={2100}
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-700">Gross amount</label>
-                    <Input
-                      type="number"
-                      value={payrollForm.grossAmount}
-                      onChange={(event) =>
-                        setPayrollForm((prev) => ({
-                          ...prev,
-                          grossAmount: event.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-700">Net amount</label>
-                    <Input
-                      type="number"
-                      value={payrollForm.netAmount}
-                      onChange={(event) =>
-                        setPayrollForm((prev) => ({
-                          ...prev,
-                          netAmount: event.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-700">Bonus</label>
-                    <Input
-                      type="number"
-                      value={payrollForm.bonus}
-                      onChange={(event) =>
-                        setPayrollForm((prev) => ({
-                          ...prev,
-                          bonus: event.target.value,
-                        }))
-                      }
-                      placeholder="0"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-700">Deductions</label>
-                    <Input
-                      type="number"
-                      value={payrollForm.deductions}
-                      onChange={(event) =>
-                        setPayrollForm((prev) => ({
-                          ...prev,
-                          deductions: event.target.value,
-                        }))
-                      }
-                      placeholder="0"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Status</label>
-                  <select
-                    value={payrollForm.status}
-                    onChange={(event) =>
-                      setPayrollForm((prev) => ({
-                        ...prev,
-                        status: event.target.value as PayrollStatus,
-                      }))
-                    }
-                    className="h-10 w-full rounded-md border border-gray-200 px-3 text-sm text-gray-700 focus:border-gray-300 focus:outline-none"
-                  >
-                    {PAYROLL_STATUSES.map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Notes</label>
-                  <textarea
-                    value={payrollForm.notes}
-                    onChange={(event) =>
-                      setPayrollForm((prev) => ({
-                        ...prev,
-                        notes: event.target.value,
-                      }))
-                    }
-                    className="h-24 w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-gray-300 focus:outline-none"
-                    placeholder="Optional notes (bank batch, approvals, etc.)"
-                  />
-                </div>
-              </div>
-
-              <Button onClick={handleSavePayroll} className="mt-4 w-full" disabled={savingPayroll}>
-                {savingPayroll ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving
-                  </>
-                ) : (
-                  'Save payroll'
-                )}
-              </Button>
-            </div>
           </div>
         </section>
       )}

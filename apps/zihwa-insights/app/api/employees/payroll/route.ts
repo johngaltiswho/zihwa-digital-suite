@@ -24,6 +24,13 @@ export async function GET(request: Request) {
             firstName: true,
             lastName: true,
             department: true,
+            companyId: true,
+            company: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
       },
@@ -126,6 +133,13 @@ export async function POST(request: Request) {
             employeeId: true,
             firstName: true,
             lastName: true,
+            companyId: true,
+            company: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
       },
