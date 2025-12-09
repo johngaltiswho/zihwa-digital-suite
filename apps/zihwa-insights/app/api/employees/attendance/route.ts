@@ -175,7 +175,7 @@ export async function POST(request: Request) {
           slBalance -= consumption.sl
         }
 
-        const record = existingRecord
+        const record = existingRecord && existingRecord.id
           ? await tx.attendanceRecord.update({
               where: { id: existingRecord.id },
               data: updateData,

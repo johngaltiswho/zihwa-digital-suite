@@ -229,6 +229,8 @@ export default function EmployeesPage() {
     bankAccountNumber: '',
     ifscCode: '',
     status: 'ACTIVE' as EmployeeStatus,
+    elBalance: '',
+    slBalance: '',
   })
   const [savingRow, setSavingRow] = useState(false)
   const [deletingRow, setDeletingRow] = useState<string | null>(null)
@@ -400,6 +402,8 @@ export default function EmployeesPage() {
       bankAccountNumber: employee.bankAccountNumber || '',
       ifscCode: employee.ifscCode || '',
       status: employee.status,
+      elBalance: employee.elBalance !== undefined && employee.elBalance !== null ? String(employee.elBalance) : '',
+      slBalance: employee.slBalance !== undefined && employee.slBalance !== null ? String(employee.slBalance) : '',
     })
   }
 
@@ -427,6 +431,8 @@ export default function EmployeesPage() {
         bankAccountNumber: editForm.bankAccountNumber,
         ifscCode: editForm.ifscCode,
         status: editForm.status,
+        elBalance: editForm.elBalance === '' ? undefined : Number(editForm.elBalance),
+        slBalance: editForm.slBalance === '' ? undefined : Number(editForm.slBalance),
       }
       const response = await fetch('/api/employees', {
         method: 'PATCH',
@@ -447,6 +453,14 @@ export default function EmployeesPage() {
                 grossSalary: data.data.grossSalary,
                 designation: data.data.designation,
                 department: data.data.department,
+                elBalance:
+                  data.data.elBalance !== undefined && data.data.elBalance !== null
+                    ? data.data.elBalance
+                    : employee.elBalance,
+                slBalance:
+                  data.data.slBalance !== undefined && data.data.slBalance !== null
+                    ? data.data.slBalance
+                    : employee.slBalance,
               }
             : employee
         )
@@ -741,7 +755,7 @@ export default function EmployeesPage() {
       setEditingAttendanceRow(null)
     } catch (error) {
       console.error(error)
-      alert('Failed to save attendance changes')
+      alert(error instanceof Error ? error.message : 'Failed to save attendance changes')
     }
   }
 
@@ -942,11 +956,11 @@ export default function EmployeesPage() {
                       return (
                         <tr key={employee.id} className="border-t border-gray-50 hover:bg-gray-50/50">
                           <td className="px-4 py-3 align-top">
-                            {isEditing ? (
-                              <div className="space-y-2">
-                                <div className="flex gap-2">
-                                  <Input
-                                    value={editForm.firstName}
+                              {isEditing ? (
+                                <div className="space-y-2">
+                                  <div className="flex gap-2">
+                                    <Input
+                                      value={editForm.firstName}
                                     onChange={(event) => handleEditChange('firstName', event.target.value)}
                                     className="h-8"
                                   />
@@ -957,14 +971,34 @@ export default function EmployeesPage() {
                                   />
                                 </div>
                                 <div className="flex gap-2">
-                                  <Input
-                                    value={editForm.department}
-                                    onChange={(event) => handleEditChange('department', event.target.value)}
-                                    placeholder="Department"
-                                    className="h-8"
-                                  />
+                                    <Input
+                                      value={editForm.department}
+                                      onChange={(event) => handleEditChange('department', event.target.value)}
+                                      placeholder="Department"
+                                      className="h-8"
+                                    />
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      step="0.5"
+                                      value={editForm.elBalance}
+                                      onChange={(event) => handleEditChange('elBalance', event.target.value)}
+                                      placeholder="EL balance"
+                                      className="h-8"
+                                    />
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      step="0.5"
+                                      value={editForm.slBalance}
+                                      onChange={(event) => handleEditChange('slBalance', event.target.value)}
+                                      placeholder="SL balance"
+                                      className="h-8"
+                                    />
+                                  </div>
                                 </div>
-                              </div>
                               ) : (
                                 <div className="space-y-1">
                                   <div className="font-medium text-gray-900">{employee.fullName}</div>
@@ -1261,6 +1295,12 @@ export default function EmployeesPage() {
                           <th className="sticky left-0 bg-gray-50 px-3 py-2 text-left text-[11px] font-semibold text-gray-500">
                             Employee
                           </th>
+                          <th className="bg-gray-50 px-2 py-2 text-center text-[11px] font-semibold text-gray-500">
+                            EL
+                          </th>
+                          <th className="bg-gray-50 px-2 py-2 text-center text-[11px] font-semibold text-gray-500">
+                            SL
+                          </th>
                           {attendanceDays.map((day) => (
                             <th key={day} className="px-1 py-2 text-[11px] font-semibold text-gray-500">
                               {day}
@@ -1270,12 +1310,18 @@ export default function EmployeesPage() {
                         </tr>
                       </thead>
                       <tbody>
-                    {filteredAttendanceEmployees.map((employee) => {
+                        {filteredAttendanceEmployees.map((employee) => {
                           const isEditingAttendance = editingAttendanceRow === employee.id
                           return (
                             <tr key={employee.id} className="border-t border-gray-50">
                               <td className="sticky left-0 bg-white px-3 py-2 text-xs font-medium text-gray-900">
                                 {employee.fullName}
+                              </td>
+                              <td className="px-2 py-2 text-center text-[11px] text-gray-700">
+                                {formatLeaveBalance(employee.elBalance)}
+                              </td>
+                              <td className="px-2 py-2 text-center text-[11px] text-gray-700">
+                                {formatLeaveBalance(employee.slBalance)}
                               </td>
                               {attendanceDays.map((day) => {
                                 const { year, month } = attendanceMonthParts

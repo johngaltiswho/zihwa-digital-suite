@@ -208,6 +208,8 @@ export async function PATCH(request: Request) {
       bankAccountNumber,
       ifscCode,
       status,
+      elBalance,
+      slBalance,
     } = body
 
     if (!id) {
@@ -225,6 +227,12 @@ export async function PATCH(request: Request) {
     if (ifscCode !== undefined) data.ifscCode = ifscCode || null
     if (status && Object.values(EmployeeStatus).includes(status)) {
       data.status = status
+    }
+    if (elBalance !== undefined) {
+      data.elBalance = elBalance === null || elBalance === '' ? 0 : Number(elBalance)
+    }
+    if (slBalance !== undefined) {
+      data.slBalance = slBalance === null || slBalance === '' ? 0 : Number(slBalance)
     }
 
     const updated = await prisma.employee.update({
