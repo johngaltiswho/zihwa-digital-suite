@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
-import { Prisma } from '@prisma/client'
+import { DocumentComplianceStatus, Prisma } from '@prisma/client'
 import { z } from 'zod'
+import { ensureDocumentTypes } from '@/lib/document-type-seed'
 
 // Validation schema for document data
 const documentSchema = z.object({
@@ -14,6 +15,10 @@ const documentSchema = z.object({
   fileSize: z.number().min(1, 'File size must be greater than 0'),
   mimeType: z.string().min(1, 'MIME type is required'),
   companyId: z.string().min(1, 'Company ID is required'),
+  documentTypeId: z.string().optional(),
+  requirementId: z.string().optional(),
+  periodMonth: z.number().int().min(1).max(12).optional(),
+  periodYear: z.number().int().min(2000).max(2100).optional(),
 })
 
 export async function GET(request: NextRequest) {
@@ -40,6 +45,8 @@ export async function GET(request: NextRequest) {
       whereClause.category = category
     }
 
+    await ensureDocumentTypes(prisma)
+
     const documents = await prisma.document.findMany({
       where: whereClause,
       orderBy: { createdAt: 'desc' },
@@ -49,6 +56,21 @@ export async function GET(request: NextRequest) {
             id: true,
             name: true
           }
+        },
+        documentType: {
+          select: {
+            id: true,
+            title: true,
+            category: true,
+            frequency: true,
+          },
+        },
+        requirement: {
+          select: {
+            id: true,
+            customTitle: true,
+            documentTypeId: true,
+          },
         }
       }
     })
@@ -85,15 +107,48 @@ export async function POST(request: NextRequest) {
     const data = validationResult.data
 
     // Verify that the company exists and user has access
-    const company = await prisma.company.findUnique({
-      where: { id: data.companyId }
+    const companyAccess = await prisma.companyAccess.findFirst({
+      where: { 
+        companyId: data.companyId,
+        user: {
+          clerkId: userId
+        }
+      },
+      include: {
+        company: true
+      }
     })
 
-    if (!company) {
+    if (!companyAccess) {
       return NextResponse.json(
-        { error: 'Company not found' },
+        { error: 'Company not found or access denied' },
         { status: 404 }
       )
+    }
+
+    await ensureDocumentTypes(prisma)
+
+    let requirementId = data.requirementId
+
+    if (!requirementId && data.documentTypeId) {
+      const existingRequirement = await prisma.companyDocumentRequirement.findFirst({
+        where: {
+          companyId: data.companyId,
+          documentTypeId: data.documentTypeId,
+        },
+      })
+
+      if (existingRequirement) {
+        requirementId = existingRequirement.id
+      } else {
+        const createdRequirement = await prisma.companyDocumentRequirement.create({
+          data: {
+            companyId: data.companyId,
+            documentTypeId: data.documentTypeId,
+          },
+        })
+        requirementId = createdRequirement.id
+      }
     }
 
     // Create the document
@@ -102,12 +157,17 @@ export async function POST(request: NextRequest) {
         name: data.name,
         description: data.description,
         category: data.category,
+        documentTypeId: data.documentTypeId,
+        requirementId,
+        periodMonth: data.periodMonth,
+        periodYear: data.periodYear,
         fileUrl: data.fileUrl,
         fileName: data.fileName,
         fileSize: data.fileSize,
         mimeType: data.mimeType,
         companyId: data.companyId,
-        uploadedById: userId, // You might need to add this field to your schema
+        uploadedById: userId,
+        status: DocumentComplianceStatus.SUBMITTED,
       },
       include: {
         company: {
@@ -115,9 +175,41 @@ export async function POST(request: NextRequest) {
             id: true,
             name: true
           }
-        }
+        },
+        documentType: true,
+        requirement: true,
       }
     })
+
+    if (document.documentTypeId) {
+      await prisma.companyDocumentStatus.upsert({
+        where: {
+          company_document_status_period_unique: {
+            companyId: data.companyId,
+            documentTypeId: document.documentTypeId,
+            periodMonth: data.periodMonth ?? null,
+            periodYear: data.periodYear ?? null,
+          },
+        },
+        update: {
+          status: DocumentComplianceStatus.SUBMITTED,
+          documentId: document.id,
+          requirementId: requirementId!,
+        },
+        create: {
+          companyId: data.companyId,
+          documentTypeId: document.documentTypeId,
+          requirementId: requirementId!,
+          periodMonth: data.periodMonth,
+          periodYear: data.periodYear,
+          documentId: document.id,
+          status: DocumentComplianceStatus.SUBMITTED,
+        },
+        include: {
+          documentType: true,
+        },
+      })
+    }
 
     return NextResponse.json(document, { status: 201 })
   } catch (error) {

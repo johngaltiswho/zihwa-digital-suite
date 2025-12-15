@@ -54,6 +54,8 @@ model Company {
   complianceDeadlines ComplianceDeadline[]
   documents           Document[]
   employees           Employee[]
+  documentRequirements CompanyDocumentRequirement[]
+  documentStatuses     CompanyDocumentStatus[]
 
   @@map("companies")
 }
@@ -103,10 +105,15 @@ model Document {
   name        String
   description String?
   category    DocumentCategory
+  documentTypeId String?
+  requirementId  String?
   fileUrl     String       // Supabase storage URL
   fileName    String
   fileSize    Int
   mimeType    String
+  periodMonth Int?
+  periodYear  Int?
+  status      DocumentComplianceStatus @default(PENDING)
   companyId   String
   uploadedById String?
   isActive    Boolean      @default(true)
@@ -114,9 +121,73 @@ model Document {
   updatedAt   DateTime     @updatedAt
 
   // Relations
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company      Company                      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  documentType DocumentType?                @relation(fields: [documentTypeId], references: [id])
+  requirement  CompanyDocumentRequirement?  @relation(fields: [requirementId], references: [id])
+  statuses     CompanyDocumentStatus[]
 
   @@map("documents")
+}
+
+model DocumentType {
+  id             String           @id @default(cuid())
+  code           String           @unique
+  title          String
+  description    String?
+  category       DocumentCategory
+  frequency      Frequency        @default(ONE_TIME)
+  isMandatory    Boolean          @default(true)
+  requiresPeriod Boolean          @default(false)
+  defaultDueDay  Int?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  requirements CompanyDocumentRequirement[]
+  documents    Document[]
+  statuses     CompanyDocumentStatus[]
+
+  @@map("document_types")
+}
+
+model CompanyDocumentRequirement {
+  id             String      @id @default(cuid())
+  companyId      String
+  documentTypeId String
+  customTitle    String?
+  isActive       Boolean     @default(true)
+  notes          String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  company      Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  documentType DocumentType @relation(fields: [documentTypeId], references: [id])
+  documents    Document[]
+  statuses     CompanyDocumentStatus[]
+
+  @@unique([companyId, documentTypeId])
+  @@map("company_document_requirements")
+}
+
+model CompanyDocumentStatus {
+  id             String                     @id @default(cuid())
+  companyId      String
+  requirementId  String
+  documentTypeId String
+  periodMonth    Int?
+  periodYear     Int?
+  dueDate        DateTime?
+  status         DocumentComplianceStatus   @default(PENDING)
+  documentId     String?
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+
+  company      Company                     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  requirement  CompanyDocumentRequirement  @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  documentType DocumentType                @relation(fields: [documentTypeId], references: [id])
+  document     Document?                   @relation(fields: [documentId], references: [id])
+
+  @@unique([companyId, documentTypeId, periodMonth, periodYear], map: "company_document_status_period_unique")
+  @@map("company_document_statuses")
 }
 
 model Employee {
@@ -257,6 +328,14 @@ enum DocumentCategory {
   COMPLIANCE_DOC
   CONTRACT
   OTHER
+}
+
+enum DocumentComplianceStatus {
+  PENDING
+  SUBMITTED
+  APPROVED
+  EXPIRED
+  NOT_REQUIRED
 }
 
 enum EmployeeStatus {
