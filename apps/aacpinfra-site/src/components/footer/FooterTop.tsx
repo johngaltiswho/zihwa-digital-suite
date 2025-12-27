@@ -1,0 +1,111 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+
+export default function FooterTop() {
+  return (
+    <section className="bg-white border-t border-gray-200">
+      <div className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        {/* ================= AACP + HEAD OFFICE ================= */}
+        <div>
+          <div className="flex items-start gap-3 mb-2">
+            <Image
+              src="/aacp-logo.jpg"
+              alt="AACP Logo"
+              width={90}
+              height={40}
+              className="object-contain -mt-3"
+            />
+            <h3 className="text-m font-bold leading-snug">
+              AACP Infrastructure <br />
+              Systems Pvt. Ltd.
+            </h3>
+          </div>
+
+          <p className="text-sm text-gray-600 leading-relaxed mb-6">
+            Engineering excellence in civil construction and infrastructure
+            development since 1998. Building tomorrow’s infrastructure today.
+          </p>
+
+          <div className="text-m text-gray-700 space-y-1 ">
+            <p className="font-semibold mb-1 inline-block border-b-2 border-black pb-1">Head Office </p>
+            <p>#403, 3rd Floor, 22nd Cross</p>
+            <p>H.S.R Layout, Sector II</p>
+            <p>Bangalore – 560102</p>
+          </div>
+        </div>
+
+        {/* ================= COMPANY + INQUIRIES ================= */}
+        <div>
+          <h4 className="text-lg font-semibold mb-3 inline-block border-b-2 border-black pb-2">Company</h4>
+          <ul className="space-y-2 text-sm text-gray-700 mb-5">
+            <li><Link href="/careers" className="hover:underline">Careers</Link></li>
+            <li><Link href="/news" className="hover:underline">News & Updates</Link></li>
+            <li><Link href="/clients" className="hover:underline">Clients & Partners</Link></li>
+            <li><Link href="/contact" className="hover:underline">Contact Us</Link></li>
+          </ul>
+
+          <h4 className="text-lg font-semibold mb-3 inline-block border-b-2 border-black pb-2">Inquiries</h4>
+          <p className="text-sm text-gray-700 mb-3">
+            For any inquiries, questions or commendations, please email us at:
+          </p>
+
+          <div className="flex items-center gap-2 text-sm mb-2">
+            <span>✉️</span>
+            <a href="mailto:info@aacpinfra.com" className="hover:underline">
+              info@aacpinfra.com
+            </a>
+          </div>
+
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-pink-600">📞</span>
+            <a href="tel:+919403890723" className="hover:underline">
+              +91 94038 90723
+            </a>
+          </div>
+        </div>
+
+        {/* ================= RIGHT SIDE : CONTACT FORM ================= */}
+        <div>
+          <h4 className="text-lg font-semibold mb-4 ">Connect With  US</h4>
+
+          <form className="space-y-3">
+            <input
+              type="text"
+              placeholder="Name *"
+              className="w-full bg-gray-100 px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-gray-400"
+            />
+
+            <input
+              type="email"
+              placeholder="Email *"
+              className="w-full bg-gray-100 px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-gray-400"
+            />
+
+            <input
+              type="text"
+              placeholder="Subject"
+              className="w-full bg-gray-100 px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-gray-400"
+            />
+
+            <textarea
+              placeholder="Message"
+              rows={4}
+              className="w-full bg-gray-100 px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-gray-400 resize-none"
+            />
+
+            <button
+              type="button"
+              className="bg-gray-900 text-white text-sm px-6 py-2 hover:bg-gray-800 transition"
+            >
+              Send
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </section>
+  );
+}

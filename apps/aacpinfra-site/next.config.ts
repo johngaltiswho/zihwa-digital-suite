@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+    transpilePackages: ["@repo/ui"], // ✅ REQUIRED for monorepo
+
   images: {
     remotePatterns: [
       {

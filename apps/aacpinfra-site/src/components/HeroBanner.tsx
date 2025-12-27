@@ -1,29 +1,38 @@
-// apps/aacpinfra-site/src/components/HeroBanner.tsx
-import Image from 'next/image';
+// interface HeroBannerProps {
+//   title: string;
+//   subtitle: string;
+//   image: string;
+// }
 
-interface HeroBannerProps {
-  title: string;
-  subtitle?: string;
-  imageUrl?: string;
-}
+// export default function HeroBanner({ title, subtitle, image }: HeroBannerProps) {
+//   return (
+//     <section
+//       className="relative h-[75vh] w-full flex items-center"
+//       style={{
+//         backgroundImage: `url(${image})`,
+//         backgroundSize: 'cover',
+//         backgroundPosition: 'center',
+//       }}
+//     >
+//       {/* Overlay */}
+//       <div className="absolute inset-0 bg-black/40" />
 
-export default function HeroBanner({ title, subtitle, imageUrl }: HeroBannerProps) {
-  return (
-    <section
-      className="relative h-[40vh] md:h-[50vh] flex items-center justify-center text-center text-white w-full"
-      style={{
-        backgroundImage: imageUrl ? `url(${imageUrl})` : 'none',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }}
-    >
-      <div className="absolute inset-0 bg-black opacity-60"></div>
-      <div className="relative z-10 p-8 w-full max-w-4xl mx-auto">
-        <h1 className="text-4xl md:text-5xl font-bold mb-2">
-          {title}
-        </h1>
-        {subtitle && <p className="text-xl md:text-2xl">{subtitle}</p>}
-      </div>
-    </section>
-  );
-}
+//       {/* Content */}
+//       <div className="relative z-10 max-w-5xl px-6 mx-auto text-white">
+//         <h1 className="text-5xl md:text-6xl font-semibold leading-tight">
+//           {title}
+//         </h1>
+
+//         <p className="mt-4 text-xl max-w-3xl">
+//           {subtitle}
+//         </p>
+
+//         <div className="mt-8">
+//           <button className="border border-white px-8 py-3 uppercase tracking-widest text-sm hover:bg-white hover:text-black transition">
+//             Learn More
+//           </button>
+//         </div>
+//       </div>
+//     </section>
+//   );
+// }

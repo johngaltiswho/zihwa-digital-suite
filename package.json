@@ -17,5 +17,11 @@
   "packageManager": "pnpm@10.25.0",
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "framer-motion": "^12.23.26",
+    "lucide-react": "^0.562.0",
+    "react-icons": "^5.5.0",
+    "swiper": "^12.0.3"
   }
 }
