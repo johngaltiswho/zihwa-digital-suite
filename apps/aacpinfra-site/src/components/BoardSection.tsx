@@ -29,7 +29,10 @@ export default function BoardSection() {
     <section className="py-24 bg-white text-center">
 
       {/* ================= CLIENTS ================= */}
-      <div className="mb-20">
+      <section
+        id="clients"
+        className="mb-20 scroll-mt-32"
+      >
         <h2 className="text-4xl font-bold tracking-wide mb-10 border-b-2 inline-block pb-2">
           Our Clients
         </h2>
@@ -50,7 +53,7 @@ export default function BoardSection() {
             ))}
           </div>
         </div>
-      </div>
+      </section>
 
       {/* ================= BOARD ================= */}
       <h2 className="text-4xl font-bold tracking-wide mb-14 border-b-2 inline-block pb-2">

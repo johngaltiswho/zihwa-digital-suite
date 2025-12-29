@@ -28,7 +28,7 @@ export default function NewsDetailPage() {
   return (
     <section className="max-w-6xl mx-auto bg-white px-6 py-20 grid grid-cols-1 lg:grid-cols-3 gap-16">
       {/* ================= MAIN CONTENT ================= */}
-      <article className="lg:col-span-2 space-y-10">
+      <article className="lg:col-span-2 space-y-6">
         {/* ================= TITLE ================= */}
         <h1 className="text-4xl font-serif text-black leading-tight">
           {news.title}
@@ -51,7 +51,7 @@ export default function NewsDetailPage() {
           news.consultant ||
           news.PMC ||
           news.MonitoringAgency) && (
-          <div className="border border-gray-200 p-6 space-y-3 text-sm text-gray-700">
+          <div className="border border-gray-200 p-4 space-y-3 text-sm text-gray-700">
             <h3 className="font-serif text-xl text-black mb-4 underline">
               Project Details :
             </h3>
@@ -119,36 +119,87 @@ export default function NewsDetailPage() {
 
         {/* ================= INTRODUCTION ================= */}
         {news.introduction && (
-          <p className="text-lg text-gray-700 mb-4 leading-relaxed">
+          <p className="text-lg text-gray-700 leading-relaxed">
             {news.introduction}
           </p>
         )}
 
-        {/* ================= CONTENT ================= */}
+        {/* ================= SMART CONTENT RENDERER ================= */}
         {Array.isArray(news.content) &&
-          news.content.map((para, idx) => (
-            <p
-              key={idx}
-              className="text-gray-700 mb-4 leading-relaxed"
-            >
-              {para}
-            </p>
-          ))}
+          news.content.map((item, index) => {
+            const text = item.trim();
 
-        {/* ================= BULLET POINTS ================= */}
-        {news.bulletPoints &&
-          news.bulletPoints.length > 0 && (
-            <ul className="list-disc pl-6 space-y-2 text-gray-700">
-              {news.bulletPoints.map((point, i) => (
-                <li key={i}>{point}</li>
-              ))}
-            </ul>
-          )}
+            const isHeading =
+              text.endsWith(":") && !/^\d+\./.test(text);
+
+            const isNumbered =
+              /^\d+\.\s/.test(text);
+
+            const isDashBullet =
+              text.startsWith("- ");
+
+            const isTagline =
+              text.includes("(COST") ||
+              text.includes("QUALITY + SAFETY");
+
+            if (isHeading) {
+              return (
+                <h3
+                  key={index}
+                  className="mt-2 mb-1 text-lg font-semibold text-black"
+                >
+                  {text}
+                </h3>
+              );
+            }
+
+            if (isNumbered) {
+              return (
+                <li
+                  key={index}
+                  className="ml-6 list-decimal text-gray-700 mb-2"
+                >
+                  {text.replace(/^\d+\.\s/, "")}
+                </li>
+              );
+            }
+
+            if (isDashBullet) {
+              return (
+                <li
+                  key={index}
+                  className="ml-6 list-disc text-gray-700 mb-2"
+                >
+                  {text.replace("- ", "")}
+                </li>
+              );
+            }
+
+            if (isTagline) {
+              return (
+                <p
+                  key={index}
+                  className="text-center font-semibold text-gray-800 my-6"
+                >
+                  {text}
+                </p>
+              );
+            }
+
+            return (
+              <p
+                key={index}
+                className="text-gray-700 leading-relaxed mb-4"
+              >
+                {text}
+              </p>
+            );
+          })}
 
         {/* ================= DOCUMENTS ================= */}
         {news.documents &&
           news.documents.length > 0 && (
-            <div className="pt-6 mb-2 space-y-3">
+            <div className="pt-6 space-y-3">
               {news.documents.map((doc, i) => (
                 <a
                   key={i}
@@ -165,7 +216,7 @@ export default function NewsDetailPage() {
 
         {/* ================= CONCLUSION ================= */}
         {news.conclusion && (
-          <p className="pt-4 text-gray-700 mb-2 leading-relaxed">
+          <p className="pt-6 text-gray-700 leading-relaxed">
             {news.conclusion}
           </p>
         )}
@@ -182,7 +233,7 @@ export default function NewsDetailPage() {
                 {news.gallery.map((img, i) => (
                   <div
                     key={i}
-                    className="relative h-56  cursor-pointer overflow-hidden bg-gray-100 rounded"
+                    className="relative h-56 cursor-pointer overflow-hidden bg-gray-100 rounded"
                     onClick={() => setActiveImage(img)}
                   >
                     <Image

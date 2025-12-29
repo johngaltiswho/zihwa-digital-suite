@@ -8,6 +8,8 @@ export default function FooterTop() {
     <section className="bg-white border-t border-gray-200">
       <div className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-3 gap-6">
 
+
+
         {/* ================= AACP + HEAD OFFICE ================= */}
         <div>
           <div className="flex items-start gap-3 mb-2">
@@ -32,7 +34,7 @@ export default function FooterTop() {
           <div className="text-m text-gray-700 space-y-1 ">
             <p className="font-semibold mb-1 inline-block border-b-2 border-black pb-1">Head Office </p>
             <p>#403, 3rd Floor, 22nd Cross</p>
-            <p>H.S.R Layout, Sector II</p>
+            <p>H.S.R Layout, Sector 6</p>
             <p>Bangalore – 560102</p>
           </div>
         </div>
@@ -43,7 +45,7 @@ export default function FooterTop() {
           <ul className="space-y-2 text-sm text-gray-700 mb-5">
             <li><Link href="/careers" className="hover:underline">Careers</Link></li>
             <li><Link href="/news" className="hover:underline">News & Updates</Link></li>
-            <li><Link href="/clients" className="hover:underline">Clients & Partners</Link></li>
+            <li><Link href="/#clients" className="hover:underline">Clients & Partners</Link></li>
             <li><Link href="/contact" className="hover:underline">Contact Us</Link></li>
           </ul>
 

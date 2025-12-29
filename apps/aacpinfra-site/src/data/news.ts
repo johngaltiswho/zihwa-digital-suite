@@ -134,7 +134,7 @@ export const newsData: NewsItem[] = [
   documents: [
     {
       label: "View Presentation",
-      file: "/docs/Sustaining-Water.pdf"
+      file: "/docs/SustainingWater.pdf"
     }
   ],
   conclusion:
@@ -543,7 +543,7 @@ export const newsData: NewsItem[] = [
   documents: [
     {
       label: "Download Presentation",
-      file: "/docs/Corporate-Presentation.pdf"
+      file: "/docs/AACP-Corporate-Presentation-Growth.pdf"
     }
   ],
   conclusion:

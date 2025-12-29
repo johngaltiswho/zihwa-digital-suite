@@ -32,7 +32,7 @@ export const newsData: NewsItem[] = [
     title: "Recycling & Renewables",
     slug: "recycling-renewables",
     image: "/news/Recycling-Renewables.jpg",
-    categories: ["Project", "Presentation", "In The News"],
+    categories: ["Presentation", "In The News"],
     excerpt:
       "Sustainable initiatives focusing on recycling practices and renewable solutions for eco-friendly infrastructure.",
   },

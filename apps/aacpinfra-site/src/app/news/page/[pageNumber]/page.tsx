@@ -1,19 +1,15 @@
 import { notFound } from "next/navigation";
 import NewsList from "@/components/news/NewsList";
-import NewsCategories from "@/components/news/NewsCategories";
 import Pagination from "@/components/news/Pagination";
 import { getNewsByPage, getTotalPages } from "@/lib/newsData";
 
 type Props = {
-  params: { pageNumber?: string };
+  params: {
+    pageNumber: string;
+  };
 };
 
-export default function NewsPageNumber({ params }: Props) {
-  // ⚠️ Guard against HMR / undefined params
-  if (!params?.pageNumber) {
-    return null; // allow hot reload to settle
-  }
-
+export default async function NewsPageNumber({ params }: Props) {
   const currentPage = Number(params.pageNumber);
   const totalPages = getTotalPages();
 
@@ -28,21 +24,25 @@ export default function NewsPageNumber({ params }: Props) {
   const items = getNewsByPage(currentPage);
 
   return (
-    <main className="max-w-7xl mx-auto px-6 py-16 bg-white grid grid-cols-1 lg:grid-cols-3 gap-12">
-      <section className="lg:col-span-2">
-        <NewsList items={items} />
+    <main className="max-w-7xl mx-auto px-6 pt-8 pb-16">
+      <h1 className="text-4xl text-black font-serif mb-4">
+        News & Insights
+      </h1>
 
-        <div className="mt-20 flex justify-center">
+      <p className="text-gray-600 mb-10">
+        Latest updates, project highlights, and industry insights.
+      </p>
+
+      <NewsList items={items} />
+
+      {totalPages > 1 && (
+        <div className="mt-16 flex justify-center">
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
           />
         </div>
-      </section>
-
-      <aside>
-        <NewsCategories />
-      </aside>
+      )}
     </main>
   );
 }

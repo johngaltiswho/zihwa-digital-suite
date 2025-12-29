@@ -130,10 +130,10 @@ export default function JobDetailPage({
           </div>
         </section>
 
-        {/* ================= COMMENTS ================= */}
+        {/* ================= COMMENTS =================
         <section className="max-w-4xl mx-auto px-6 py-2">
           <JobComments slug={job.slug} />
-        </section>
+        </section> */}
       </article>
     </main>
   );

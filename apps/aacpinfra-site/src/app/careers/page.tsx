@@ -1,187 +1,219 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import JobComments from "@/components/JobComments";
 
 /* ================= ANIMATION ================= */
 const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
+  hidden: { opacity: 0, y: 14 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.6, ease: "easeOut" },
+    transition: { duration: 0.4, ease: "easeOut" },
   },
 };
 
-const staggerContainer = {
-  hidden: {},
-  visible: {
-    transition: {
-      staggerChildren: 0.15,
-    },
-  },
-};
-
-/* ================= JOB DATA ================= */
+/* ================= JOB LIST (VERIFIED) ================= */
 const jobs = [
-  { title: "Civil Site Engineer", slug: "civil-site-engineer", image: "/careers/civil-site-engineer.jpg" },
-  { title: "Structural Designer", slug: "structural-designer", image: "/careers/structural-designer.jpg" },
-  { title: "Business Development Associate", slug: "business-development-associate", image: "/careers/business-development.jpg" },
-  { title: "Project Control Engineer", slug: "project-control-engineer", image: "/careers/project-control.jpg" },
-  { title: "Project Accounts", slug: "project-accounts", image: "/careers/project-accounts.jpg" },
-  { title: "Quality Control Engineer", slug: "quality-control-engineer", image: "/careers/quality-control.jpg" },
-  { title: "Land Surveyor", slug: "land-surveyor", image: "/careers/land-surveyor.jpg" },
-  { title: "Project Manager", slug: "project-manager", image: "/careers/project-manager.jpg" },
-  { title: "Project Engineer", slug: "project-engineer", image: "/careers/project-engineer.jpg" },
-  { title: "Quantity Surveyor", slug: "quantity-surveyor", image: "/careers/quantity-surveyor.jpg" },
+  {
+    title: "Civil Site Engineer",
+    slug: "civil-site-engineer",
+    qualification: "BE / Diploma in Civil Engineering",
+    experience: "2 – 5 Years",
+    shortDescription:
+      "Responsible for on-site execution, supervision, and quality control of civil works.",
+  },
+  {
+    title: "Structural Designer",
+    slug: "structural-designer",
+    qualification: "BE / M.Tech (Structures)",
+    experience: "3+ Years",
+    shortDescription:
+      "Designs and analyzes RCC and steel structures ensuring safety and code compliance.",
+  },
+  {
+    title: "Business Development Associate",
+    slug: "business-development-associate",
+    qualification: "MBA / Any Graduate",
+    experience: "5+ Years",
+    shortDescription:
+      "Identifies business opportunities, prepares proposals, and supports client acquisition.",
+  },
+  {
+    title: "Project Control Engineer",
+    slug: "project-control-engineer",
+    qualification: "BE / B.Tech (Civil or relevant discipline)",
+    experience: "3 – 6 Years",
+    shortDescription:
+      "Manages planning, scheduling, cost tracking, and project reporting.",
+  },
+  {
+    title: "Project Accounts",
+    slug: "project-accounts",
+    qualification:
+      "Bachelor’s Degree in Accounting / Business or related field",
+    experience: "3 – 5 Years",
+    shortDescription:
+      "Handles project billing, budgeting, and financial reconciliation.",
+  },
+  {
+    title: "Quality Control Engineer",
+    slug: "quality-control-engineer",
+    qualification: "BE / Diploma in Civil Engineering",
+    experience: "3 – 5 Years",
+    shortDescription:
+      "Ensures construction quality through inspections, testing, and compliance checks.",
+  },
+  {
+    title: "Land Surveyor",
+    slug: "land-surveyor",
+    qualification: "Diploma / Degree in Civil Engineering or related field",
+    experience: "2 – 5 Years",
+    shortDescription:
+      "Conducts land surveys, measurements, and layout marking for project execution.",
+  },
+  {
+    title: "Project Manager",
+    slug: "project-manager",
+    qualification: "BE / B.Tech in Civil Engineering",
+    experience: "5+ Years",
+    shortDescription:
+      "Leads end-to-end project execution including cost, quality, and timelines.",
+  },
+  {
+    title: "Project Engineer",
+    slug: "project-engineer",
+    qualification: "BE / B.Tech in Civil Engineering",
+    experience: "5+ Years",
+    shortDescription:
+      "Supports planning, execution, and coordination of site activities.",
+  },
+  {
+    title: "Quantity Surveyor",
+    slug: "quantity-surveyor",
+    qualification: "BE / Diploma in Civil Engineering",
+    experience: "3 – 6 Years",
+    shortDescription:
+      "Manages Site Assessments, estimation, cost control, and contract measurements.",
+  },
 ];
 
 export default function CareersPage() {
   return (
     <main className="bg-white text-gray-900">
 
-      {/* ================= HERO ================= */}
-      <section className="relative h-[70vh] flex items-center">
-        <Image
-          src="/careers/herocareers.jpg"
-          alt="Careers at AACP Infrastructure"
-          fill
-          priority
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-black/40" />
-
-        <motion.div
+      {/* ================= INTRO ================= */}
+      <section className="max-w-7xl mx-auto px-6 pt-8 pb-6 text-center">
+        <motion.h1
           variants={fadeUp}
           initial="hidden"
           animate="visible"
-          className="relative max-w-6xl mx-auto px-6 text-white"
+          className="text-5xl md:text-6xl font-semibold tracking-widest"
         >
-          <h1 className="text-5xl md:text-7xl font-black tracking-widest">
-            CAREERS
-          </h1>
-          <p className="mt-6 max-w-xl text-lg text-gray-200">
-            Build your future with AACP Infrastructure and contribute
-            to projects that shape India’s growth.
-          </p>
+          CAREERS
+        </motion.h1>
+
+        <motion.h2
+          variants={fadeUp}
+          initial="hidden"
+          animate="visible"
+          className="mt-1 text-xl md:text-2xl font-medium tracking-wide text-gray-700"
+        >
+          at AACP Infrastructure
+        </motion.h2>
+
+        <div className="w-16 h-[2px] bg-gray-300 mx-auto mt-4 mb-4" />
+
+        <motion.p
+          variants={fadeUp}
+          initial="hidden"
+          animate="visible"
+          className="max-w-3xl mx-auto text-base md:text-lg text-gray-600 leading-relaxed"
+        >
+          Join AACP Infrastructure Systems Pvt. Ltd. and be part of projects
+          that shape India’s growing infrastructure. We value expertise,
+          integrity, and commitment to excellence.
+        </motion.p>
+      </section>
+
+      {/* ================= JOB TABLE ================= */}
+      <section className="max-w-7xl mx-auto px-6 pb-16">
+        <motion.div
+          variants={fadeUp}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          className="border border-gray-200 rounded-2xl overflow-hidden"
+        >
+          {/* Header */}
+          <div className="hidden md:grid grid-cols-5 bg-gray-100 px-8 py-4 text-sm font-semibold text-gray-700 tracking-wide">
+            <div>Position</div>
+            <div>Role Summary</div>
+            <div>Qualification</div>
+            <div>Experience</div>
+            <div className="text-center">Apply</div>
+          </div>
+
+          {/* Rows */}
+          {jobs.map((job) => (
+            <div
+              key={job.slug}
+              className="grid grid-cols-1 md:grid-cols-5 gap-4 px-8 py-5 border-t hover:bg-gray-50 transition"
+            >
+              <div className="font-medium text-lg">
+                <Link href={`/careers/${job.slug}`} className="hover:underline">
+                  {job.title}
+                </Link>
+              </div>
+
+              <div className="text-gray-700">
+                {job.shortDescription}
+              </div>
+
+              <div className="text-gray-700">
+                {job.qualification}
+              </div>
+
+              <div className="text-gray-700">
+                {job.experience}
+              </div>
+
+              {/* ✅ COMPACT APPLY BUTTON */}
+              <div className="flex items-center md:justify-center">
+                <Link
+                  href={`/careers/${job.slug}`}
+                  className="inline-flex items-center justify-center border border-gray-900 px-3 py-1 text-[16px] font-semibold tracking-wider whitespace-nowrap hover:bg-gray-900 hover:text-white transition"
+                >
+                  View & Apply
+                </Link>
+              </div>
+            </div>
+          ))}
         </motion.div>
       </section>
 
-      {/* ================= NOTICE ================= */}
-      <section className="max-w-5xl mx-auto px-6 pt-8 pb-4">
-        <p className="text-sm text-gray-600 leading-relaxed italic">
-          <span className="font-semibold not-italic">
-            NOTICE TO THIRD PARTY AGENCIES:
-          </span>{" "}
-          Please note that AACP does not accept unsolicited resumes from recruiters
-          or employment agencies. In the absence of a signed Recruitment Fee
-          Agreement, AACP will not consider or agree to payment of any referral
-          compensation or recruiter fee. In the event a recruiter or agency submits
-          a resume or candidate without a previously agreed arrangement, AACP
-          explicitly reserves the right to pursue and hire those candidate(s)
-          without any financial obligation to the recruiter or agency.
-        </p>
-      </section>
-
-      {/* ================= JOB OPENINGS ================= */}
-      <section className="max-w-6xl mx-auto px-4 pt-12 pb-36">
+      {/* ================= APPLY CTA ================= */}
+      <section className="bg-gray-900 text-white py-12 text-center">
         <motion.h2
           variants={fadeUp}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
-          className="text-4xl font-semibold text-center mb-14 underline underline-offset-6"
+          className="text-2xl md:text-3xl font-semibold mb-2"
         >
-          Job Openings
+          Ready to Apply?
         </motion.h2>
 
-        <motion.div
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          className="space-y-24"
+        <p className="mb-5 tracking-wide text-sm md:text-base">
+          Email your resume with the job title in the subject line.
+        </p>
+
+        <a
+          href="mailto:careers@aacpinfra.com"
+          className="inline-block border border-white px-10 py-2.5 text-sm tracking-widest hover:bg-white hover:text-black transition"
         >
-          {jobs.map((job, index) => (
-            <motion.div
-              key={job.slug}
-              variants={fadeUp}
-              className="grid grid-cols-1 md:grid-cols-2 gap-28 items-center"
-            >
-              {/* Image (CLICKABLE) */}
-              <Link
-                href={`/careers/${job.slug}`}
-                className={`rounded-lg overflow-hidden mx-auto block cursor-pointer ${
-                  index % 2 !== 0 ? "md:order-2" : ""
-                }`}
-                style={{ maxWidth: "380px" }}
-              >
-                <Image
-                  src={job.image}
-                  alt={job.title}
-                  width={420}
-                  height={280}
-                  className="w-full h-auto object-cover transition-transform duration-500 hover:scale-105"
-                />
-              </Link>
-
-              {/* Content */}
-              <div className={index % 2 !== 0 ? "md:order-1" : ""}>
-                <h3 className="text-4xl font-semibold mb-4 hover:text-gray-600 transition">
-                  <Link href={`/careers/${job.slug}`}>
-                    {job.title}
-                  </Link>
-                </h3>
-
-                <p className="text-gray-700 mb-6 leading-relaxed">
-                  Join AACP Infrastructure and work on large-scale
-                  infrastructure projects across India.
-                </p>
-
-                <Link
-                  href={`/careers/${job.slug}`}
-                  aria-label={`Apply for ${job.title}`}
-                  className="inline-flex items-center border border-black px-8 py-2 text-sm tracking-widest hover:bg-black hover:text-white transition"
-                >
-                  APPLY NOW →
-                </Link>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
-      </section>
-
-      {/* ================= READY TO APPLY ================= */}
-      <section className="bg-gray-900 text-white py-16">
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          className="text-center"
-        >
-          <h2 className="text-3xl font-semibold mb-4">
-            Ready to Apply?
-          </h2>
-
-          <p className="mb-10 tracking-wide">
-            Email your resume with the job title in the subject line.
-          </p>
-
-          <a
-            href="mailto:careers@aacpinfra.com"
-            className="inline-block border border-white px-12 py-3 text-sm tracking-widest hover:bg-white hover:text-black transition"
-          >
-            APPLY NOW
-          </a>
-        </motion.div>
-      </section>
-
-      {/* ================= COMMENTS ================= */}
-      <section className="mt-24">
-        <JobComments slug="careers" />
+          APPLY NOW
+        </a>
       </section>
 
     </main>

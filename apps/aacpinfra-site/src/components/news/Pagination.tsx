@@ -3,6 +3,11 @@ import Link from "next/link";
 interface Props {
   currentPage: number;
   totalPages: number;
+  /**
+   * Examples:
+   * /news
+   * /news/category/project
+   */
   basePath?: string;
 }
 
@@ -15,17 +20,24 @@ export default function Pagination({
 
   const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
 
-  const pageHref = (page: number) =>
-    page === 1 ? basePath : `${basePath}/page/${page}`;
+  /**
+   * IMPORTANT:
+   * - Page 1 → basePath
+   * - Page N → `${basePath}/page/${N}`
+   */
+  const pageHref = (page: number) => {
+    if (page <= 1) return basePath;
+    return `${basePath}/page/${page}`;
+  };
 
   return (
     <nav
       aria-label="Pagination"
-      className="flex items-center justify-center gap-6 text-xl font-medium text-gray-500"
+      className="flex items-center justify-center gap-4 text-xl font-medium text-gray-500"
     >
       {/* PREVIOUS */}
       <Link
-        href={pageHref(Math.max(1, currentPage - 1))}
+        href={pageHref(currentPage - 1)}
         aria-disabled={currentPage === 1}
         className={`text-3xl font-semibold leading-none ${
           currentPage === 1
@@ -54,7 +66,7 @@ export default function Pagination({
 
       {/* NEXT */}
       <Link
-        href={pageHref(Math.min(totalPages, currentPage + 1))}
+        href={pageHref(currentPage + 1)}
         aria-disabled={currentPage === totalPages}
         className={`text-3xl font-semibold leading-none ${
           currentPage === totalPages

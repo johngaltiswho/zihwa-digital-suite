@@ -1,17 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { Cinzel, Lora } from "next/font/google";
-
-const cinzel = Cinzel({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
-
-const lora = Lora({
-  subsets: ["latin"],
-  weight: ["400"],
-});
 
 export default function AboutOverview() {
   return (
@@ -21,13 +10,13 @@ export default function AboutOverview() {
         {/* ================= LEFT COLUMN – ABOUT US ================= */}
         <div className="md:col-span-2">
           <h2
-            className={`${cinzel.className} text-4xl font-semibold mb-3 inline-block border-b-2 border-black pb-2`}
+            className="font-heading text-4xl font-semibold mb-3 inline-block border-b-2 border-black pb-2"
           >
             ABOUT US
           </h2>
 
           <p
-            className={`${lora.className} mt-6 text-gray-800 text-[16px] leading-[2]`}
+            className="font-body mt-6 text-gray-800 text-[16px] leading-[2]"
           >
             We at AACP are reinvigorating the traditional practices of
             General Contracting by blending the timeless tools of project
@@ -54,13 +43,13 @@ export default function AboutOverview() {
           {/* SAFETY CULTURE */}
           <div>
             <h3
-              className={`${cinzel.className} text-3xl font-semibold inline-block border-b-2 border-black pb-2 mb-4 tracking-wide`}
+              className="font-heading text-3xl font-semibold inline-block border-b-2 border-black pb-2 mb-4 tracking-wide"
             >
               SAFETY CULTURE
             </h3>
 
             <p
-              className={`${lora.className} text-gray-800 leading-relaxed`}
+              className="font-body text-gray-800 leading-relaxed"
             >
               AACP breathes a culture of Injury Free Environment. Every
               employee, from the CEO to the workers on the site, has
@@ -68,7 +57,6 @@ export default function AboutOverview() {
               for all who enter our work sites.
             </p>
 
-            {/* SAFETY PAGE LINK */}
             <Link
               href="/safety"
               className="mt-3 inline-block text-red-600 underline hover:opacity-80 transition"
@@ -80,20 +68,19 @@ export default function AboutOverview() {
           {/* INNOVATION */}
           <div>
             <h3
-              className={`${cinzel.className} text-3xl font-semibold inline-block border-b-2 border-black pb-2 mb-4 tracking-wide`}
+              className="font-heading text-3xl font-semibold inline-block border-b-2 border-black pb-2 mb-4 tracking-wide"
             >
               INNOVATION
             </h3>
 
             <p
-              className={`${lora.className} text-gray-800 leading-relaxed`}
+              className="font-body text-gray-800 leading-relaxed"
             >
               AACP encourages and motivates its employees to continually
               seek and adopt new techniques and technology to reform the
               construction management process.
             </p>
 
-            {/* ✅ INNOVATION PAGE LINK */}
             <Link
               href="/innovation"
               className="mt-3 inline-block text-red-600 underline hover:opacity-80 transition"

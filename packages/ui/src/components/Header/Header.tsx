@@ -9,10 +9,12 @@ const NAV_ITEMS = [
   { label: "ABOUT", href: "/about" },
   { label: "SAFETY", href: "/safety" },
   { label: "STRATEGY", href: "/strategy" },
+  { label: "INNOVATION", href: "/innovation" },
   { label: "CAREERS", href: "/careers" },
   { label: "NEWS", href: "/news" },
   { label: "PROJECTS", href: "/projects" },
-  { label: "PRECAST", href: "/precast" },
+  
+  // { label: "PRECAST", href: "/precast" },
   { label: "CONTACT US", href: "/contact", isButton: true },
 ];
 
@@ -28,34 +30,37 @@ export function Header() {
       }}
     >
       {/* ================= TOP BAR ================= */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          padding: "12px 205px 4px",
-          gap: "24px",
-          fontSize: "14px",
-          fontWeight: 600,
-        }}
-      >
-        <Link href="/intranet" className="top-link">
-          INTRANET
-        </Link>
+<div
+  style={{
+    display: "flex",
+    justifyContent: "flex-end",
+    padding: "12px 205px 4px",
+    gap: "24px",
+    fontSize: "14px",
+    fontWeight: 600,
+  }}
+>
+  <span
+    className="top-link"
+    style={{ cursor: "default", opacity: 1.7 }}
+  >
+    INTRANET
+  </span>
 
-        <Link
-          href="/sub-contractor-registration"
-          className="top-link"
-        >
-          SUB CONTRACTOR REGISTRATION
-        </Link>
-      </div>
+  <span
+    className="top-link"
+    style={{ cursor: "default", opacity: 1.7 }}
+  >
+    SUB CONTRACTOR REGISTRATION
+  </span>
+</div>
 
       {/* ================= MAIN HEADER ================= */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
-          padding: "6px 160px 8px",
+          padding: "6px 140px 8px",
           gap: "18px",
         }}
       >

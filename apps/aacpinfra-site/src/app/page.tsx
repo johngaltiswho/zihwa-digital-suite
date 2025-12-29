@@ -1,5 +1,5 @@
-// apps/aacpinfra-site/src/app/page.tsx
-
+// apps/aacpinfra-site/src/app/page.tsx;
+"use client";
 import Link from "next/link";
 
 import { homepageData } from "@/data/homepage";
@@ -20,6 +20,7 @@ export default function HomePage() {
   );
 
   const home = homepageData;
+  
 
   /* ================= HERO SLIDES (9 SLIDES) ================= */
   const heroSlides = [
@@ -90,7 +91,7 @@ export default function HomePage() {
       {/* ================= SERVICES ================= */}
       <section 
             id="services"
-            className="py-10 bg-gray-100 text-center">
+            className="py-10 bg-gray-100 text-center scroll-mt-[120px]">
         <h2 className="text-3xl font-bold mb-12 inline-block border-b-2 border-black pb-1">
           {home.servicesOverviewTitle}
         </h2>
@@ -142,7 +143,7 @@ export default function HomePage() {
       {/* ================= BOARD ================= */}
       <BoardSection />
 
-      {/* ================= TEAM ================= */}
+      {/* ================= TEAM =================
       <section className="py-16 bg-gray-100 text-center">
         <h2 className="text-3xl font-bold mb-12">
           {home.teamSectionTitle}
@@ -159,7 +160,7 @@ export default function HomePage() {
             </div>
           ))}
         </div>
-      </section>
+      </section> */}
 
       {/* ================= CTA ================= */}
       <CtaSection

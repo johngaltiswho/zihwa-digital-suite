@@ -1,45 +1,51 @@
 import Image from "next/image";
 import Link from "next/link";
-import { NewsItem } from "@/types/news";
 
-export default function NewsList({ items }: { items: NewsItem[] }) {
+export default function NewsList({ items }: { items: any[] }) {
   return (
-    <div className="space-y-24">
-      {items.map((item) => (
+    <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-3">
+      {items.map((news) => (
         <article
-          key={item.id}
-          className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start"
+          key={news.id}
+          className="group rounded-2xl border bg-white overflow-hidden transition-shadow hover:shadow-xl"
         >
           {/* IMAGE */}
-          <Link href={`/news/${item.slug}`}>
-            <div className="relative w-full h-[260px] overflow-hidden">
-              <Image
-                src={item.image}
-                alt={item.title}
-                fill
-                className="object-cover"
-              />
-            </div>
+          <Link href={`/news/${news.slug}`} className="block overflow-hidden">
+            <Image
+              src={news.image}
+              alt={news.title}
+              width={600}
+              height={400}
+              className="h-64 w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
           </Link>
 
           {/* CONTENT */}
-          <div className="space-y-4">
-            <h2 className="text-2xl font-serif text-black tracking-wide uppercase">
-              <Link href={`/news/${item.slug}`}>
-                {item.title}
+          <div className="p-8">
+            {/* CATEGORY */}
+            <p className="text-xs uppercase tracking-widest text-gray-500 mb-3">
+              {news.categories?.[0] ?? "News"}
+            </p>
+
+            {/* TITLE */}
+            <h2 className="text-2xl text-black font-semibold leading-snug mb-4 group-hover:underline">
+              <Link href={`/news/${news.slug}`}>
+                {news.title}
               </Link>
             </h2>
 
-            {/* DESCRIPTION */}
-            <p className="text-gray-600 leading-relaxed max-w-xl">
-              {item.excerpt}
+            {/* EXCERPT */}
+            <p className="text-gray-600 leading-relaxed line-clamp-3 mb-6">
+              {news.excerpt}
             </p>
 
+            {/* READ MORE */}
             <Link
-              href={`/news/${item.slug}`}
-              className="inline-block text-sm text-black tracking-wide uppercase border-b border-black pb-1"
+              href={`/news/${news.slug}`}
+              className="inline-flex items-center gap-2 text-sm font-semibold text-black group-hover:gap-3 transition-all"
             >
-              Read More
+              Read more
+              <span aria-hidden>→</span>
             </Link>
           </div>
         </article>

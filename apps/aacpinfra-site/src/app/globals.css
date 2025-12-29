@@ -144,4 +144,23 @@ section {
 .reveal {
   animation: fadeUp 0.8s ease-out both;
 }
+body {
+  font-family: var(--font-inter), sans-serif;
+}
 
+/* ================= TYPOGRAPHY ================= */
+
+/* Body text */
+body {
+  font-family: var(--font-inter), sans-serif;
+}
+
+/* Headings */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-poppins), sans-serif;
+}
