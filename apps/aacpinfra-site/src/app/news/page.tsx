@@ -9,24 +9,25 @@ export default function NewsPage() {
   const totalPages = getTotalPages();
 
   return (
-    <main className="max-w-7xl mx-auto px-6 pt-10 pb-20">
-      <header className="mb-8">
-        <h1 className="text-5xl text-black font-serif font-bold mb-4">
-          News & Insights
-        </h1>
+    <main className="max-w-7xl mx-auto px-6 pt-6 pb-10">
+      <h1 className="text-5xl text-black font-serif font-semibold mb-3">
+        News & Insights
+      </h1>
 
-        <p className="max-w-3xl text-gray-600 mb-8">
-          Latest updates, project highlights, and industry insights from AACP Infrastructure.
-        </p>
+      <p className="text-gray-600 mb-6 max-w-3xl">
+        Latest updates, project highlights, and industry insights from AACP Infrastructure.
+      </p>
 
-        <NewsCategories />
-      </header>
+      {/* CATEGORY TABS */}
+      <NewsCategories />
 
       <NewsList items={items} />
 
-      <div className="mt-20 flex justify-center">
-        <Pagination currentPage={currentPage} totalPages={totalPages} />
-      </div>
+      {totalPages > 1 && (
+        <div className="mt-16 flex justify-center">
+          <Pagination currentPage={1} totalPages={totalPages} />
+        </div>
+      )}
     </main>
   );
 }

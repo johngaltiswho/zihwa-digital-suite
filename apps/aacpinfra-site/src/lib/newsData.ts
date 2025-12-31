@@ -6,7 +6,7 @@ import { NewsItem } from "@/types/news";
  * - One news can belong to multiple categories
  * - excerpt is shown below title in news listing
  */
-
+const ITEMS_PER_PAGE = 12;
 export const newsData: NewsItem[] = [
   // ===== PAGE 1 (9 items) =====
   {
@@ -188,7 +188,7 @@ export const newsData: NewsItem[] = [
     title: "Foray Into Modular Construction",
     slug: "foray-into-modular",
     image: "/news/Foray-Into-Modular.jpg",
-    categories: ["Project", "In The News"],
+    categories: ["In The News"],
     excerpt:
       "Exploration into modular construction techniques for faster and efficient builds.",
   },
@@ -197,7 +197,7 @@ export const newsData: NewsItem[] = [
     title: "Building Success: Unveiling Advantages Of Precast Construction",
     slug: "Building-Success",
     image: "/news/Building-Success.jpg",
-    categories: ["Project"],
+    categories: ["In The News"],
     excerpt:
       "Unveiling Advantages of Precast Construction.",
   },
@@ -372,7 +372,7 @@ export const newsData: NewsItem[] = [
     title: "Sustaining Success",
     slug: "sustaining-success",
     image: "/news/Sustaining-Success.jpg",
-    categories: ["Project", "In The News"],
+    categories: ["In The News"],
     excerpt:
       "Milestones and success stories showcasing AACP’s growth journey.",
   },
@@ -381,7 +381,7 @@ export const newsData: NewsItem[] = [
     title: "Transforming Spaces",
     slug: "transforming-spaces",
     image: "/news/Transforming-Spaces.jpg",
-    categories: ["Project"],
+    categories: ["In The News"],
     excerpt:
       "Transformation of spaces through innovative engineering solutions.",
   },
@@ -419,7 +419,7 @@ export const newsData: NewsItem[] = [
     title: "Innovative Solution",
     slug: "innovative-solution",
     image: "/news/Innovative-Solution.jpg",
-    categories: ["Presentation", "In The News"],
+    categories: ["In The News"],
     excerpt:
       "Innovative engineering solutions addressing complex infrastructure challenges.",
   },
@@ -437,7 +437,7 @@ export const newsData: NewsItem[] = [
     title: "Rain Water Harvesting Pond",
     slug: "Rain-Water-Harvesting-Pond",
     image: "/news/Rain-Water-Pond.jpg",
-    categories: ["Project", "Presentation", "In The News"],
+    categories: ["Project","In The News"],
     excerpt:
       "Advanced water sustainability initiatives ensuring long-term conservation.",
   },
@@ -464,13 +464,12 @@ export const newsData: NewsItem[] = [
 // ================= HELPERS =================
 
 export function getNewsByPage(page: number) {
-  if (page === 1) return newsData.slice(0, 9);
-  const start = 9 + (page - 2) * 8;
-  return newsData.slice(start, start + 8);
+  const start = (page - 1) * ITEMS_PER_PAGE;
+  return newsData.slice(start, start + ITEMS_PER_PAGE);
 }
 
 export function getTotalPages() {
-  return 6;
+  return Math.ceil(newsData.length / ITEMS_PER_PAGE);
 }
 
 export function getAllCategories(): string[] {
@@ -487,20 +486,17 @@ export function getNewsByCategory(category: string, page: number) {
           item.categories.includes(category)
         );
 
-  if (page === 1) return filtered.slice(0, 9);
-
-  const start = 9 + (page - 2) * 8;
-  return filtered.slice(start, start + 8);
+  const start = (page - 1) * ITEMS_PER_PAGE;
+  return filtered.slice(start, start + ITEMS_PER_PAGE);
 }
 
 export function getTotalPagesByCategory(category: string) {
   const total =
     category === "All"
       ? newsData.length
-      : newsData.filter((n) =>
-          n.categories.includes(category)
+      : newsData.filter((item) =>
+          item.categories.includes(category)
         ).length;
 
-  if (total <= 9) return 1;
-  return 1 + Math.ceil((total - 9) / 8);
+  return Math.ceil(total / ITEMS_PER_PAGE);
 }

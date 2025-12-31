@@ -2,17 +2,28 @@ import { notFound } from "next/navigation";
 import NewsList from "@/components/news/NewsList";
 import Pagination from "@/components/news/Pagination";
 import NewsCategories from "@/components/news/NewsCategories";
-import { getNewsByPage, getTotalPages } from "@/lib/newsData";
+import {
+  getNewsByCategory,
+  getTotalPagesByCategory,
+} from "@/lib/newsData";
+
+function normalizeCategory(slug: string) {
+  return slug
+    .replace(/-/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
 
 type Props = {
   params: {
+    category: string;
     pageNumber: string;
   };
 };
 
-export default function NewsPageNumber({ params }: Props) {
+export default function CategoryNewsPageNumber({ params }: Props) {
   const currentPage = Number(params.pageNumber);
-  const totalPages = getTotalPages();
+  const category = normalizeCategory(params.category);
+  const totalPages = getTotalPagesByCategory(category);
 
   if (
     Number.isNaN(currentPage) ||
@@ -22,20 +33,18 @@ export default function NewsPageNumber({ params }: Props) {
     notFound();
   }
 
-  const items = getNewsByPage(currentPage);
+  const items = getNewsByCategory(category, currentPage);
+  if (!items.length) notFound();
 
   return (
     <main className="max-w-7xl mx-auto px-6 pt-10 pb-20">
-      <h1 className="text-5xl font-serif text-black font-bold mb-4">
-        News & Insights
+     
+      <h1 className="text-4xl text-black font-serif font-bold mb-6 capitalize">
+        {category}
       </h1>
-
-      <p className="text-gray-600 mb-10 max-w-3xl">
-        Latest updates, project highlights, and industry insights from AACP Infrastructure.
-      </p>
-
-      {/* CATEGORY TABS */}
+       {/* CATEGORY TABS */}
       <NewsCategories />
+
 
       <NewsList items={items} />
 
@@ -44,6 +53,7 @@ export default function NewsPageNumber({ params }: Props) {
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
+            basePath={`/news/category/${params.category}`}
           />
         </div>
       )}

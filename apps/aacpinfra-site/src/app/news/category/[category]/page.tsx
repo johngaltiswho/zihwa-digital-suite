@@ -1,12 +1,12 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import NewsList from "@/components/news/NewsList";
-import NewsLayout from "@/components/news/NewsLayout";
-import { getNewsByCategory } from "@/lib/newsData";
+import Pagination from "@/components/news/Pagination";
+import NewsCategories from "@/components/news/NewsCategories";
+import {
+  getNewsByCategory,
+  getTotalPagesByCategory,
+} from "@/lib/newsData";
 
-/* ---------------------------------------------
-   Helper: normalize URL category → data category
----------------------------------------------- */
 function normalizeCategory(slug: string) {
   return slug
     .replace(/-/g, " ")
@@ -18,45 +18,34 @@ export default function CategoryNewsPage({
 }: {
   params: { category: string };
 }) {
-  if (!params?.category) return null;
-
-  const categorySlug = decodeURIComponent(params.category);
-  const category = normalizeCategory(categorySlug);
-
+  const category = normalizeCategory(params.category);
   const items = getNewsByCategory(category, 1);
+  const totalPages = getTotalPagesByCategory(category);
 
-  if (!items || items.length === 0) {
-    notFound();
-  }
+  if (!items.length) notFound();
 
   return (
-    <NewsLayout>
-      {/* CATEGORY HEADER */}
-      <header className="mb-10 max-w-3xl">
-        <h1 className="text-4xl font-serif text-black mb-3 capitalize">
-          {category}
-        </h1>
+    <main className="max-w-7xl mx-auto px-6 pt-10 pb-20">
+{/* CATEGORY TITLE */}
+<h1 className="text-4xl font-bold text-black capitalize mb-6">
+  {category}
+</h1>
 
-        <p className="text-gray-600 leading-relaxed">
-          Explore updates, project highlights, and insights related to{" "}
-          <span className="font-medium text-black capitalize">
-            {category}
-          </span>.
-        </p>
-      </header>
+{/* CATEGORY FILTER */}
+<NewsCategories />
 
-      {/* BLOG GRID */}
-      <NewsList items={items} />
+{/* NEWS GRID */}
+<NewsList items={items} />
 
-    
-      <div className="mt-20 flex justify-center">
-        <Link
-          href="/news"
-          className="inline-flex items-center gap-2 text-lg font-semibold text-gray-600 hover:text-black transition"
-        >
-          ← Back to News
-        </Link>
-      </div>
-    </NewsLayout>
+      {totalPages > 1 && (
+        <div className="mt-16 flex justify-center">
+          <Pagination
+            currentPage={1}
+            totalPages={totalPages}
+            basePath={`/news/category/${params.category}`}
+          />
+        </div>
+      )}
+    </main>
   );
 }

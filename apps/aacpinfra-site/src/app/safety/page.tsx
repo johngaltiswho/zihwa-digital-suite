@@ -66,7 +66,7 @@ export default function SafetyPage() {
   return (
     <main className="bg-white text-black">
       {/* ================= HERO SLIDER ================= */}
-      <section className="relative h-[85vh] overflow-hidden">
+      <section className="relative h-[60vh] overflow-hidden">
         {slides.map((slide, index) => (
           <motion.div
             key={index}
@@ -137,7 +137,7 @@ export default function SafetyPage() {
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true }}
-        className="max-w-5xl mx-auto px-6 py-12"
+        className="max-w-5xl mx-auto px-4 py-9"
       >
         <h2 className="text-2xl font-medium mb-4">
           Safety at AACP Infrastructure

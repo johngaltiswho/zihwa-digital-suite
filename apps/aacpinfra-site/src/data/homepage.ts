@@ -22,7 +22,7 @@ export const homepageData = {
   teamSectionTitle: "Meet Our Experts",
   cta: {
     heading: "Ready to Transform Your Vision into Reality?",
-    buttonText: "GET A FREE CONSULTATION",
+    buttonText: "VISIT US",
     buttonLink: "/contact",
   },
 };

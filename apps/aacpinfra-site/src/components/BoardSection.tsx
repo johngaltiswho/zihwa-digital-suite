@@ -26,7 +26,7 @@ const CLIENT_LOGOS = [
 
 export default function BoardSection() {
   return (
-    <section className="py-24 bg-white text-center">
+    <section className="py-18 bg-white text-center">
 
       {/* ================= CLIENTS ================= */}
       <section
@@ -91,41 +91,49 @@ export default function BoardSection() {
         ))}
       </div>
 
-      {/* ================= TESTIMONIALS ================= */}
-      <div>
-        <h2 className="text-4xl font-bold tracking-wide mb-10 border-b-2 inline-block pb-2">
-          TESTIMONIALS
-        </h2>
+     {/* ================= TESTIMONIALS ================= */}
+<div>
+  <h2 className="text-4xl font-bold tracking-wide mb-8 border-b-2 inline-block pb-2">
+    TESTIMONIALS
+  </h2>
 
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-x-[120px] gap-y-[80px] px-30 justify-items-center">
-          {testimonials.map((item) => (
-            <div
-              key={item.id}
-              className="bg-[#f2f2f2] text-gray-800 px-18 py-10 min-h-[420px] w-[360px] relative flex flex-col"
-            >
-              {/* NAME (FIXED HEIGHT – CENTERED) */}
-              <div className="min-h-[56px] flex items-center justify-center">
-                <h3 className="text-lg font-semibold text-center leading-snug tracking-wide">
-                  {item.name}, {item.company}
-                </h3>
-              </div>
+  <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-x-[120px] gap-y-[80px] px-30 justify-items-center">
+    {testimonials.map((item) => (
+      <div
+        key={item.id}
+        className="relative text-gray-900 px-18 py-10 min-h-[420px] w-[360px] flex flex-col overflow-hidden"
+        style={{
+          backgroundImage: `url(${item.bgImage})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-white/15" />
 
-              {/* TEXT */}
-              <p className="italic text-sm leading-relaxed text-center mt-8 mb-10">
-                {item.text}
-              </p>
+        {/* Content */}
+        <div className="relative z-10 flex flex-col h-full">
+          {/* NAME */}
+          <div className="min-h-[56px] flex items-center justify-center">
+            <h3 className="text-lg font-semibold text-center leading-snug tracking-wide">
+              {item.name}, {item.company}
+            </h3>
+          </div>
 
-              {/* QUOTE */}
-              <div className="text-6xl text-center text-black opacity-80 mt-auto">
-                &rdquo;
-              </div>
+          {/* TEXT */}
+          <p className="italic text-sm leading-relaxed text-center mt-8 mb-10">
+            {item.text}
+          </p>
 
-              {/* BOTTOM FADE */}
-              <div className="absolute bottom-0 left-0 w-full h-36 bg-gradient-to-t from-gray-400/40 to-transparent" />
-            </div>
-          ))}
+          {/* QUOTE */}
+          <div className="text-6xl text-center text-black opacity-80 mt-auto">
+            &rdquo;
+          </div>
         </div>
       </div>
+    ))}
+  </div>
+</div>
 
     </section>
   );

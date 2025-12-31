@@ -27,11 +27,18 @@ export function Footer() {
       >
         {/* LEFT LINKS */}
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <Link href="/intranet">INTRANET</Link>
+          {/* <Link href="/intranet">INTRANET</Link> */}
+          <span
+  className="text-gray-600 select-none"
+ >
+  INTRANET
+</span>
+
           <Link href="/privacy-policy">PRIVACY POLICY</Link>
-          <Link href="/sub-contractor-registration">
-            SUB CONTRACTOR REGISTRATION
+          <Link href="/terms-of-service">
+              TERMS OF SERVICE
           </Link>
+
         </div>
 
         {/* CENTER TEXT */}

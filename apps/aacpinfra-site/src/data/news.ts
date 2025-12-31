@@ -22,6 +22,7 @@ export const newsData: NewsItem[] = [
             "/news/Walkway-Works-3.jpg",
             "/news/Walkway-Works-4.jpg",
   ],
+  date: "2018",
   client: "Toyota Kirloskar Motor (TKM)",
   projectManagementConsultant: "JLL",
   natureOfWork: "Dismantling, Solid Block Masonry, Paver Block & Saucer Drain Works.",
@@ -50,6 +51,7 @@ export const newsData: NewsItem[] = [
             "/news/Drain-Dismantling-3.jpg",
             "/news/Drain-Dismantling-4.jpg",
   ],
+  date: "2018",
   client: "Toyota Kirloskar Motor (TKM)",
   natureOfWork: "Dismantling & Rectification Works.",
   introduction:
@@ -66,7 +68,7 @@ export const newsData: NewsItem[] = [
   id: 3,
   slug: "recycling-renewables",
   title: "Recycling & Renewables",
-  categories: ["Project", "Presentation", "In The News"],
+  categories: ["Presentation", "In The News"],
   heroImages: ["/news/Recycling-Renewables.jpg"],
   gallery: ["/news/Recycling-Renewables.jpg"],
   introduction:
@@ -97,7 +99,7 @@ export const newsData: NewsItem[] = [
   id: 4,
   slug: "earth-haulers",
   title: "Earth Haulers",
-  categories: ["Project", "Presentation", "In The News"],
+  categories: ["Presentation", "In The News"],
   heroImages: ["/news/Earth-Haulers.jpg"],
   gallery: ["/news/Earth-Haulers.jpg"],
   introduction:
@@ -121,7 +123,7 @@ export const newsData: NewsItem[] = [
   id: 5,
   slug: "sustaining-water",
   title: "Sustaining Water",
-  categories: ["Project", "Presentation", "In The News"],
+  categories: ["Presentation", "In The News"],
   heroImages: ["/news/Sustaining-Water.jpg"],
   gallery: ["/news/Sustaining-Water.jpg"],
   introduction:
@@ -156,6 +158,7 @@ export const newsData: NewsItem[] = [
             "/news/Rain-Water-Harvesting-Pond-2-3.jpg",
             "/news/Rain-Water-Harvesting-Pond-2-4.jpg",
   ],
+  date: "2020",
   client: "Toyota Kirloskar Auto Parts (TKAP)",
   natureOfWork: "Earthwork, Civil Works, etc.",
   introduction:
@@ -191,6 +194,7 @@ export const newsData: NewsItem[] = [
             "/news/Surface-Reconstruction-4.jpg",
             "/news/Surface-Reconstruction-5.jpg",
   ],
+  date:"2019",
   client: "Transystem Logistics India Pvt. Ltd",
   projectManagementConsultant:"AACP",
   natureOfWork:"Barrication, Rectification & Asphalting Works.",
@@ -224,6 +228,7 @@ export const newsData: NewsItem[] = [
             "/news/Emission-Yard-Road-2.jpg",
             "/news/Emission-Yard-Road-3.jpg",
   ],
+  date:"2020",
   client: "Toyota Kirloskar Motor (TKM) Pvt. Ltd.",
   projectManagementConsultant:"JLL",
   natureOfWork:"Barrication, Rectification & Asphalting Works.",
@@ -260,6 +265,7 @@ export const newsData: NewsItem[] = [
             "/news/Walkway-Shelter-3.jpg",
             "/news/Walkway-Shelter-4.jpg",
   ],
+  date:"2020",
   client: "Toyota Kirloskar Auto Parts (TKAP).",
   structuralDesigner:"Manju Design Build",
   natureOfWork:"Design, Excavation, Structural Steel Erection, GI Sheet.",
@@ -304,6 +310,7 @@ export const newsData: NewsItem[] = [
             "/news/Pothole-Creation-3.jpg",
             "/news/Pothole-Creation-4.jpg",
   ],
+  date:"2020",
   client: "Toyota Kirloskar Motor (TKM)",
   consultant: "JLL",
   natureOfWork:"Dismantling Existing Road, Specialized RCC with Construction Chemicals.",
@@ -329,6 +336,7 @@ export const newsData: NewsItem[] = [
   categories: ["Project"],
   heroImages: ["/news/Sludge-Barrel-store.jpg"],
   gallery: ["/news/Sludge-Barrel-store.jpg"],
+  date:"2020",
   client: "Toyota Kirloskar Auto Parts (TKAP)",
   natureOfWork:"Dismantling, PCC, Excavation, RCC, Block Masonry & Structural Steel Work.",
   introduction:
@@ -350,6 +358,7 @@ export const newsData: NewsItem[] = [
   categories: ["Project"],
   heroImages: ["/news/Civil-Dismantling-Road.jpg"],
   gallery: ["/news/Civil-Dismantling-Road.jpg"],
+  date:"2020",
   client: "Toyota Kirloskar Motor (TKM) Pvt.Ltd.",
   projectManagementConsultant:"JLL",
   natureOfWork:" Rectification, Widening & Asphalting Works.",
@@ -373,6 +382,7 @@ export const newsData: NewsItem[] = [
   categories: ["Project"],
   heroImages: ["/news/NALA-Stream.jpg"],
   gallery: ["/news/NALA-Stream.jpg"],
+  date:"2020",
   client: "BOSCH (Bidadi)",
   projectManagementConsultant:"Tata Consultancy Services (TCS).",
   natureOfWork:"Nala Rerouting.",
@@ -415,6 +425,7 @@ export const newsData: NewsItem[] = [
             "/news/Eco-Zone-Development-8.jpg",
             "/news/Eco-Zone-Development-9.jpg",
   ],
+  date:"2021",
   client: "Toyota Kirloskar Motor (TKM)",
   projectManagementConsultant:"JLL",
   natureOfWork:"Eco Zone Development.",
@@ -458,6 +469,7 @@ export const newsData: NewsItem[] = [
             "/news/Abbankuppe-Lake-7.jpg",
             "/news/Abbankuppe-Lake-8.jpg",
   ],
+  date:"2021",
   client: "Toyota Kirloskar Motor (TKM) Pvt. Ltd.",
   projectManagementConsultant:"STEM",
   natureOfWork:"Lake Development",
@@ -508,6 +520,7 @@ export const newsData: NewsItem[] = [
             "/news/Plant-1-Shuttle-4.jpg",
             "/news/Plant-1-Shuttle-5.jpg",
   ],
+  date:"2020",
   client: "Toyota Kirloskar Motor (TKM) Pvt. Ltd",
   projectManagementConsultant:"JLL",
   natureOfWork:"Barrication, Rectification & Asphalting Works.",
@@ -576,6 +589,7 @@ export const newsData: NewsItem[] = [
             "/news/Afforestation-6.jpg",
             "/news/Afforestation-7.jpg",
   ],
+  date:"2021",
   client:"Toyota Kirloskar Motor (TKM) Pvt. Ltd",
   projectManagementConsultant:"JLL",
   natureOfWork:"Afforestation",
@@ -620,7 +634,7 @@ export const newsData: NewsItem[] = [
   id: 20,
   slug: "foray-into-modular",
   title: "Foray Into Modular Construction",
-  categories: ["Project", "In The News"],
+  categories: ["In The News"],
   heroImages: ["/news/Foray-Into-Modular.jpg"],
   gallery: ["/news/Foray-Into-Modular.jpg"],
   introduction:
@@ -670,10 +684,10 @@ export const newsData: NewsItem[] = [
 },
 
 {
-  id:20,
+  id:21,
   slug: "Building-Success",
   title: "Building Success Unveiling Advantages of Precast Construction",
-  categories: ["Project"],
+  categories: ["In The News"],
   heroImages: [
     "/news/Building-success.jpg",
   ],
@@ -734,6 +748,7 @@ export const newsData: NewsItem[] = [
             "/news/RainWater-Harvesting-system-3.jpg",
             "/news/RainWater-Harvesting-system-4.jpg",
   ],
+  date:"2022",
   client: "Toyota Kirloskar Motor (TKM)",
   projectManagementConsultant:"JLL",
   natureOfWork:"Rain Water Harvesting Pond (RWH) Development.",
@@ -755,6 +770,7 @@ export const newsData: NewsItem[] = [
   categories: ["Project"],
   heroImages: ["/news/Pond-Modification.jpg"],
   gallery: ["/news/Pond-Modification.jpg"],
+  date:"2022",
   client: "Toyota Kirloskar Auto Parts (TKAP)",
   natureOfWork:"Earth Work, Dismantling & Concrete Works.",
   introduction:
@@ -782,6 +798,7 @@ export const newsData: NewsItem[] = [
             "/news/Phase-II-Road-2.jpg",
             "/news/Phase-II-Road-3.jpg",
   ],
+  date:"2022",
   client: "BOSCH",
   projectManagementConsultant:"Tata Consultancy Services (TCS).",
   natureOfWork:" Roads, Container Shifting, Chain Link Fencing & Storm Water Drain Works.",
@@ -807,6 +824,7 @@ export const newsData: NewsItem[] = [
   categories: ["Project"],
   heroImages: ["/news/Road-Works-For-Assetz.jpg"],
   gallery: ["/news/Road-Works-For-Assetz.jpg"],
+  date:"2021",
   client: "Assetz Group",
   natureOfWork:"Laying of Quarry Dust, Wet Mix Macadam (WMM) & M-Sand.",
   introduction:
@@ -831,6 +849,7 @@ export const newsData: NewsItem[] = [
   categories: ["Project"],
   heroImages: ["/news/Solar-Plant-at-BOSCH.jpg"],
   gallery: ["/news/Solar-Plant-at-BOSCH.jpg"],
+  date:"2018",
   client: "BOSCH",
   natureOfWork:"Site Grading, Control Building and External Developments.",
   introduction:
@@ -854,6 +873,7 @@ export const newsData: NewsItem[] = [
   categories: ["Project"],
   heroImages: ["/news/Earthwork-on-Hard-Soft-Rock.jpg"],
   gallery: ["/news/Earthwork-on-Hard-Soft-Rock.jpg"],
+  date:"2018",
   client: "Mantri Developers",
   natureOfWork:"Earthwork on Hard & Soft Rock.",
 
@@ -875,6 +895,7 @@ export const newsData: NewsItem[] = [
   categories: ["Project"],
   heroImages: ["/news/Toyota-Kirloskar-Auto.jpg"],
   gallery: ["/news/Toyota-Kirloskar-Auto.jpg"],
+  date:"2021",
   client: "Toyota Kirloskar Auto Parts (TKAP)",
   natureOfWork:" Roads, Drains & Site Reclamation.",
   introduction:
@@ -895,6 +916,7 @@ export const newsData: NewsItem[] = [
   categories: ["Project"],
   heroImages: ["/news/Land-Reclamation.jpg"],
   gallery: ["/news/Land-Reclamation.jpg"],
+  date:"2013",
   client: "BOSCH (Bidadi)",
   projectManagementConsultant:"Tata Consultancy Services (TCS).",
   natureOfWork:"Land Reclamation.",
@@ -953,6 +975,7 @@ export const newsData: NewsItem[] = [
             "/news/Scientific-Art-Work-7.jpg",
             "/news/Scientific-Art-Work-8.jpg",
   ],
+  date:"2021",
   client:"Toyota Kirloskar Motors (TKM)",
   projectManagementConsultant:"JLL",
   natureOfWork:" Carving, Procuring & Installation of Stone Granites.",
@@ -986,6 +1009,7 @@ export const newsData: NewsItem[] = [
             "/news/Concrete-Roads-4.jpg",
             "/news/Concrete-Roads-5.jpg",
   ],
+  date:"2021",
   client: "Bidadi Industrail Association (BIA)",
   natureOfWork:" Excavation, GSB Laying, WMM Laying & Concreting.",
   introduction:
@@ -1016,6 +1040,7 @@ export const newsData: NewsItem[] = [
             "/news/Surface-Reconstruction-4.jpg",
             "/news/Surface-Reconstruction-5.jpg",
   ],
+  date:"2021",
   client: "Transystem Logistics India Pvt. Ltd.",
   projectManagementConsultant:"AACP",
   natureOfWork:"Barrication, Rectification & Asphalting Works.",
@@ -1053,6 +1078,7 @@ export const newsData: NewsItem[] = [
   gallery: ["/news/Molex-Parking-Shelter.jpg",
             "/news/Molex-Parking-Shelter-2.jpg"
   ],
+  date:"2023",
   client: "Molex India Pvt.Ltd",
   natureOfWork:"Design.",
   introduction:
@@ -1077,6 +1103,7 @@ export const newsData: NewsItem[] = [
   categories: ["Project"],
   heroImages: ["/news/External-Development.jpg"],
   gallery: ["/news/External-Development.jpg"],
+  date:"2023",
   client: "Kennametal Industries.",
   natureOfWork:"Roads, Drains & External Development.",
 
@@ -1100,6 +1127,7 @@ export const newsData: NewsItem[] = [
   categories: ["Project"],
   heroImages: ["/news/Rain-Water-Conveyance-System.jpg" ],
   gallery: ["/news/Rain-Water-Conveyance-System.jpg" ],
+  date:"2021",
   client: "Transystem Logistics International (TLI)",
   natureOfWork:"Earthwork, Civil Works, Mechanical, etc..",
   introduction:
@@ -1138,6 +1166,7 @@ export const newsData: NewsItem[] = [
             "/news/Rain-Water-Storage-Conveyance-System-7.jpg",
             "/news/Rain-Water-Storage-Conveyance-System-8.jpg",
   ],
+  date:"2021",
   client: "Toyoto Tshuso India Pvt. Ltd (TTIPL)",
   natureOfWork:"Earthwork, Civil Works, Mechanical, Electrical & Instrumentation, etc.",
   introduction:
@@ -1162,6 +1191,7 @@ export const newsData: NewsItem[] = [
   categories: ["Project"],
   heroImages: ["/news/Sustainable-Rejuvenation.jpg"],
   gallery: ["/news/Sustainable-Rejuvenation.jpg"],
+  date:"2022",
   natureOfWork:"Road Works, Drain Works, Footh Path, Beutification.",
   introduction:
     "Development of green buffer zones.",
@@ -1185,6 +1215,7 @@ export const newsData: NewsItem[] = [
   categories: ["Project"],
   heroImages: ["/news/Sustainable-Rejuvation-of-public-Infrastructure.jpg"],
   gallery: ["/news/Sustainable-Rejuvation-of-public-Infrastructure.jpg"],
+  date:"2023",
   client:"Pothole Raja/ABB",
   natureOfWork:"Road Works, Drain Works, Stainless Steel Works.",
   introduction:
@@ -1206,7 +1237,7 @@ export const newsData: NewsItem[] = [
   id: 40,
   slug: "sustaining-success",
   title: "Sustaining Success: Nurturing External Infrastructure For Manufacturing Firms and Tech Parks",
-  categories: ["Project", "In The News"],
+  categories: ["In The News"],
   heroImages: ["/news/Sustaining-Success.jpg"],
   gallery: ["/news/Sustaining-Success.jpg"],
   introduction:
@@ -1235,7 +1266,7 @@ export const newsData: NewsItem[] = [
   id: 41,
   slug: "transforming-spaces",
   title: "Transforming Spaces: AACP Completes INR 15 Crores Worth of Development at BOSCH",
-  categories: ["Project"],
+  categories: ["In The News"],
   heroImages: ["/news/Transforming-Spaces.jpg"],
   gallery: ["/news/Transforming-Spaces.jpg"],
   client: "BOSCH",
@@ -1269,6 +1300,7 @@ export const newsData: NewsItem[] = [
   categories: ["Project"],
   heroImages: ["/news/Veersandra-Lake.jpg"],
   gallery: ["/news/Veersandra-Lake.jpg"],
+  date:"2022",
   client: "Titan",
   natureOfWork:"Turnkey | Design Build .",
   introduction:
@@ -1307,6 +1339,7 @@ export const newsData: NewsItem[] = [
             "/news/Walkway-Shelter-at-TKM-6.jpg",
             "/news/Walkway-Shelter-at-TKM-7.jpg",
   ],
+  date:"2021",
   client: "Toyota Kirloskar Auto Parts (TKAP)",
   structuralDesigner:"Manju Design Build",
   natureOfWork:"Design, Excavation, Structural Steel Erection, GI Sheet.",
@@ -1338,6 +1371,7 @@ export const newsData: NewsItem[] = [
   categories: ["Project"],
   heroImages: ["/news/Compound-Wall.jpg"],
   gallery: ["/news/Compound-Wall.jpg"],
+  date:"2021",
   client: "BOSCH",
   natureOfWork:"Size Stone Masonry & Chain Link Fencing.",
   introduction:
@@ -1357,7 +1391,7 @@ export const newsData: NewsItem[] = [
   id: 45,
   slug: "innovative-solution",
   title: "Innovative Solution to Help Tackle Deteriorating Roads with Pothole Raja",
-  categories: ["Presentation", "In The News"],
+  categories: ["In The News"],
   heroImages: ["/news/Innovative-Solution.jpg"],
   gallery: ["/news/Innovative-Solution.jpg"],
   introduction:
@@ -1373,12 +1407,6 @@ export const newsData: NewsItem[] = [
   "Project Outlook:",
   "We are excited to work with Pothole Raja in this innovative endeavor and we look forward to providing a smooth road user experience."
 ],
-  documents: [
-    {
-      label: "View Presentation",
-      file: "/docs/Innovative-Solution.pdf"
-    }
-  ],
   conclusion:
     "Innovation strengthened project outcomes."
 },
@@ -1390,6 +1418,7 @@ export const newsData: NewsItem[] = [
   categories: ["Project"],
   heroImages: ["/news/Revolutionizing-India.jpg"],
   gallery: ["/news/Revolutionizing-India.jpg"],
+  date:"2023",
   introduction:
     "Projects contributing to national growth.",
   content: [
@@ -1421,9 +1450,10 @@ export const newsData: NewsItem[] = [
   id: 47,
   slug: "Rain-Water-Harvesting-Pond",
   title: "Rain Water Harvesting Pond",
-  categories: ["Project", "Presentation", "In The News"],
+  categories: ["Project","In The News"],
   heroImages: ["/news/Rain-Water-Pond.jpg"],
   gallery: ["/news/Rain-Water-Pond.jpg"],
+  date:"2023",
   client: "Toyota Kirloskar Motor (TKM)",
   projectManagementConsultant:"JLL",
   natureOfWork: " Rain Water Harvesting Pond (RWH) Development.",
@@ -1451,6 +1481,7 @@ export const newsData: NewsItem[] = [
   categories: ["Project"],
   heroImages: ["/news/New-Project-Fixing.jpg"],
   gallery: ["/news/New-Project-Fixing.jpg"],
+  date:"2023",
   introduction:
     "Execution of new fixing projects.",
   content: [
@@ -1479,6 +1510,7 @@ export const newsData: NewsItem[] = [
   categories: ["Project"],
   heroImages: ["/news/Roads-External-Development.jpg"],
   gallery: ["/news/Roads-External-Development.jpg"],
+  date:"2023",
   client: "Brigade Group",
   natureOfWork:"Roads, Drains & External Development.",
   introduction:

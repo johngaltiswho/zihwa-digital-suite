@@ -1,11 +1,13 @@
-// apps/aacpinfra-site/src/app/page.tsx;
+// apps/aacpinfra-site/src/app/page.tsx
 "use client";
+
+import { useEffect } from "react";
 import Link from "next/link";
 
 import { homepageData } from "@/data/homepage";
 import { servicesData } from "@/data/services";
-import { projectsData } from "@/data/projects";
-import { teamData } from "@/data/team";
+// import { projectsData } from "@/data/projects";
+// import { teamData } from "@/data/team";
 
 import AboutOverview from "@/components/AboutOverview";
 import CtaSection from "@/components/CtaSection";
@@ -13,16 +15,32 @@ import BoardSection from "@/components/BoardSection";
 import FooterTop from "@/components/footer/FooterTop";
 
 import { HeroSlider } from "@repo/ui";
+
 export default function HomePage() {
-  console.log(
-    "SITE URL from env:",
-    process.env.NEXT_PUBLIC_SITE_URL
-  );
-
   const home = homepageData;
-  
 
-  /* ================= HERO SLIDES (9 SLIDES) ================= */
+  /* ================= HARD SCROLL FIX (HERO SLIDER SAFE) ================= */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.location.hash !== "#services") return;
+
+    let attempts = 0;
+
+    const scrollToServices = () => {
+      const el = document.getElementById("services");
+
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth" });
+      } else if (attempts < 12) {
+        attempts += 1;
+        setTimeout(scrollToServices, 120);
+      }
+    };
+
+    scrollToServices();
+  }, []);
+
+  /* ================= HERO SLIDES ================= */
   const heroSlides = [
     {
       image: "/hero/slide-1.jpg",
@@ -46,7 +64,7 @@ export default function HomePage() {
       image: "/hero/slide-4.jpg",
       title: "Urban Infrastructure Development",
       subtitle: "Integrated Roads, Drainage & Utility Works",
-      cta: { label: "Explore Services", href: "/services" },
+      cta: { label: "Explore Services", href: "/#services" }, // ✅ IMPORTANT
     },
     {
       image: "/hero/slide-5.jpg",
@@ -70,7 +88,7 @@ export default function HomePage() {
       image: "/hero/slide-8.jpg",
       title: "Engineering Excellence Across Sectors",
       subtitle: "Delivering complex infrastructure projects with precision",
-      cta: { label: "Our Expertise", href: "/services" },
+      cta: { label: "Our Expertise", href: "/#services" }, // ✅ IMPORTANT
     },
     {
       image: "/hero/slide-9.jpg",
@@ -88,20 +106,25 @@ export default function HomePage() {
       {/* ================= ABOUT ================= */}
       <AboutOverview />
 
-      {/* ================= SERVICES ================= */}
-      <section 
-            id="services"
-            className="py-10 bg-gray-100 text-center scroll-mt-[120px]">
+      {/* ================= SERVICES / EXPERTISE ================= */}
+      <section
+        id="services"
+        className="py-10 bg-gray-100 text-center scroll-mt-[160px]"
+      >
         <h2 className="text-3xl font-bold mb-12 inline-block border-b-2 border-black pb-1">
           {home.servicesOverviewTitle}
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto px-6">
           {servicesData.map((service) => (
-            <Link
+            <div
               key={service.id}
-              href={`/services/${service.slug}`}
-              className="bg-white p-8 rounded-xl shadow hover:shadow-lg transition"
+              className="
+                bg-white p-8 rounded-xl shadow
+                transition-all duration-300
+                hover:shadow-lg hover:-translate-y-1
+                cursor-pointer
+              "
             >
               {service.icon_url && (
                 <img
@@ -110,57 +133,21 @@ export default function HomePage() {
                   className="w-12 mb-4 mx-auto"
                 />
               )}
+
               <h3 className="text-xl font-semibold mb-3">
                 {service.title}
               </h3>
+
               <p className="text-sm text-gray-600">
                 {service.short_description}
               </p>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* ================= PROJECTS ================= */}
-      <section className="py-10 bg-white text-center">
-        <h2 className="text-3xl font-bold mb-12">
-          {home.recentWorksTitle}
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto px-6">
-          {projectsData.slice(0, 3).map((project) => (
-            <Link
-              key={project.id}
-              href={`/projects/${project.slug}`}
-              className="bg-gray-100 p-6 rounded-lg hover:shadow"
-            >
-              <h3 className="font-semibold">{project.title}</h3>
-            </Link>
+            </div>
           ))}
         </div>
       </section>
 
       {/* ================= BOARD ================= */}
       <BoardSection />
-
-      {/* ================= TEAM =================
-      <section className="py-16 bg-gray-100 text-center">
-        <h2 className="text-3xl font-bold mb-12">
-          {home.teamSectionTitle}
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto px-6">
-          {teamData.slice(0, 3).map((member) => (
-            <div
-              key={member.id}
-              className="bg-white p-6 rounded-lg shadow"
-            >
-              <h3 className="font-semibold">{member.name}</h3>
-              <p className="text-blue-600">{member.position}</p>
-            </div>
-          ))}
-        </div>
-      </section> */}
 
       {/* ================= CTA ================= */}
       <CtaSection

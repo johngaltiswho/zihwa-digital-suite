@@ -34,7 +34,7 @@ export default function AboutPage() {
 
   /* -------- SERVICES → HOME → EXPERTISE -------- */
   const goToServices = () => {
-    router.push("/");
+    router.push("/#services");
 
     setTimeout(() => {
       const el = document.getElementById("services");
@@ -43,10 +43,10 @@ export default function AboutPage() {
       el.scrollIntoView({ behavior: "smooth", block: "start" });
 
       // temporary highlight
-      el.classList.add("ring-2", "ring-red-500", "ring-offset-4");
+      el.classList.add("ring-2", "ring-black-500", "ring-offset-4");
 
       setTimeout(() => {
-        el.classList.remove("ring-2", "ring-red-500", "ring-offset-4");
+        el.classList.remove("ring-2", "ring-black-500", "ring-offset-4");
       }, 1800);
     }, 350);
   };
@@ -155,10 +155,10 @@ export default function AboutPage() {
       </section>
 
       {/* ================= WHO WE ARE ================= */}
-      <section id="who-we-are" className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+      <section id="who-we-are" className="py-10 bg-white">
+        <div className="max-w-6xl mx-auto px-2 grid grid-cols-1 md:grid-cols-2 gap-18 items-center">
           <motion.div variants={fadeUp} initial="hidden" whileInView="visible">
-            <h2 className="text-4xl font-bold mb-6 text-black bg-gray-50 text-slate-900">
+            <h2 className="text-4xl font-bold mb-4 text-black bg-gray-50 text-slate-900">
               Who We Are
             </h2>
             <p className="text-gray-700 leading-relaxed mb-4">
@@ -177,10 +177,10 @@ export default function AboutPage() {
             variants={fadeUp}
             initial="hidden"
             whileInView="visible"
-            className="relative h-[450px] rounded-xl overflow-hidden shadow-lg"
+            className="relative h-[300px] rounded-xl overflow-hidden shadow-lg"
           >
             <Image
-              src="/images/about-team.jpg"
+              src="/careers/land-surveyor.jpg"
               alt="AACP Team"
               fill
               className="object-cover"
@@ -190,7 +190,7 @@ export default function AboutPage() {
       </section>
 
       {/* ================= VISION / MISSION ================= */}
-      <section id="vision-mission" className="py-16 text-black bg-gray-50">
+      <section id="vision-mission" className="py-12 text-black bg-gray-50">
         <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-3 gap-8">
           {[
             {
@@ -220,80 +220,113 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ================= STRATEGY ================= */}
-      <section id="why-different" className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
-          <Image
-            src="/images/about-quality.jpg"
-            alt="Quality & Safety"
-            width={600}
-            height={450}
-            className="rounded-xl shadow-lg"
-          />
 
-          <motion.div variants={fadeUp} initial="hidden" whileInView="visible">
-            <h2 className="text-3xl font-bold text-black bg-gray-50 mb-6">
-              What Makes Us Different
-            </h2>
-            <ul className="space-y-3 text-gray-700 font-medium">
-              <li>✔ Safety-first execution</li>
-              <li>✔ Strategic planning</li>
-              <li>✔ Quality-driven standards</li>
-              <li>✔ Sustainable practices</li>
-              <li>✔ Skilled engineering teams</li>
-            </ul>
-          </motion.div>
-        </div>
-      </section>
+      {/* ================= OUR JOURNEY ================= */}
+<section id="journey" className="py-8 bg-gray-50">
+  <div className="max-w-5xl mx-auto px-6">
+    {/* Title */}
+    <h2 className="text-5xl font-bold text-black text-center mb-14 tracking-wide">
+      Our Journey
+    </h2>
 
-      {/* ================= SAFETY / JOURNEY ================= */}
-      <section id="journey" className="py-16 bg-gray-50">
-        <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-4xl font-bold text-black bg-gray-50 text-center mb-12">
-            Our Journey
-          </h2>
-          {[
-            ["2015", "Company founded"],
-            ["2018", "Expanded into precast"],
-            ["2021", "Safety milestones achieved"],
-            ["2024", "Multi-region execution"],
-          ].map(([year, text]) => (
-            <div key={year} className="flex gap-6 mb-4">
-              <span className="font-bold text-black">{year}</span>
-              <p className="text-gray-700">{text}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+    <div className="relative">
+      {/* Vertical line (thinner) */}
+      <div className="absolute left-1/2 top-0 h-full w-[1px] bg-gray-300 -translate-x-1/2" />
 
-      {/* ================= INNOVATION / STATS ================= */}
-      <section id="stats" className="py-20 bg-gray-900 text-white">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-          {[
-            ["10+", "Years Experience"],
-            ["50+", "Projects"],
-            ["100%", "Safety Compliance"],
-            ["200+", "Professionals"],
-          ].map(([val, label]) => (
-            <div key={label}>
-              <p className="text-4xl font-bold">{val}</p>
-              <p className="text-gray-300">{label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      {[
+        {
+          year: "1991",
+          text:
+            "Founded to execute external development works for private manufacturing facilities and real estate developers.",
+        },
+        {
+          year: "1996",
+          text:
+            "Began working with Toyota Kirloskar Motor Pvt. Ltd. for manufacturing unit development at Bidadi.",
+        },
+        {
+          year: "2006",
+          text:
+            "Executed deep excavation works for Mantri’s landmark Mantri Mall project.",
+        },
+        {
+          year: "2011",
+          text:
+            "Completed 200 acres of land reclamation and nala rerouting for BOSCH at Bidadi.",
+        },
+        {
+          year: "2016",
+          text: "Converted into AACP Infrastructure Systems Pvt. Ltd.",
+        },
+        {
+          year: "2021",
+          text: "Launched dedicated Precast Manufacturing Unit.",
+        },
+        {
+          year: "2023",
+          text:
+            "Ventured into construction of concrete and structural buildings.",
+        },
+        {
+          year: "2024",
+          text:
+            "Expanded expertise into Pre-Engineered Building (PEB) structures.",
+        },
+      ].map((item, index) => (
+        <motion.div
+          key={item.year}
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.4, delay: index * 0.04 }}
+          className={`relative mb-6 flex ${
+            index % 2 === 0 ? "justify-start" : "justify-end"
+          }`}
+        >
+          {/* Dot (smaller) */}
+          <span className="absolute left-1/2 top-5 w-2.5 h-2.5 bg-gray-900 rounded-full -translate-x-1/2 z-10" />
+
+          {/* Card (smaller) */}
+          <div
+            className={`w-[calc(50%-32px)] bg-white px-5 py-3 rounded-lg shadow-sm ${
+              index % 2 === 0 ? "mr-auto" : "ml-auto"
+            }`}
+          >
+            <p className="text-sm font-bold tracking-widest text-gray-900 mb-1">
+              {item.year}
+            </p>
+            <p className="text-xs text-gray-700 leading-relaxed">
+              {item.text}
+            </p>
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  </div>
+</section>
 
       {/* ================= CTA ================= */}
-      <section className="py-24 bg-white text-center">
-        <h2 className="text-4xl font-bold text-black bg-gray-50 mb-6">
+      <section className="py-24 bg-gray-900 text-center">
+        <h2 className="text-4xl font-bold text-white mb-6">
           Let’s Build the Future Together
         </h2>
         <Link
-          href="/contact"
-          className="inline-block bg-gray-900 text-white px-8 py-4 rounded-lg"
-        >
-          Contact Us
-        </Link>
+  href="/contact"
+  className="
+    inline-flex items-center justify-center
+    bg-white text-gray-900
+    px-10 py-4
+    rounded-lg
+    font-medium tracking-wide
+    transition-all duration-300
+    hover:bg-gray-200
+    hover:scale-[1.03]
+    focus:outline-none focus:ring-2 focus:ring-white/60
+  "
+>
+  CONTACT US
+</Link>
+
       </section>
     </>
   );

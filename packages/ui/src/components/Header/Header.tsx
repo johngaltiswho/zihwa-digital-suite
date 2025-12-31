@@ -9,13 +9,12 @@ const NAV_ITEMS = [
   { label: "ABOUT", href: "/about" },
   { label: "SAFETY", href: "/safety" },
   { label: "STRATEGY", href: "/strategy" },
-  { label: "INNOVATION", href: "/innovation" },
   { label: "CAREERS", href: "/careers" },
-  { label: "NEWS", href: "/news" },
+  { label: "SERVICES", href: "/#services" },
   { label: "PROJECTS", href: "/projects" },
+  { label: "NEWS", href: "/news" },
   
-  // { label: "PRECAST", href: "/precast" },
-  { label: "CONTACT US", href: "/contact", isButton: true },
+  
 ];
 
 export function Header() {
@@ -29,30 +28,17 @@ export function Header() {
         boxShadow: "0 1px 6px rgba(0,0,0,0.08)",
       }}
     >
-      {/* ================= TOP BAR ================= */}
+     {/* ================= TOP BAR ================= */}
 <div
   style={{
     display: "flex",
     justifyContent: "flex-end",
-    padding: "12px 205px 4px",
+    padding: "12px 200px 4px",
     gap: "24px",
     fontSize: "14px",
     fontWeight: 600,
   }}
 >
-  <span
-    className="top-link"
-    style={{ cursor: "default", opacity: 1.7 }}
-  >
-    INTRANET
-  </span>
-
-  <span
-    className="top-link"
-    style={{ cursor: "default", opacity: 1.7 }}
-  >
-    SUB CONTRACTOR REGISTRATION
-  </span>
 </div>
 
       {/* ================= MAIN HEADER ================= */}
@@ -60,7 +46,7 @@ export function Header() {
         style={{
           display: "flex",
           alignItems: "center",
-          padding: "6px 140px 8px",
+          padding: "6px 200px 10px",
           gap: "18px",
         }}
       >
@@ -72,7 +58,7 @@ export function Header() {
             width={90}
             height={22}
             priority
-            style={{ transform: "translateY(-18px)" }}
+            style={{ transform: "translateY(-16px)" }}
           />
         </Link>
 

@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { jobs } from "@/data/jobs";
-import JobComments from "@/components/JobComments";
+// import JobComments from "@/components/JobComments";
 
 export default function JobDetailPage({
   params,
@@ -37,13 +37,15 @@ export default function JobDetailPage({
             {job.title}
           </h1>
 
+          {/* APPLY BUTTON (UPDATED) */}
           <div className="mt-8">
-            <a
-              href="#apply"
-              className="inline-block border border-white px-8 py-3 text-sm tracking-widest hover:bg-white hover:text-black transition"
+            <Link
+              href="/careers/apply"
+              className="inline-block border border-white px-8 py-3 text-sm tracking-widest
+                         hover:bg-white hover:text-black transition"
             >
               APPLY FOR THIS POSITION
-            </a>
+            </Link>
           </div>
         </div>
       </header>
@@ -93,32 +95,24 @@ export default function JobDetailPage({
         </section>
 
         {/* ================= READY TO APPLY ================= */}
-        <section
-          id="apply"
-          className="max-w-4xl mx-auto px-6 py-16 text-center"
-        >
+        <section className="max-w-4xl mx-auto px-6 py-16 text-center">
           <h2 className="text-3xl font-semibold mb-4">
             Ready to Apply?
           </h2>
 
           <p className="text-gray-700 mb-10">
-            To apply for this position, please send a Cover Letter together with
-            your C.V to{" "}
-            <a
-              href="mailto:hr@aacpinfra.com"
-              className="font-bold  underline hover:text-black"
-            >
-              hr@aacpinfra.com
-            </a>
-            .
+            Click the button below to apply for this position.
+            You will be redirected to our application form.
           </p>
 
-          <a
-            href="mailto:hr@aacpinfra.com"
-            className="inline-block border border-black px-10 py-3 text-sm tracking-widest hover:bg-black hover:text-white transition"
+          {/* APPLY NOW BUTTON (UPDATED) */}
+          <Link
+            href="/careers/apply"
+            className="inline-block border border-black px-10 py-3 text-sm tracking-widest
+                       hover:bg-black hover:text-white transition"
           >
             APPLY NOW
-          </a>
+          </Link>
 
           <div className="mt-10">
             <Link
@@ -130,10 +124,11 @@ export default function JobDetailPage({
           </div>
         </section>
 
-        {/* ================= COMMENTS =================
+        {/* ================= COMMENTS (OPTIONAL) =================
         <section className="max-w-4xl mx-auto px-6 py-2">
           <JobComments slug={job.slug} />
-        </section> */}
+        </section>
+        */}
       </article>
     </main>
   );

@@ -37,4 +37,5 @@ export interface NewsItem {
   conclusion?: string;
 
   documents?: NewsDocument[];
+  date?: string; 
 }

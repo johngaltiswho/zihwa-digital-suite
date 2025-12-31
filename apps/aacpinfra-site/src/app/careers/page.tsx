@@ -119,7 +119,7 @@ export default function CareersPage() {
           animate="visible"
           className="mt-1 text-xl md:text-2xl font-medium tracking-wide text-gray-700"
         >
-          at AACP Infrastructure
+          {/* at AACP Infrastructure */}
         </motion.h2>
 
         <div className="w-16 h-[2px] bg-gray-300 mx-auto mt-4 mb-4" />

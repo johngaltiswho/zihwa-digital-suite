@@ -29,6 +29,7 @@ export default function RootLayout({
       className={`${poppins.variable} ${inter.variable}`}
     >
       <body
+        className="bg-white"
         style={{
           minHeight: "100vh",
           display: "flex",
@@ -36,7 +37,9 @@ export default function RootLayout({
         }}
       >
         <Header />
-        <main style={{ flex: 1 }}>{children}</main>
+        <main style={{ flex: 1 }}>
+          {children}
+        </main>
         <Footer />
       </body>
     </html>

@@ -26,7 +26,7 @@ export default function NewsDetailPage() {
   }
 
   return (
-    <section className="max-w-6xl mx-auto bg-white px-6 py-20 grid grid-cols-1 lg:grid-cols-3 gap-16">
+    <section className="max-w-6xl mx-auto bg-white px-6 py-8 grid grid-cols-1 lg:grid-cols-3 gap-16">
       {/* ================= MAIN CONTENT ================= */}
       <article className="lg:col-span-2 space-y-6">
         {/* ================= TITLE ================= */}
@@ -44,7 +44,8 @@ export default function NewsDetailPage() {
           )}
 
         {/* ================= PROJECT DETAILS ================= */}
-        {(news.client ||
+        {(news.date ||
+          news.client ||
           news.natureOfWork ||
           news.structuralDesigner ||
           news.projectManagementConsultant ||
@@ -55,6 +56,13 @@ export default function NewsDetailPage() {
             <h3 className="font-serif text-xl text-black mb-4 underline">
               Project Details :
             </h3>
+
+            {news.date && (
+              <p>
+                <strong className="text-black">Project Year:</strong>{" "}
+                {news.date}
+              </p>
+            )}
 
             {news.client && (
               <p>
