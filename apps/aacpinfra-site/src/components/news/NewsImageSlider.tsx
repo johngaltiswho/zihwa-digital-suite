@@ -4,20 +4,21 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
 import Image from "next/image";
 import { useState } from "react";
-import ImageLightbox from "./ImageLightbox";
+import NewsGallery from "./NewsGallery";
 
 import "swiper/css";
 import "swiper/css/navigation";
 
-export default function NewsImageSlider({
-  images,
-}: {
+interface Props {
   images: string[];
-}) {
-  const [active, setActive] = useState<string | null>(null);
+}
+
+export default function NewsImageSlider({ images }: Props) {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
   return (
     <>
+      {/* ================= HERO SLIDER ================= */}
       <Swiper
         modules={[Navigation]}
         navigation
@@ -27,23 +28,29 @@ export default function NewsImageSlider({
         {images.map((img, i) => (
           <SwiperSlide key={i}>
             <div
-              className="relative h-[420px] cursor-pointer"
-              onClick={() => setActive(img)}
+              className="relative h-[450px] cursor-pointer bg-gray-100"
+              onClick={() => setActiveIndex(i)}
             >
               <Image
                 src={img}
-                alt={`Hero ${i + 1}`}
+                alt={`Hero image ${i + 1}`}
                 fill
                 priority={i === 0}
-                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 80vw"
+                className="object-contain"
               />
             </div>
           </SwiperSlide>
         ))}
       </Swiper>
 
-      {active && (
-        <ImageLightbox src={active} onClose={() => setActive(null)} />
+      {/* ================= FULLSCREEN GALLERY ================= */}
+      {activeIndex !== null && (
+        <NewsGallery
+          images={images}
+          startIndex={activeIndex}
+          onClose={() => setActiveIndex(null)}
+        />
       )}
     </>
   );

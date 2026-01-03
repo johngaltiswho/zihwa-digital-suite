@@ -19,7 +19,8 @@ export default function NewsDetailPage() {
     (item) => item.slug === slug
   );
 
-  const [activeImage, setActiveImage] = useState<string | null>(null);
+  
+  const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null);
 
   if (!news) {
     return notFound();
@@ -35,22 +36,23 @@ export default function NewsDetailPage() {
         </h1>
 
         {/* ================= HERO IMAGE SLIDER ================= */}
-        {Array.isArray(news.heroImages) &&
-          news.heroImages.length > 0 && (
-            <NewsImageSlider
-              images={news.heroImages}
-              onImageClick={setActiveImage}
-            />
-          )}
+        {Array.isArray(news.heroImages) && news.heroImages.length > 0 && (
+          <NewsImageSlider images={news.heroImages} />
+        )}
 
         {/* ================= PROJECT DETAILS ================= */}
         {(news.date ||
           news.client ||
+          news.location ||
+          news.facility ||
+          news.project_type ||
           news.natureOfWork ||
           news.structuralDesigner ||
           news.projectManagementConsultant ||
           news.consultant ||
           news.PMC ||
+          news.scope ||
+          news.status ||
           news.MonitoringAgency) && (
           <div className="border border-gray-200 p-4 space-y-3 text-sm text-gray-700">
             <h3 className="font-serif text-xl text-black mb-4 underline">
@@ -73,18 +75,14 @@ export default function NewsDetailPage() {
 
             {news.natureOfWork && (
               <p>
-                <strong className="text-black">
-                  Nature of Work:
-                </strong>{" "}
+                <strong className="text-black">Nature of Work:</strong>{" "}
                 {news.natureOfWork}
               </p>
             )}
 
             {news.structuralDesigner && (
               <p>
-                <strong className="text-black">
-                  Structural Designer:
-                </strong>{" "}
+                <strong className="text-black">Structural Designer:</strong>{" "}
                 {news.structuralDesigner}
               </p>
             )}
@@ -100,9 +98,7 @@ export default function NewsDetailPage() {
 
             {news.consultant && (
               <p>
-                <strong className="text-black">
-                  Consultant:
-                </strong>{" "}
+                <strong className="text-black">Consultant:</strong>{" "}
                 {news.consultant}
               </p>
             )}
@@ -116,10 +112,43 @@ export default function NewsDetailPage() {
 
             {news.MonitoringAgency && (
               <p>
-                <strong className="text-black">
-                  Monitoring Agency:
-                </strong>{" "}
+                <strong className="text-black">Monitoring Agency:</strong>{" "}
                 {news.MonitoringAgency}
+              </p>
+            )}
+
+            {news.location && (
+              <p>
+                <strong className="text-black">Location:</strong>{" "}
+                {news.location}
+              </p>
+            )}
+
+            {news.facility && (
+              <p>
+                <strong className="text-black">Facility:</strong>{" "}
+                {news.facility}
+              </p>
+            )}
+
+            {news.project_type && (
+              <p>
+                <strong className="text-black">Project Type:</strong>{" "}
+                {news.project_type}
+              </p>
+            )}
+
+            {news.scope && (
+              <p>
+                <strong className="text-black">Scope:</strong>{" "}
+                {news.scope}
+              </p>
+            )}
+
+            {news.status && (
+              <p>
+                <strong className="text-black">Status:</strong>{" "}
+                {news.status}
               </p>
             )}
           </div>
@@ -205,22 +234,21 @@ export default function NewsDetailPage() {
           })}
 
         {/* ================= DOCUMENTS ================= */}
-        {news.documents &&
-          news.documents.length > 0 && (
-            <div className="pt-6 space-y-3">
-              {news.documents.map((doc, i) => (
-                <a
-                  key={i}
-                  href={doc.file}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block font-bold text-black border-b border-black uppercase text-sm tracking-wide"
-                >
-                  {doc.label}
-                </a>
-              ))}
-            </div>
-          )}
+        {news.documents && news.documents.length > 0 && (
+          <div className="pt-6 space-y-3">
+            {news.documents.map((doc, i) => (
+              <a
+                key={i}
+                href={doc.file}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block font-bold text-black border-b border-black uppercase text-sm tracking-wide"
+              >
+                {doc.label}
+              </a>
+            ))}
+          </div>
+        )}
 
         {/* ================= CONCLUSION ================= */}
         {news.conclusion && (
@@ -230,31 +258,30 @@ export default function NewsDetailPage() {
         )}
 
         {/* ================= IMAGE GALLERY ================= */}
-        {Array.isArray(news.gallery) &&
-          news.gallery.length > 0 && (
-            <div className="pt-14">
-              <h2 className="text-2xl font-serif text-black mb-6">
-                Project Gallery
-              </h2>
+        {Array.isArray(news.gallery) && news.gallery.length > 0 && (
+          <div className="pt-14">
+            <h2 className="text-2xl font-serif text-black mb-6">
+              Project Gallery
+            </h2>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                {news.gallery.map((img, i) => (
-                  <div
-                    key={i}
-                    className="relative h-56 cursor-pointer overflow-hidden bg-gray-100 rounded"
-                    onClick={() => setActiveImage(img)}
-                  >
-                    <Image
-                      src={img}
-                      alt={`${news.title} image ${i + 1}`}
-                      fill
-                      className="object-cover transition-transform duration-300 hover:scale-105"
-                    />
-                  </div>
-                ))}
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              {news.gallery.map((img, i) => (
+                <div
+                  key={i}
+                  className="relative h-56 cursor-pointer overflow-hidden bg-gray-100 rounded"
+                  onClick={() => setActiveImageIndex(i)}
+                >
+                  <Image
+                    src={img}
+                    alt={`${news.title} image ${i + 1}`}
+                    fill
+                    className="object-cover transition-transform duration-300 hover:scale-105"
+                  />
+                </div>
+              ))}
             </div>
-          )}
+          </div>
+        )}
 
         {/* ================= COMMENTS ================= */}
         <NewsComments />
@@ -262,7 +289,7 @@ export default function NewsDetailPage() {
 
       {/* ================= SIDEBAR ================= */}
       <aside className="border border-gray-200 p-8 h-fit bg-white">
-        <h3 className="font-serif text-lg mb-6 text-black uppercase tracking-wide">
+        <h3 className="font-semibold text-lg mb-6 text-black uppercase tracking-wide">
           Categories
         </h3>
 
@@ -274,10 +301,11 @@ export default function NewsDetailPage() {
       </aside>
 
       {/* ================= IMAGE LIGHTBOX ================= */}
-      {activeImage && (
+      {activeImageIndex !== null && Array.isArray(news.gallery) && (
         <ImageLightbox
-          src={activeImage}
-          onClose={() => setActiveImage(null)}
+          images={news.gallery}
+          index={activeImageIndex}
+          onClose={() => setActiveImageIndex(null)}
         />
       )}
     </section>

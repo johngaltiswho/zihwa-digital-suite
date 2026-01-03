@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import Image from "next/image";
+import { motion,type Variants } from "framer-motion";
 
 /* ---------------- HERO SLIDES ---------------- */
 const slides = [
@@ -33,7 +34,7 @@ const slides = [
 ];
 
 /* ---------------- ANIMATION ---------------- */
-const fadeUp = {
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 24 },
   visible: {
     opacity: 1,
@@ -75,11 +76,15 @@ export default function SafetyPage() {
             animate={{ opacity: index === active ? 1 : 0 }}
             transition={{ duration: 1 }}
           >
-            <img
-              src={slide.image}
-              alt={slide.title}
-              className="w-full h-full object-cover"
-            />
+  <Image
+    src={slide.image}          // ✅ use slide image
+    alt={slide.title}
+    fill                        // ✅ full width & height
+    priority={index === 0}      // ✅ CLS optimization
+    sizes="100vw"               // ✅ Cloudflare safe
+    className="object-cover"
+  />
+
 
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
               <div className="text-center text-white max-w-4xl px-6">
@@ -99,8 +104,8 @@ export default function SafetyPage() {
           onClick={prevSlide}
           aria-label="Previous slide"
           className="absolute left-6 top-1/2 -translate-y-1/2 z-20
-                     text-white text-5xl font-light
-                     opacity-70 hover:opacity-100 transition"
+                    text-white text-5xl font-light
+                    opacity-70 hover:opacity-100 transition"
         >
           ‹
         </button>
@@ -110,8 +115,8 @@ export default function SafetyPage() {
           onClick={nextSlide}
           aria-label="Next slide"
           className="absolute right-6 top-1/2 -translate-y-1/2 z-20
-                     text-white text-5xl font-light
-                     opacity-70 hover:opacity-100 transition"
+                    text-white text-5xl font-light
+                    opacity-70 hover:opacity-100 transition"
         >
           ›
         </button>

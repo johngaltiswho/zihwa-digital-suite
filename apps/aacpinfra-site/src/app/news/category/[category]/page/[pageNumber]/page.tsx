@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import NewsList from "@/components/news/NewsList";
 import Pagination from "@/components/news/Pagination";
 import NewsCategories from "@/components/news/NewsCategories";
+import { resolveNewsCategory } from "@/lib/resolveNewsCategory";
 import {
   getNewsByCategory,
   getTotalPagesByCategory,
@@ -13,18 +14,27 @@ function normalizeCategory(slug: string) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-type Props = {
-  params: {
+export default async function CategoryNewsPageNumber({
+  params,
+}: {
+  params: Promise<{
     category: string;
     pageNumber: string;
-  };
-};
+  }>;
+}) {
+  const { category: rawCategory, pageNumber } =await params;
 
-export default function CategoryNewsPageNumber({ params }: Props) {
-  const currentPage = Number(params.pageNumber);
-  const category = normalizeCategory(params.category);
+  const currentPage = Number(pageNumber);
+  const category = resolveNewsCategory(rawCategory);
+
+  // ✅ Invalid category → 404
+  if (!category) {
+    notFound();
+  }
+
   const totalPages = getTotalPagesByCategory(category);
 
+  // ✅ Invalid page number → 404
   if (
     Number.isNaN(currentPage) ||
     currentPage < 1 ||
@@ -34,17 +44,21 @@ export default function CategoryNewsPageNumber({ params }: Props) {
   }
 
   const items = getNewsByCategory(category, currentPage);
-  if (!items.length) notFound();
+
+  if (!items.length) {
+    notFound();
+  }
 
   return (
     <main className="max-w-7xl mx-auto px-6 pt-10 pb-20">
-     
       <h1 className="text-4xl text-black font-serif font-bold mb-6 capitalize">
-        {category}
+        {category === "All"
+          ? "All News"
+          : normalizeCategory(rawCategory)}
       </h1>
-       {/* CATEGORY TABS */}
-      <NewsCategories />
 
+      {/* CATEGORY TABS */}
+      <NewsCategories />
 
       <NewsList items={items} />
 
@@ -53,7 +67,7 @@ export default function CategoryNewsPageNumber({ params }: Props) {
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
-            basePath={`/news/category/${params.category}`}
+            basePath={`/news/category/${rawCategory}`}
           />
         </div>
       )}

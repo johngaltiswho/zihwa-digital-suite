@@ -8,10 +8,10 @@ import { ongoingProjects } from "@/data/ongoingProjects";
 import OngoingProjects from "@/components/projects/OngoingProjects";
 import FeaturedProjects from "@/components/projects/FeaturedProjects";
 
-import { motion } from "framer-motion";
+import { motion,type Variants } from "framer-motion";
 
 /* ================= MOTION VARIANTS ================= */
-const fadeUp = {
+const fadeUp: Variants= {
   hidden: { opacity: 0, y: 32 },
   visible: {
     opacity: 1,
@@ -73,13 +73,13 @@ export default function ProjectsPage() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
-            className="flex flex-col md:flex-row md:items-center md:justify-between mb-14"
+            className="flex flex-col md:flex-row md:items-center md:justify-between mb-8"
           >
             <h2 className="text-4xl text-black font-semibold border-b-2 inline-block">
               Featured Projects
             </h2>
 
-           <div className="flex items-center gap-3 mt-4 md:mt-0">
+          <div className="flex items-center gap-3 mt-4 md:mt-0">
   <span className="text-sm font-medium text-gray-700">
     Filter by Year 
   </span>

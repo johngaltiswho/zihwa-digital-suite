@@ -1,5 +1,5 @@
-import { NewsItem } from "@/types/news";
-
+import { NewsListItem } from "@/types/news";
+import { NewsCategory } from "@/types/news";
 /**
  * NOTE:
  * - categories is an array
@@ -7,7 +7,7 @@ import { NewsItem } from "@/types/news";
  * - excerpt is shown below title in news listing
  */
 const ITEMS_PER_PAGE = 12;
-export const newsData: NewsItem[] = [
+export const newsData: NewsListItem[] = [
   // ===== PAGE 1 (9 items) =====
   {
     id: 1,
@@ -459,6 +459,34 @@ export const newsData: NewsItem[] = [
     excerpt:
       "External road development improving connectivity and accessibility.",
   },
+  {
+    id: 50,
+    title: "Industrial Demolition & Scrap Recovery Works – Bosch IT Campus",
+    slug: "industrial-demolition-scrap-recovery-bosch-bangalore",
+    image: "/news/bosch-demolition.jpeg",
+    categories: ["Project"],
+    excerpt:
+    "Controlled industrial demolition and scrap recovery works executed at Bosch IT Campus, Adugodi, Bangalore, with a strong focus on safety, sustainability, and cost optimization.",
+  },
+  {
+    id: 51,
+    title: "Bus Bay Parking & Drainage Infrastructure – TVS Motor Company",
+    slug: "bus-bay-parking-drainage-infrastructure-tvs-motor-company",
+    image: "/news/tvs-bus-bay.jpeg",
+    categories: ["Project"],
+    excerpt:
+      "Execution of a dedicated bus bay parking and RCC drainage infrastructure at TVS Motor Company, Hosur, enhancing employee safety by eliminating highway crossings and improving internal road and stormwater systems.",
+  },
+  {
+    id: 52,
+    title: "Structural Steel Strengthening & Tie Beam Works – Bosch IT Campus",
+    slug: "structural-steel-tie-beam-strengthening-bosch-it-campus",
+    image: "/news/bosch-steel.jpeg",
+    categories: ["Project"],
+    excerpt:
+    "Structural steel strengthening and tie beam works executed at Bosch IT Campus, Adugodi, including fabrication, erection, sandblasting, NDT testing, and quality-controlled installation.",
+
+  },
 ];
 
 // ================= HELPERS =================
@@ -478,7 +506,10 @@ export function getAllCategories(): string[] {
   );
 }
 
-export function getNewsByCategory(category: string, page: number) {
+export function getNewsByCategory(
+  category: NewsCategory | "All",
+  page: number
+) {
   const filtered =
     category === "All"
       ? newsData
@@ -490,13 +521,16 @@ export function getNewsByCategory(category: string, page: number) {
   return filtered.slice(start, start + ITEMS_PER_PAGE);
 }
 
-export function getTotalPagesByCategory(category: string) {
+export function getTotalPagesByCategory(
+  category: NewsCategory | "All"
+) {
   const total =
     category === "All"
       ? newsData.length
       : newsData.filter((item) =>
           item.categories.includes(category)
         ).length;
+
 
   return Math.ceil(total / ITEMS_PER_PAGE);
 }

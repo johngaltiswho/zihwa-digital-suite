@@ -1,5 +1,6 @@
 import "./globals.css";
-import { Header, Footer } from "@repo/ui";
+import { Footer } from "@repo/ui";
+import Header from "@/components/Header";
 import { Poppins, Inter } from "next/font/google";
 import type { ReactNode } from "react";
 

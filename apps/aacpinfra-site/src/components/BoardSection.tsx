@@ -44,11 +44,14 @@ export default function BoardSection() {
                 key={index}
                 className="mx-10 flex items-center opacity-90 hover:opacity-100 transition"
               >
-                <img
-                  src={logo}
-                  alt="Client Logo"
-                  className="h-[140px] max-w-[240px] object-contain"
-                />
+  <Image
+  src={logo}
+  alt="Client Logo"
+  width={240}
+  height={140}
+  className="object-contain"
+/>
+
               </div>
             ))}
           </div>

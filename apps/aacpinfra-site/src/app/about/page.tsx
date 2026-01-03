@@ -12,8 +12,27 @@ const fadeUp = {
   visible: { opacity: 1, y: 0 },
 };
 
+type HeroNavItem =
+  | {
+      id: string;
+      label: string;
+      type: "scroll";
+      target: string;
+    }
+  | {
+      id: string;
+      label: string;
+      type: "link";
+      target: string;
+    }
+  | {
+      id: string;
+      label: string;
+      type: "services";
+    };
+
 /* ---------------- HERO NAV CONFIG ---------------- */
-const heroNav = [
+const heroNav:HeroNavItem[] = [
   { id: "01", label: "AACP IN BRIEF", type: "scroll", target: "who-we-are" },
   { id: "02", label: "SERVICES", type: "services" },
   { id: "03", label: "STRATEGY", type: "link", target: "/strategy" },

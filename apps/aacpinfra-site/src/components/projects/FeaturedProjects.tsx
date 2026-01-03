@@ -3,6 +3,8 @@
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import type { NewsItem } from "@/types/news";
+import Image from "next/image";
+
 import { ProjectGridSkeleton } from "./ProjectSkeleton";
 
 interface Props {
@@ -10,23 +12,33 @@ interface Props {
 }
 
 /* ================= CONFIG ================= */
-const ITEMS_PER_PAGE = 12; // 4 columns × 3 rows
+const ITEMS_PER_PAGE = 12;
 
 export default function FeaturedProjects({ projects }: Props) {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  /* ✅ Reset pagination when year filter changes */
+  /* Reset page when data changes */
   useEffect(() => {
     setPage(1);
   }, [projects]);
 
-  const totalPages = Math.ceil(projects.length / ITEMS_PER_PAGE);
+  /* ✅ SORT PROJECTS BY YEAR (DESCENDING) */
+  const sortedProjects = useMemo(() => {
+    return [...projects].sort((a, b) => {
+      const yearA = Number(a.date ?? 0);
+      const yearB = Number(b.date ?? 0);
+      return yearB - yearA;
+    });
+  }, [projects]);
 
+  const totalPages = Math.ceil(sortedProjects.length / ITEMS_PER_PAGE);
+
+  /* ✅ PAGINATE SORTED PROJECTS */
   const paginatedProjects = useMemo(() => {
     const start = (page - 1) * ITEMS_PER_PAGE;
-    return projects.slice(start, start + ITEMS_PER_PAGE);
-  }, [page, projects]);
+    return sortedProjects.slice(start, start + ITEMS_PER_PAGE);
+  }, [page, sortedProjects]);
 
   const goToPage = (p: number) => {
     if (p < 1 || p > totalPages) return;
@@ -55,30 +67,27 @@ export default function FeaturedProjects({ projects }: Props) {
                 href={`/news/${project.slug}`}
                 className="group"
               >
-                <article
-                  className="
-                    relative overflow-hidden
-                    rounded
-                    bg-white
-                    shadow-md
-                    transition-all duration-300
-                    hover:shadow-xl hover:-translate-y-1
-                  "
-                >
+                <article className="relative overflow-hidden rounded bg-white shadow-md transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                  
                   {/* IMAGE */}
-                  <img
+                  <Image
                     src={imageSrc}
                     alt={project.title}
-                    className="
-                      h-[240px] w-full object-cover
-                      transition-transform duration-700
-                      group-hover:scale-105
-                    "
+                    width={600}
+                    height={400}
+                    className="h-[240px] w-full object-cover transition-transform duration-700 group-hover:scale-105"
                     onError={(e) => {
                       (e.currentTarget as HTMLImageElement).src =
                         "/news/placeholder.jpg";
                     }}
                   />
+
+                  {/* ✅ YEAR BADGE */}
+                  {project.date && (
+                    <span className="absolute top-3 left-3 bg-black/40 text-white text-xs font-semibold px-3 py-1 rounded-full backdrop-blur-sm">
+                      {project.date}
+                    </span>
+                  )}
 
                   {/* OVERLAY */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
@@ -119,7 +128,7 @@ export default function FeaturedProjects({ projects }: Props) {
               <button
                 key={p}
                 onClick={() => goToPage(p)}
-                className={`h-10 w-10 text-black rounded-full text-sm font-medium transition ${
+                className={`h-10 w-10 rounded-full text-sm text-black font-medium transition ${
                   p === page
                     ? "bg-gray-900 text-white"
                     : "bg-gray-200 hover:bg-gray-300"

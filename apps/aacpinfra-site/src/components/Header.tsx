@@ -1,45 +1,107 @@
-// // 
-// import Image from "next/image";
-// import Link from "next/link";
+"use client";
 
-// export default function Header() {
-//   return (
-//     <header className="w-full bg-white border-b">
-//       {/* Top utility bar */}
-//       <div className="hidden md:flex justify-end text-xs tracking-wide px-10 py-2 text-gray-500">
-//         <span className="mr-6 cursor-pointer hover:text-black">
-//           INTRANET
-//         </span>
-//         <span className="cursor-pointer hover:text-black">
-//           SUB CONTRACTOR REGISTRATION
-//         </span>
-//       </div>
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
-//       {/* Main navigation */}
-//       <div className="flex items-center justify-between px-8 md:px-16 py-5">
-//         {/* Logo */}
-//         <Link href="/" className="flex items-center">
-//           <Image
-//             src="/aacp-logo.jpg"
-//             alt="AACP Logo"
-//             width={84}
-//             height={47}
-//             priority
-//           />
-//         </Link>
+const NAV_ITEMS = [
+  { label: "HOME", href: "/" },
+  { label: "ABOUT", href: "/about" },
+  { label: "SAFETY", href: "/safety" },
+  { label: "STRATEGY", href: "/strategy" },
+  { label: "CAREERS", href: "/careers" },
+  { label: "SERVICES", href: "/#services" },
+  { label: "PROJECTS", href: "/projects" },
+  { label: "NEWS", href: "/news" },
+  
+  
+];
 
-//         {/* Nav */}
-//         <nav className="hidden md:flex space-x-10 text-sm font-medium tracking-widest uppercase">
-//           <Link href="/" className="hover:text-gray-600">Home</Link>
-//           <Link href="/about" className="hover:text-gray-600">About</Link>
-//           <Link href="/safety" className="hover:text-gray-600">Safety</Link>
-//           <Link href="/strategy" className="hover:text-gray-600">Strategy</Link>
-//           <Link href="/careers" className="hover:text-gray-600">Careers</Link>
-//           <Link href="/news" className="hover:text-gray-600">News</Link>
-//           <Link href="/projects" className="hover:text-gray-600">Projects</Link>
-//           <Link href="/precast" className="hover:text-gray-600">Precast</Link>
-//         </nav>
-//       </div>
-//     </header>
-//   );
-// }
+export default function Header() {
+  const pathname = usePathname();
+
+  return (
+    <header
+      style={{
+        width: "100%",
+        backgroundColor: "#ffffff",
+        boxShadow: "0 1px 6px rgba(0,0,0,0.08)",
+      }}
+    >
+     {/* ================= TOP BAR ================= */}
+<div
+  style={{
+    display: "flex",
+    justifyContent: "flex-end",
+    padding: "12px 200px 4px",
+    gap: "24px",
+    fontSize: "14px",
+    fontWeight: 600,
+  }}
+>
+</div>
+
+      {/* ================= MAIN HEADER ================= */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          padding: "6px 200px 10px",
+          gap: "18px",
+        }}
+      >
+        {/* LOGO */}
+        <Link href="/" style={{ flexShrink: 0 }}>
+          <Image
+            src="/aacp-logo.jpg"
+            alt="AACP Infra"
+            width={90}
+            height={22}
+            priority
+            style={{ transform: "translateY(-16px)" }}
+          />
+        </Link>
+
+        {/* NAVIGATION */}
+        <nav
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "36px",
+            flexGrow: 1,
+          }}
+        >
+          {NAV_ITEMS.map((item) => {
+            const isActive = pathname === item.href;
+
+            // if (item.isButton) {
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`nav-link ${
+          isActive ? "nav-link-active" : ""
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              );
+            // }
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`nav-link ${
+                  isActive ? "nav-link-active" : ""
+                }`}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+    </header>
+  );
+}

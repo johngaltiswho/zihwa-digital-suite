@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { Header } from "@repo/ui";
+import Header from "@/components/Header";
+
 
 describe("Header component", () => {
   it("renders without crashing", () => {

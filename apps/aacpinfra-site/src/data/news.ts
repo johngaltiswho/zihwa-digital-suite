@@ -1524,6 +1524,254 @@ export const newsData: NewsItem[] = [
 ],
   conclusion:
     "Accessibility and safety were enhanced."
-}
+},
+{
+  id: 50,
+  title: "Industrial Demolition & Scrap Recovery Works – Bosch IT Campus",
+  slug: "industrial-demolition-scrap-recovery-bosch-bangalore",
+  heroImages:["/news/bosch-demolition.jpeg",
+    "/news/bosch-demolition-1.jpeg",
+    "/news/bosch-demolition-2.jpeg",
+    "/news/bosch-demolition-3.jpeg",
+    "/news/bosch-demolition-4.jpeg",
+    "/news/bosch-demolition-5.jpeg",
+    "/news/bosch-demolition-6.jpeg"
+  ],
+  gallery: [
+    "/news/bosch-demolition.jpeg",
+    "/news/bosch-demolition-1.jpeg",
+    "/news/bosch-demolition-2.jpeg",
+    "/news/bosch-demolition-3.jpeg",
+    "/news/bosch-demolition-4.jpeg",
+    "/news/bosch-demolition-5.jpeg",
+    "/news/bosch-demolition-6.jpeg"
+  ],
+  categories: ["Project"],
+  date:"2025",
+  client:"Bosch",
+  location:"Adugodi, Bangalore, India",
+  facility:"BAN 401 / UPS & Battery Room / Scrap Yard",
+  project_type:"Industrial Demolition Works",
+  scope:"Controlled dismantling and debris management",
+  status:"Completed",
+  introduction:
+    "Industrial Demolition & Scrap Recovery Works | Bosch Bangalore – AACP Infrastructure, AACP Infrastructure executed controlled demolition works at Bosch IT Buildings, Adugodi, Bangalore, including RCC structures, steel dismantling, and sustainable scrap recovery with minimal landfill disposal",
+  keywords: [
+    "Industrial demolition contractor Bangalore",
+    "controlled demolition works India",
+    "sustainable demolition and scrap recovery",
+    "industrial dismantling services",
+    "Bosch Bangalore civil works",
+    "AACP Infrastructure Systems"],
+content: [
+  "Project Overview:",
+  "AACP Infrastructure Systems Pvt. Ltd. successfully executed controlled demolition and dismantling works at Bosch’s IT Campus in Adugodi, Bangalore, as part of the BAN103 Beyond Phase-2 development.",
+  "The scope included selective demolition of RCC structures, UPS and battery rooms, and ancillary scrap yard buildings within an active industrial environment. The project was delivered with a strong emphasis on safety, sustainability, and cost optimization, ensuring minimal disruption to ongoing operations while fully complying with Bosch’s stringent safety procedures and engineering standards.",
+
+  "Scope of Work:",
+  "- Selective dismantling of RCC structures (excluding grade slab and footings)",
+  "- Demolition of blockwork, stone masonry, and roof sheet structures",
+  "- Dismantling of framed steel structures including columns, trusses, and purlins",
+  "- Mechanical demolition using excavator-mounted breakers",
+  "- Segregation of demolition debris at source",
+  "- Scrap recovery, buy-back, and material salvaging",
+  "- Loading, transportation, and disposal of concrete debris as per local authority norms",
+  "- Execution strictly in compliance with Bosch safety manuals and site protocols",
+
+  "Sustainability & Cost Optimization:",
+  "A key highlight of this project was AACP’s sustainable demolition approach.",
+  "- Salvaged steel and reusable scrap materials were recovered and buy-back adjusted",
+  "- Reusable materials were preserved for future use instead of disposal",
+  "- Only non-recoverable concrete debris was sent to authorized dumping yards",
+  "- This approach significantly reduced demolition costs while minimizing landfill impact",
+
+  "Execution Challenges & Solutions:",
+  "Challenge:",
+  "Demolition within a live industrial campus with strict safety, access, and operational controls.",
+  "Solution:",
+  "Phased dismantling, controlled work zones, trained manpower, and strict adherence to Bosch’s safety procedures ensured safe execution without disruption to ongoing campus operations.",
+
+  "Outcome & Value Delivered:",
+  "- Safe and controlled demolition within an operational industrial facility",
+  "- Reduced project cost through efficient scrap recovery and buy-back",
+  "- Minimal environmental impact with reduced landfill disposal",
+  "- Full compliance with client safety, quality, and engineering standards",
+
+  "AACP Capability Snapshot:",
+  "AACP Infrastructure Systems Pvt. Ltd. specializes in industrial demolition, external development works, RCC roads, drainage systems, and infrastructure solutions for manufacturing plants, IT campuses, and industrial facilities across India, with a strong emphasis on safety, sustainability, and execution excellence."
+]
+},
+{
+  
+  id: 51,
+  title: "Bus Bay Parking & Drainage Infrastructure – TVS Motor Company",
+  slug: "bus-bay-parking-drainage-infrastructure-tvs-motor-company",
+  categories: ["Project"],
+  date: "2024",
+  client: "TVS Motor Company",
+  location: "Harita, Hosur, Tamil Nadu, India",
+  project_type: "Industrial Infrastructure & Road Works",
+  scope: "Bus bay parking, drainage, RCC roads & safety infrastructure",
+  status: "Completed",
+
+  heroImages: [
+    "/news/tvs-bus-bay.jpeg",
+    "/news/tvs-bus-bay-1.jpeg",
+    "/news/tvs-bus-bay-2.jpeg",
+    "/news/tvs-bus-bay-3.jpeg",
+    "/news/tvs-bus-bay-4.jpeg",
+    "/news/tvs-bus-bay-5.jpeg",
+    "/news/tvs-bus-bay-6.jpeg",
+    "/news/tvs-bus-bay-7.jpeg",
+    "/news/tvs-bus-bay-8.jpeg",
+    "/news/tvs-bus-bay-9.jpeg",
+    "/news/tvs-bus-bay-10.jpeg",
+    "/news/tvs-bus-bay-11.jpeg",
+
+  ],
+  gallery: [
+    "/news/tvs-bus-bay.jpeg",
+    "/news/tvs-bus-bay-1.jpeg",
+    "/news/tvs-bus-bay-2.jpeg",
+    "/news/tvs-bus-bay-3.jpeg",
+    "/news/tvs-bus-bay-4.jpeg",
+    "/news/tvs-bus-bay-5.jpeg",
+    "/news/tvs-bus-bay-6.jpeg",
+    "/news/tvs-bus-bay-7.jpeg",
+    "/news/tvs-bus-bay-8.jpeg",
+    "/news/tvs-bus-bay-9.jpeg",
+    "/news/tvs-bus-bay-10.jpeg",
+    "/news/tvs-bus-bay-11.jpeg",
+
+  ],
+
+  introduction:
+    "AACP Infrastructure Systems Pvt. Ltd. executed comprehensive bus bay parking and associated civil infrastructure works at TVS Motor Company’s Harita facility in Hosur. The project was undertaken as a critical safety intervention to eliminate unsafe employee movement across a national highway.",
+  keywords: [
+    "bus bay parking construction India",
+    "industrial drainage infrastructure",
+    "RCC roads industrial campus",
+    "precast RCC drains",
+    "TVS Motor Company Hosur projects",
+    "AACP Infrastructure Systems"
+  ],
+  content: [
+    "Project Overview:",
+    "The scope involved development of a dedicated bus parking bay opposite the main plant, integrated with high-capacity drainage, level correction of existing parking areas, and construction of durable internal roads, significantly improving pedestrian and vehicular safety within the industrial campus.",
+
+    "Scope of Work:",
+    "- Earthwork excavation and backfilling for foundations and road subgrades",
+    "- Construction of PCC and RCC structural elements",
+    "- Raising and leveling of existing parking and carriageway areas",
+    "- Construction of RCC M30 grade roads and ramps",
+    "- Granular sub-base, WMM, DBM, and bituminous road layers",
+    "- Design, supply, and installation of precast RCC drainage systems",
+    "- Kerbs, paver blocks, road markings, signage, and safety accessories",
+    "- Chain-link fencing, utility ducts, and stormwater management works",
+
+    "Unique Engineering Highlight:",
+    "A key technical differentiator of this project was the use of 200 mm thick precast RCC drains, manufactured and installed using AACP’s precast construction methodology.",
+
+    "Benefits Delivered:",
+    "- Faster execution compared to conventional in-situ drains",
+    "- Superior dimensional accuracy and finish",
+    "- Improved durability and load-bearing performance",
+    "- Minimal disruption to surrounding operations",
+
+    "Safety-Driven Design & Execution:",
+    "The project addressed serious safety risks caused by employee movement across a live national highway by introducing a segregated, off-highway bus bay parking system integrated with safe internal circulation.",
+
+    "Outcome & Value Delivered:",
+    "- Elimination of unsafe highway crossings for employees",
+    "- Long-life road and drainage infrastructure for heavy vehicle use",
+    "- Faster execution using precast technology",
+    "- Improved compliance with industrial safety and infrastructure standards",
+    "AACP Capability Snapshot:",
+    "AACP Infrastructure Systems Pvt. Ltd. specializes in industrial infrastructure development, including RCC roads, bus bays, drainage systems, precast concrete solutions, and external development works for manufacturing plants and large industrial campuses across India.",
+  ],
+},
+{
+  id: 52,
+  title: "Structural Steel Strengthening & Tie Beam Works – Bosch IT Buildings Adugodi ",
+  slug: "structural-steel-tie-beam-strengthening-bosch-it-campus",
+  categories: ["Project"],
+  date: "2025",
+  client: "Bosch",
+  location: "Adugodi, Bangalore, Karnataka, India",
+  facility: "BAN103–BAN600 | Beyond Phase-2 New IT Buildings",
+  project_type: "Structural Steel Strengthening Works",
+  scope:
+    "Tie beam fabrication, erection, testing, and quality-controlled installation",
+  status: "Completed",
+   /* ================= GALLERY ================= */
+  heroImages: [
+    "/news/bosch-steel.jpeg",
+    "/news/bosch-steel-1.jpeg",
+    "/news/bosch-steel-2.jpeg",
+    "/news/bosch-steel-3.jpeg",
+  ],
+  gallery: [
+    "/news/bosch-steel.jpeg",
+    "/news/bosch-steel-1.jpeg",
+    "/news/bosch-steel-2.jpeg",
+    "/news/bosch-steel-3.jpeg",
+  ],
+
+  keywords: [
+    "Structural steel strengthening contractor Bangalore",
+    "PEB structure strengthening India",
+    "tie beam fabrication and erection",
+    "industrial structural steel works",
+    "NDT testing steel structures",
+    "AACP Infrastructure Systems",
+  ],
+  
+  /* ================= CONTENT ================= */
+  introduction:
+    "AACP Infrastructure Systems Pvt. Ltd. executed structural steel fabrication and strengthening works for the existing Pre-Engineered Building (PEB) structures at Bosch’s Beyond Phase-2 IT campus in Adugodi, Bangalore. The objective was to enhance overall structural integrity through continuous tie beam installation across the buildings.",
+
+  content: [
+    "Project Overview:",
+    "The works were executed within an operational IT campus, demanding strict adherence to safety, quality, and execution standards. The project was carried out under close inspection, meeting Bosch’s rigorous engineering and quality benchmarks for critical structural interventions.",
+
+    "Scope of Work:",
+    "- Structural steel fabrication for tie beam strengthening",
+    "- Cutting, fabrication, and erection of steel members",
+    "- Installation of tie beams across existing PEB structures",
+    "- Controlled erection sequencing to integrate new members",
+    "- Sandblasting of steel sections for surface preparation",
+    "- Application of approved protective paint systems",
+    "- Coordination with client and PMC teams",
+
+    "Access Methodology & Safe Erection Strategy:",
+    "Tie-beam areas:",
+    "- Erection using two scissor lifts for safe access and precise positioning",
+    "Mezzanine areas:",
+    "- Installation using chain pulleys with mobile scaffolding for confined zones",
+
+    "Engineering & Quality Excellence:",
+    "Approximately 40 MT of structural steel was executed under stringent quality control procedures.",
+    "- Sandblasting of all steel members",
+    "- Paint thickness measurement using calibrated scanners",
+    "- Dye Penetrant Testing (DPT) for weld integrity",
+    "- Continuous inspection under strict acceptance criteria",
+
+    "Execution Challenges & Solutions:",
+    "Strengthening an existing PEB structure within a live facility required phased planning, controlled access equipment, precision fabrication, and rigorous inspection protocols to ensure seamless execution.",
+
+    "Outcome & Value Delivered:",
+    "- Enhanced structural stability and load-carrying capacity",
+    "- High-precision fabrication and erection",
+    "- Safe execution using controlled access methodologies",
+    "- Long-term durability through advanced surface preparation",
+    "- Full compliance with Bosch’s safety, quality, and engineering standards",
+  ],
+
+  conclusion:
+    "This project reflects AACP Infrastructure’s capability in executing quality-critical structural steel strengthening works within live industrial environments, delivering durable, compliant, and safety-driven engineering solutions.",
+
+ 
+},
+
 
 ];

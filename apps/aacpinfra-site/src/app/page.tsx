@@ -2,19 +2,18 @@
 "use client";
 
 import { useEffect } from "react";
-import Link from "next/link";
+import Image from "next/image";
 
 import { homepageData } from "@/data/homepage";
 import { servicesData } from "@/data/services";
-// import { projectsData } from "@/data/projects";
-// import { teamData } from "@/data/team";
 
 import AboutOverview from "@/components/AboutOverview";
 import CtaSection from "@/components/CtaSection";
 import BoardSection from "@/components/BoardSection";
 import FooterTop from "@/components/footer/FooterTop";
 
-import { HeroSlider } from "@repo/ui";
+import HeroSlider from "@/components/HeroSlider";
+
 
 export default function HomePage() {
   const home = homepageData;
@@ -64,7 +63,7 @@ export default function HomePage() {
       image: "/hero/slide-4.jpg",
       title: "Urban Infrastructure Development",
       subtitle: "Integrated Roads, Drainage & Utility Works",
-      cta: { label: "Explore Services", href: "/#services" }, // ✅ IMPORTANT
+      cta: { label: "Explore Services", href: "/#services" },
     },
     {
       image: "/hero/slide-5.jpg",
@@ -88,7 +87,7 @@ export default function HomePage() {
       image: "/hero/slide-8.jpg",
       title: "Engineering Excellence Across Sectors",
       subtitle: "Delivering complex infrastructure projects with precision",
-      cta: { label: "Our Expertise", href: "/#services" }, // ✅ IMPORTANT
+      cta: { label: "Our Expertise", href: "/#services" },
     },
     {
       image: "/hero/slide-9.jpg",
@@ -127,10 +126,12 @@ export default function HomePage() {
               "
             >
               {service.icon_url && (
-                <img
+                <Image
                   src={service.icon_url}
                   alt={service.title}
-                  className="w-12 mb-4 mx-auto"
+                  width={48}
+                  height={48}
+                  className="mb-4 mx-auto"
                 />
               )}
 

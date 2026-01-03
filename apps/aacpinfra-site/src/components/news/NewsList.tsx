@@ -1,7 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
+import { NewsListItem } from "@/types/news";
 
-export default function NewsList({ items }: { items: any[] }) {
+interface Props {
+  items: NewsListItem[];
+}
+
+export default function NewsList({ items }: Props) {
   return (
     <div
       className="
@@ -30,6 +35,7 @@ export default function NewsList({ items }: { items: any[] }) {
           <Link href={`/news/${news.slug}`} className="block overflow-hidden">
             <Image
               src={news.image}
+
               alt={news.title}
               width={600}
               height={400}
@@ -43,18 +49,16 @@ export default function NewsList({ items }: { items: any[] }) {
               "
             />
           </Link>
-
           {/* ================= CONTENT ================= */}
           <div className="p-6">
             {/* CATEGORY */}
             <p className="text-xs uppercase tracking-widest text-gray-500 mb-1">
               {news.categories?.[0] ?? "News"}
             </p>
-
             {/* DATE */}
-            {news.Date && (
+            {news.date && (
               <p className="text-xs text-gray-400 mb-3">
-                {news.Date}
+                {news.date}
               </p>
             )}
 

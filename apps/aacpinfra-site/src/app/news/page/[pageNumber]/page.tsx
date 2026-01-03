@@ -4,15 +4,17 @@ import Pagination from "@/components/news/Pagination";
 import NewsCategories from "@/components/news/NewsCategories";
 import { getNewsByPage, getTotalPages } from "@/lib/newsData";
 
-type Props = {
-  params: {
-    pageNumber: string;
-  };
-};
+export default async function NewsPageNumber({
+  params,
+}: {
+    params: Promise<{ pageNumber: string }>;
 
-export default function NewsPageNumber({ params }: Props) {
-  const currentPage = Number(params.pageNumber);
+}) {
+  const { pageNumber } =await params;
+
+  const currentPage = Number(pageNumber);
   const totalPages = getTotalPages();
+
 
   if (
     Number.isNaN(currentPage) ||
@@ -23,6 +25,9 @@ export default function NewsPageNumber({ params }: Props) {
   }
 
   const items = getNewsByPage(currentPage);
+  if (!items.length) {
+    notFound();
+  }
 
   return (
     <main className="max-w-7xl mx-auto px-6 pt-10 pb-20">

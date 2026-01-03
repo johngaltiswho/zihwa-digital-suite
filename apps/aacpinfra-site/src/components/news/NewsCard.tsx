@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 type Props = {
   title: string;
@@ -12,7 +13,7 @@ export default function NewsCard({ title, image, slug }: Props) {
       href={`/news/${slug}`}
       className="flex gap-8 items-start mb-14"
     >
-      <img
+      <Image
         src={image}
         alt={title}
         className="w-[360px] h-[220px] object-cover"

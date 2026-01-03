@@ -4,21 +4,21 @@ import { notFound } from "next/navigation";
 import { jobs } from "@/data/jobs";
 // import JobComments from "@/components/JobComments";
 
-export default function JobDetailPage({
+export default async function JobDetailPage({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }) {
-  const job = jobs.find((j) => j.slug === params.slug);
+  const { slug } = await params;
 
-  if (!job) {
-    notFound();
-  }
+  const job = jobs.find((j) => j.slug === slug);
+
+  if (!job) notFound();
 
   return (
     <main className="bg-white text-gray-900 scroll-smooth">
       {/* ================= HERO ================= */}
-      <header className="relative h-[65vh] flex items-center">
+      <header className="relative h-[60vh] flex items-center">
         <Image
           src={job.image}
           alt={job.title}
@@ -37,12 +37,11 @@ export default function JobDetailPage({
             {job.title}
           </h1>
 
-          {/* APPLY BUTTON (UPDATED) */}
           <div className="mt-8">
             <Link
               href="/careers/apply"
               className="inline-block border border-white px-8 py-3 text-sm tracking-widest
-                         hover:bg-white hover:text-black transition"
+                        hover:bg-white hover:text-black transition"
             >
               APPLY FOR THIS POSITION
             </Link>
@@ -52,7 +51,7 @@ export default function JobDetailPage({
 
       <article>
         {/* ================= INTRO ================= */}
-        <section className="max-w-4xl mx-auto px-6 py-10 text-center">
+        <section className="max-w-4xl mx-auto px-6 py-8 text-center">
           <p className="text-lg leading-relaxed text-gray-700">
             {job.intro}
           </p>
@@ -60,42 +59,42 @@ export default function JobDetailPage({
 
         {/* ================= RESPONSIBILITIES ================= */}
         <section className="max-w-4xl mx-auto px-6 py-2">
-          <h2 className="text-3xl font-semibold mb-6">
+          <h2 className="text-3xl font-semibold mb-4">
             Job Responsibilities
           </h2>
           <ul className="list-disc pl-6 space-y-3 text-gray-700">
-            {job.responsibilities.map((item, idx) => (
-              <li key={idx}>{item}</li>
+            {job.responsibilities.map((item) => (
+              <li key={item}>{item}</li>
             ))}
           </ul>
         </section>
 
         {/* ================= QUALIFICATIONS ================= */}
         <section className="max-w-4xl mx-auto px-6 py-6">
-          <h2 className="text-3xl font-semibold mb-8">
+          <h2 className="text-3xl font-semibold mb-4">
             Job Qualifications
           </h2>
           <ul className="list-disc pl-6 space-y-3 text-gray-700">
-            {job.qualifications.map((item, idx) => (
-              <li key={idx}>{item}</li>
+            {job.qualifications.map((item) => (
+              <li key={item}>{item}</li>
             ))}
           </ul>
         </section>
 
         {/* ================= WHY JOIN ================= */}
         <section className="max-w-4xl mx-auto px-6 py-6">
-          <h2 className="text-3xl font-semibold mb-8">
+          <h2 className="text-3xl font-semibold mb-4">
             Why Join AACP Infrastructure?
           </h2>
           <ul className="list-disc pl-6 space-y-3 text-gray-700">
-            {job.whyJoin.map((item, idx) => (
-              <li key={idx}>{item}</li>
+            {job.whyJoin.map((item) => (
+              <li key={item}>{item}</li>
             ))}
           </ul>
         </section>
 
         {/* ================= READY TO APPLY ================= */}
-        <section className="max-w-4xl mx-auto px-6 py-16 text-center">
+        <section className="max-w-4xl mx-auto px-6 py-12 text-center ">
           <h2 className="text-3xl font-semibold mb-4">
             Ready to Apply?
           </h2>
@@ -105,11 +104,10 @@ export default function JobDetailPage({
             You will be redirected to our application form.
           </p>
 
-          {/* APPLY NOW BUTTON (UPDATED) */}
           <Link
             href="/careers/apply"
             className="inline-block border border-black px-10 py-3 text-sm tracking-widest
-                       hover:bg-black hover:text-white transition"
+                      hover:bg-black hover:text-white transition"
           >
             APPLY NOW
           </Link>
@@ -123,12 +121,6 @@ export default function JobDetailPage({
             </Link>
           </div>
         </section>
-
-        {/* ================= COMMENTS (OPTIONAL) =================
-        <section className="max-w-4xl mx-auto px-6 py-2">
-          <JobComments slug={job.slug} />
-        </section>
-        */}
       </article>
     </main>
   );

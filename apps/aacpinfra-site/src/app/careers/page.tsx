@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 
 /* ================= ANIMATION ================= */
-const fadeUp = {
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 14 },
   visible: {
     opacity: 1,
@@ -209,11 +209,22 @@ export default function CareersPage() {
         </p>
 
         <a
-          href="mailto:careers@aacpinfra.com"
-          className="inline-block border border-white px-10 py-2.5 text-sm tracking-widest hover:bg-white hover:text-black transition"
+          href={`https://docs.google.com/forms/d/e/1FAIpQLSe2rGd_xvuvp_kHC6DY00BpHgCOrozCh2Xm_j7N8HTZpuWz4Q/viewform`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="
+    inline-flex items-center justify-center
+    bg-white text-gray-900
+    px-10 py-3
+    rounded-full
+    text-sm font-semibold tracking-widest
+    hover:bg-gray-200
+    transition
+  "
         >
-          APPLY NOW
+          Apply Now
         </a>
+
       </section>
 
     </main>

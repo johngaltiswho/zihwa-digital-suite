@@ -1,10 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { motion,type Variants } from "framer-motion";
 
 /* ---------------- ANIMATION ---------------- */
-const fadeUp = {
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 30 },
   visible: {
     opacity: 1,

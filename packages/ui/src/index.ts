@@ -1,7 +1,7 @@
 // Core UI components
-export { Header } from "./components/Header/Header";
+// export { Header } from "./components/Header/Header";
 export {Footer} from "./components/Footer/Footer";
-export { HeroSlider } from "./components/HeroSlider/HeroSlider";
+// export { HeroSlider } from "./components/HeroSlider/HeroSlider";
 
 
 // export { default as HeroBanner } from "./HeroBanner";
