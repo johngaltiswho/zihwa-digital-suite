@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     const payload = await request.json()
     const result = upsertStatusSchema.safeParse(payload)
     if (!result.success) {
-      return NextResponse.json({ error: 'Validation failed', details: result.error.errors }, { status: 400 })
+      return NextResponse.json({ error: 'Validation failed', details: result.error.issues }, { status: 400 })
     }
 
     const data = result.data
@@ -109,21 +109,24 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    const normalizedMonth = data.periodMonth ?? 0
+    const normalizedYear = data.periodYear ?? 0
+
     const statusRow = await prisma.companyDocumentStatus.upsert({
       where: {
-        company_document_status_period_unique: {
+        companyId_documentTypeId_periodMonth_periodYear: {
           companyId: data.companyId,
           documentTypeId: data.documentTypeId,
-          periodMonth: data.periodMonth ?? null,
-          periodYear: data.periodYear ?? null,
+          periodMonth: normalizedMonth,
+          periodYear: normalizedYear,
         },
       },
       create: {
         companyId: data.companyId,
         documentTypeId: data.documentTypeId,
         requirementId: requirement.id,
-        periodMonth: data.periodMonth,
-        periodYear: data.periodYear,
+        periodMonth: normalizedMonth,
+        periodYear: normalizedYear,
         dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
         status: data.status ?? DocumentComplianceStatus.PENDING,
       },
@@ -131,6 +134,8 @@ export async function POST(request: NextRequest) {
         dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
         status: data.status ?? undefined,
         requirementId: requirement.id,
+        periodMonth: normalizedMonth,
+        periodYear: normalizedYear,
       },
       include: {
         document: true,

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
-import { DocumentComplianceStatus, Prisma } from '@prisma/client'
+import { DocumentCategory, DocumentComplianceStatus, Prisma } from '@prisma/client'
 import { z } from 'zod'
 import { ensureDocumentTypes } from '@/lib/document-type-seed'
 
@@ -42,7 +42,18 @@ export async function GET(request: NextRequest) {
     }
 
     if (category) {
-      whereClause.category = category
+      const allowedCategories: DocumentCategory[] = [
+        'KYC',
+        'CERTIFICATE',
+        'FINANCIAL_STATEMENT',
+        'EMPLOYEE_RECORD',
+        'COMPLIANCE_DOC',
+        'CONTRACT',
+        'OTHER',
+      ]
+      if (allowedCategories.includes(category as DocumentCategory)) {
+        whereClause.category = category as DocumentCategory
+      }
     }
 
     await ensureDocumentTypes(prisma)
@@ -99,7 +110,7 @@ export async function POST(request: NextRequest) {
     const validationResult = documentSchema.safeParse(body)
     if (!validationResult.success) {
       return NextResponse.json(
-        { error: 'Validation failed', details: validationResult.error.errors },
+        { error: 'Validation failed', details: validationResult.error.issues },
         { status: 400 }
       )
     }
@@ -182,13 +193,16 @@ export async function POST(request: NextRequest) {
     })
 
     if (document.documentTypeId) {
+      const normalizedMonth = data.periodMonth ?? 0
+      const normalizedYear = data.periodYear ?? 0
+
       await prisma.companyDocumentStatus.upsert({
         where: {
-          company_document_status_period_unique: {
+          companyId_documentTypeId_periodMonth_periodYear: {
             companyId: data.companyId,
             documentTypeId: document.documentTypeId,
-            periodMonth: data.periodMonth ?? null,
-            periodYear: data.periodYear ?? null,
+            periodMonth: normalizedMonth,
+            periodYear: normalizedYear,
           },
         },
         update: {
@@ -200,8 +214,8 @@ export async function POST(request: NextRequest) {
           companyId: data.companyId,
           documentTypeId: document.documentTypeId,
           requirementId: requirementId!,
-          periodMonth: data.periodMonth,
-          periodYear: data.periodYear,
+          periodMonth: normalizedMonth,
+          periodYear: normalizedYear,
           documentId: document.id,
           status: DocumentComplianceStatus.SUBMITTED,
         },

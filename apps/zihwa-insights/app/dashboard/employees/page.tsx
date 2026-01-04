@@ -116,7 +116,6 @@ const ATTENDANCE_CODES: { value: AttendanceStatus; code: string; label: string }
   { value: 'EL', code: 'EL', label: 'Earned Leave' },
   { value: 'SL', code: 'SL', label: 'Sick Leave' },
 ]
-const PAYROLL_STATUSES: PayrollStatus[] = ['PENDING', 'PROCESSING', 'PAID']
 const EMPLOYEE_STATUSES: EmployeeStatus[] = ['ACTIVE', 'INACTIVE', 'TERMINATED']
 const ATTENDANCE_KEY_DELIMITER = '__@__'
 

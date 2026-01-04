@@ -12,6 +12,14 @@ interface PageProps {
   searchParams: Promise<SearchParams>
 }
 
+type CompanyWithCounts = Awaited<ReturnType<typeof prisma.company.findMany>>[number] & {
+  _count: {
+    employees: number
+    complianceDeadlines: number
+    documents: number
+  }
+}
+
 export default async function CompaniesPage({ searchParams }: PageProps) {
   const { userId } = await auth()
   
@@ -23,7 +31,7 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
   const showAddForm = params.action === 'add'
 
   // Get companies for the current user
-  let companies = []
+  let companies: CompanyWithCounts[] = []
   try {
     companies = await prisma.company.findMany({
       orderBy: { createdAt: 'desc' },
@@ -97,7 +105,7 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
         </div>
       ) : (
         <div className="space-y-3">
-          {companies.map((company) => (
+        {companies.map((company: CompanyWithCounts) => (
             <div 
               key={company.id} 
               className="group p-4 rounded-lg border border-gray-100 hover:border-gray-200 hover:bg-gray-50/50 transition-all cursor-pointer"

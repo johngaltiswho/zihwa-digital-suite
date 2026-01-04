@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Plus, Trash2 } from 'lucide-react'
-import type { DocumentCategory } from '@prisma/client'
 import { supabase } from '@/lib/supabase'
 
 interface Company {
@@ -11,18 +10,9 @@ interface Company {
   name: string
 }
 
-interface DocumentTypeOption {
-  id: string
-  title: string
-  category: DocumentCategory
-}
-
 interface DocumentUploadProps {
   companies: Company[]
-  documentTypes: DocumentTypeOption[]
   defaultCompanyId?: string
-  defaultDocumentTypeId?: string
-  defaultPeriod?: string
 }
 
 type DocumentCategoryValue =
@@ -60,11 +50,7 @@ const createRow = (overrides?: Partial<UploadRow>): UploadRow => ({
   file: overrides?.file,
 })
 
-export default function DocumentUpload({
-  companies,
-  documentTypes: _documentTypes,
-  defaultCompanyId,
-}: DocumentUploadProps) {
+export default function DocumentUpload({ companies, defaultCompanyId }: DocumentUploadProps) {
   const router = useRouter()
   const [companyOptions, setCompanyOptions] = useState<Company[]>(companies)
   const [rows, setRows] = useState<UploadRow[]>(() => [createRow({ companyId: defaultCompanyId })])

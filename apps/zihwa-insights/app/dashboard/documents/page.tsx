@@ -17,7 +17,7 @@ type DocumentWithCompany = {
   fileName: string
   fileSize: number
   mimeType: string
-  createdAt: Date
+  createdAt: string
   company: {
     id: string
     name: string
@@ -29,14 +29,28 @@ type CompanyOption = {
   name: string
 }
 
-type RequirementWithStatuses = Awaited<ReturnType<typeof prisma.companyDocumentRequirement.findMany>>[number]
-type DocumentTypeSummary = Awaited<ReturnType<typeof prisma.documentType.findMany>>[number]
-
+type RequirementWithStatuses = Awaited<
+  ReturnType<typeof prisma.companyDocumentRequirement.findMany>
+>[number] & {
+  documentType: {
+    id: string
+    title: string
+    category: string
+    requiresPeriod: boolean
+    frequency: string
+  }
+  statuses: {
+    periodYear: number | null
+    periodMonth: number | null
+    status: string
+    document?: {
+      fileUrl: string | null
+    } | null
+  }[]
+}
 interface SearchParams {
   action?: string
   company?: string
-  documentTypeId?: string
-  period?: string
 }
 
 interface PageProps {
@@ -53,19 +67,16 @@ export default async function DocumentsPage({ searchParams }: PageProps) {
   const params = await searchParams
   const showUploadForm = params.action === 'upload'
   const selectedCompanyId = params.company
-  const selectedDocumentTypeId = params.documentTypeId
-  const selectedPeriod = params.period
 
   // Get documents and companies
   let documents: DocumentWithCompany[] = []
   let companies: CompanyOption[] = []
   let requirements: RequirementWithStatuses[] = []
-  let documentTypes: DocumentTypeSummary[] = []
   
   try {
     await ensureDocumentTypes(prisma)
 
-    const [documentRecords, companyRecords, documentTypeRecords] = await Promise.all([
+    const [documentRecords, companyRecords] = await Promise.all([
       prisma.document.findMany({
         orderBy: { createdAt: 'desc' },
         include: {
@@ -85,9 +96,6 @@ export default async function DocumentsPage({ searchParams }: PageProps) {
         },
         orderBy: { name: 'asc' },
       }),
-      prisma.documentType.findMany({
-        orderBy: [{ frequency: 'asc' }, { title: 'asc' }],
-      }),
     ])
 
     documents = documentRecords.map((doc) => ({
@@ -95,8 +103,6 @@ export default async function DocumentsPage({ searchParams }: PageProps) {
       createdAt: doc.createdAt.toISOString(),
     }))
     companies = companyRecords
-    documentTypes = documentTypeRecords
-
     if (selectedCompanyId) {
       requirements = await prisma.companyDocumentRequirement.findMany({
         where: { companyId: selectedCompanyId },
@@ -141,13 +147,7 @@ export default async function DocumentsPage({ searchParams }: PageProps) {
             <h1 className="text-2xl font-semibold text-gray-900">Upload documents</h1>
             <p className="text-gray-500 text-sm">Add new documents to your workspace</p>
           </div>
-          <DocumentUpload
-            companies={companies}
-            documentTypes={documentTypes}
-            defaultCompanyId={selectedCompanyId}
-            defaultDocumentTypeId={selectedDocumentTypeId}
-            defaultPeriod={selectedPeriod}
-          />
+          <DocumentUpload companies={companies} defaultCompanyId={selectedCompanyId} />
         </div>
       </div>
     )

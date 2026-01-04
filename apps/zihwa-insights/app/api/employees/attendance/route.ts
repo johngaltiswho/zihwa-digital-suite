@@ -142,7 +142,7 @@ export async function POST(request: Request) {
               date: normalizedDate,
             },
           },
-          select: { status: true },
+          select: { id: true, status: true },
         })
 
         const employee = await tx.employee.findUnique({
