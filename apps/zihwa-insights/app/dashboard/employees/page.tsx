@@ -156,6 +156,25 @@ const getMonthInputValue = (date = new Date()) => {
   return `${date.getFullYear()}-${month}`
 }
 
+const generateMonthOptions = () => {
+  const options = []
+  const currentDate = new Date()
+  const currentYear = currentDate.getFullYear()
+  const currentMonth = currentDate.getMonth()
+  
+  // Generate options for the last 12 months and next 12 months
+  for (let i = -12; i <= 12; i++) {
+    const targetDate = new Date(currentYear, currentMonth + i, 1)
+    const year = targetDate.getFullYear()
+    const month = targetDate.getMonth() + 1
+    const value = `${year}-${String(month).padStart(2, '0')}`
+    const label = targetDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
+    options.push({ value, label })
+  }
+  
+  return options
+}
+
 const getMonthLabel = (year: number, month: number) => {
   const date = new Date(year, month - 1, 1)
   return date.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
@@ -171,6 +190,7 @@ const formatMonthFilterLabel = (value: string) => {
 export default function EmployeesPage() {
   const today = useMemo(() => new Date(), [])
   const defaultMonth = useMemo(() => getMonthInputValue(today), [today])
+  const monthOptions = useMemo(() => generateMonthOptions(), [])
 
   const [tab, setTab] = useState<Tab>('employees')
   const [loading, setLoading] = useState(true)
@@ -1246,8 +1266,7 @@ export default function EmployeesPage() {
                   <p className="text-sm text-gray-500">Update each day like you would in a spreadsheet.</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
-                  <input
-                    type="month"
+                  <select
                     value={attendanceMonth}
                     onChange={async (event) => {
                       const value = event.target.value
@@ -1255,7 +1274,13 @@ export default function EmployeesPage() {
                       await fetchAttendance(value)
                     }}
                     className="h-10 rounded-md border border-gray-200 px-3 text-sm text-gray-700 focus:border-gray-300 focus:outline-none"
-                  />
+                  >
+                    {monthOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                   <select
                     value={attendanceCompanyFilter}
                     onChange={(event) => setAttendanceCompanyFilter(event.target.value)}
@@ -1412,8 +1437,7 @@ export default function EmployeesPage() {
                   <p className="text-sm text-gray-500">Track gross-to-net per cycle and payout readiness.</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
-                  <input
-                    type="month"
+                  <select
                     value={payrollMonth}
                     onChange={async (event) => {
                       const value = event.target.value
@@ -1421,7 +1445,13 @@ export default function EmployeesPage() {
                       await fetchPayroll(value)
                     }}
                     className="h-10 rounded-md border border-gray-200 px-3 text-sm text-gray-700 focus:border-gray-300 focus:outline-none"
-                  />
+                  >
+                    {monthOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                   <select
                     value={payrollCompanyFilter}
                     onChange={(event) => setPayrollCompanyFilter(event.target.value)}
