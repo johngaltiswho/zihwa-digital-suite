@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-
 export default function ContactForm() {
   const [form, setForm] = useState({
     name: "",

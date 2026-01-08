@@ -35,12 +35,17 @@ export default function RootLayout({
           minHeight: "100vh",
           display: "flex",
           flexDirection: "column",
+          // Prevents horizontal shaking on mobile
+          overflowX: "hidden", 
         }}
       >
         <Header />
-        <main style={{ flex: 1 }}>
+        
+        {/* ADDED padding-top here to clear the header */}
+        <main style={{ flex: 1 }} className="pt-[2px] lg:pt-[1px]">
           {children}
         </main>
+
         <Footer />
       </body>
     </html>

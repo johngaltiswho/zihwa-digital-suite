@@ -1,105 +1,79 @@
-// "use client";
+"use client";
 
-// import Image from "next/image";
-// import Link from "next/link";
-// import { usePathname } from "next/navigation";
+import React, { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
-// const NAV_ITEMS = [
-//   { label: "HOME", href: "/" },
-//   { label: "ABOUT", href: "/about" },
-//   { label: "SAFETY", href: "/safety" },
-//   { label: "STRATEGY", href: "/strategy" },
-//   { label: "CAREERS", href: "/careers" },
-//   { label: "SERVICES", href: "/#services" },
-//   { label: "PROJECTS", href: "/projects" },
-//   { label: "NEWS", href: "/news" },
-  
-  
-// ];
+interface NavItem {
+  label: string;
+  href: string;
+}
 
-// export function Header() {
-//   const pathname = usePathname();
+interface HeaderProps {
+  navItems: NavItem[];
+  logoSrc: string;
+}
 
-//   return (
-//     <header
-//       style={{
-//         width: "100%",
-//         backgroundColor: "#ffffff",
-//         boxShadow: "0 1px 6px rgba(0,0,0,0.08)",
-//       }}
-//     >
-//      {/* ================= TOP BAR ================= */}
-// <div
-//   style={{
-//     display: "flex",
-//     justifyContent: "flex-end",
-//     padding: "12px 200px 4px",
-//     gap: "24px",
-//     fontSize: "14px",
-//     fontWeight: 600,
-//   }}
-// >
-// </div>
+export function SharedHeader({ navItems, logoSrc }: HeaderProps) {
+  const pathname = usePathname();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-//       {/* ================= MAIN HEADER ================= */}
-//       <div
-//         style={{
-//           display: "flex",
-//           alignItems: "center",
-//           padding: "6px 200px 10px",
-//           gap: "18px",
-//         }}
-//       >
-//         {/* LOGO */}
-//         <Link href="/" style={{ flexShrink: 0 }}>
-//           <Image
-//             src="/aacp-logo.jpg"
-//             alt="AACP Infra"
-//             width={90}
-//             height={22}
-//             priority
-//             style={{ transform: "translateY(-16px)" }}
-//           />
-//         </Link>
+  return (
+    <header className="sh-container">
+      <div className="sh-main-content">
+        {/* LOGO */}
+        <Link href="/" className="sh-logo-link">
+          <Image
+            src={logoSrc}
+            alt="Logo"
+            width={100}
+            height={28}
+            priority
+            className="sh-logo-img"
+          />
+        </Link>
 
-//         {/* NAVIGATION */}
-//         <nav
-//           style={{
-//             display: "flex",
-//             alignItems: "center",
-//             gap: "36px",
-//             flexGrow: 1,
-//           }}
-//         >
-//           {NAV_ITEMS.map((item) => {
-//             const isActive = pathname === item.href;
+        {/* DESKTOP NAV (Hidden on Mobile) */}
+        <nav className="sh-desktop-nav">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`sh-nav-link ${isActive ? "sh-nav-link-active" : ""}`}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
 
-//             if (item.isButton) {
-//               return (
-//                 <Link
-//                   key={item.href}
-//                   href={item.href}
-//                   className="contact-btn"
-//                 >
-//                   {item.label}
-//                 </Link>
-//               );
-//             }
+        {/* SANDWICH BUTTON (Visible only on Mobile) */}
+        <button 
+          className="sh-mobile-toggle" 
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+        >
+          {isMenuOpen ? "✕" : "☰"}
+        </button>
+      </div>
 
-//             return (
-//               <Link
-//                 key={item.href}
-//                 href={item.href}
-//                 className={`nav-link ${
-//                   isActive ? "nav-link-active" : ""
-//                 }`}
-//               >
-//                 {item.label}
-//               </Link>
-//             );
-//           })}
-//         </nav>
-//       </div>
-//     </header>
-//   );
-// }
+      {/* MOBILE OVERLAY MENU (Hidden on Desktop) */}
+      <div className={`sh-mobile-overlay ${isMenuOpen ? "active" : ""}`}>
+        <nav className="sh-mobile-list">
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`sh-mobile-item ${pathname === item.href ? "active" : ""}`}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+      </div>
+    </header>
+  );
+}

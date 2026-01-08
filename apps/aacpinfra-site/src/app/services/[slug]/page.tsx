@@ -3,9 +3,7 @@ import Link from "next/link";
 import { servicesData } from "@/data/services";
 import { notFound } from "next/navigation";
 
-/**
- * Generate static params for SSG
- */
+
 export async function generateStaticParams() {
   return servicesData.map((service) => ({
     slug: service.slug,

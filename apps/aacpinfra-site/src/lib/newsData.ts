@@ -1,14 +1,9 @@
 import { NewsListItem } from "@/types/news";
 import { NewsCategory } from "@/types/news";
-/**
- * NOTE:
- * - categories is an array
- * - One news can belong to multiple categories
- * - excerpt is shown below title in news listing
- */
+
 const ITEMS_PER_PAGE = 12;
 export const newsData: NewsListItem[] = [
-  // ===== PAGE 1 (9 items) =====
+  
   {
     id: 1,
     title: "Walkway Works",
@@ -91,7 +86,7 @@ export const newsData: NewsListItem[] = [
       "Installation of covered walkway shelters enhancing pedestrian comfort and protection.",
   },
 
-  // ===== PAGE 2 =====
+
   {
     id: 10,
     title: "Pothole Creation",
@@ -156,7 +151,7 @@ export const newsData: NewsListItem[] = [
       "Rectification and development of shuttle yard to streamline internal logistics.",
   },
  {
-  id: 17, // use next available ID (or adjust)
+  id: 17, 
   slug: "corporate-presentation-growth",
   title: "Corporate Presentation – AACP Infrastructure (Growth & Capabilities)",
   categories: ["Presentation", "In The News"],
@@ -164,7 +159,7 @@ export const newsData: NewsListItem[] = [
   excerpt:
     "This corporate presentation provides a comprehensive overview of AACP Infrastructure Systems Pvt. Ltd.",
 },
-  // ===== PAGE 3 =====
+ 
   {
     id: 18,
     title: "Afforestation",
@@ -238,7 +233,7 @@ export const newsData: NewsListItem[] = [
       "Road development works executed for Assetz Group residential projects.",
   },
 
-  // ===== PAGE 4 =====
+ 
   {
     id: 26,
     title: "Solar Plant at BOSCH",
@@ -304,15 +299,15 @@ export const newsData: NewsListItem[] = [
   },
   {
     id: 33,
-    title: "Surface Reconstruction",
-    slug: "road-rectification",
-    image: "/news/Surface-Reconstruction.jpg",
+    title: "External Development at Molex",
+    slug: "External-Development-at-Molex",
+    image: "/news/External-Development-at-Molex.jpg",
     categories: ["Project"],
     excerpt:
-      "Rectification works to improve road quality and safety standards.",
+      "External infrastructure development for Molex India Pvt. Ltd.",
   },
 
-  // ===== PAGE 5 =====
+
   {
     id: 34,
     title: "Molex Parking Shelter Design",
@@ -386,7 +381,7 @@ export const newsData: NewsListItem[] = [
       "Transformation of spaces through innovative engineering solutions.",
   },
 
-  // ===== PAGE 6 =====
+  
   {
     id: 42,
     title: "Veersandra Lake",
@@ -489,7 +484,7 @@ export const newsData: NewsListItem[] = [
   },
 ];
 
-// ================= HELPERS =================
+
 
 export function getNewsByPage(page: number) {
   const start = (page - 1) * ITEMS_PER_PAGE;

@@ -13,7 +13,7 @@ export const homepageData = {
     contentHtml: `
       <p>AACP Infrastructure Systems Pvt. Ltd. is a leading infrastructure development company dedicated to delivering high-quality, sustainable, and innovative solutions across various sectors. With years of experience and a team of seasoned professionals, we specialize in civil construction, road development, urban planning, and environmental projects.</p>
       <p>We blend traditional project management practices with modern technology like Data Analytics, Building Information Modelling (BIM), Lean Construction, and Green Construction. Our company focuses on eliminating cost and budget overruns and ensuring workplace safety. We believe in building not just structures, but lasting relationships and a better future.</p>
-    `, // Updated with details from summary
+    `, 
     buttonText: "READ MORE",
     buttonLink: "/about",
   },

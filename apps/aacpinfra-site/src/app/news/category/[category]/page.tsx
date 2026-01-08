@@ -23,7 +23,7 @@ export default async function CategoryNewsPage({
 
   const category = resolveNewsCategory(categorySlug);
 
-  // ✅ Guard invalid categories
+  //  Guard invalid categories
   if (!category) {
     notFound();
   }
@@ -34,7 +34,7 @@ export default async function CategoryNewsPage({
   if (!items.length) notFound();
 
   return (
-    <main className="max-w-7xl mx-auto px-6 pt-10 pb-20">
+    <main className="max-w-7xl mx-auto px-6 pt-1 pb-20">
       {/* CATEGORY TITLE */}
       <h1 className="text-4xl font-bold text-black capitalize mb-6">
         {category === "All"

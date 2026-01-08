@@ -29,9 +29,6 @@ export default function TermsOfServicePage() {
       {/* ================= CONTENT ================= */}
       <main className="bg-white">
         <div className="max-w-5xl mx-auto px-4 py-6 text-gray-800 text-[15px] leading-relaxed space-y-6">
-          {/* <p className="text-sm text-gray-600">
-            <strong>Effective Date:</strong> 31/12/2025
-          </p> */}
 
           <p>
             These Terms of Service (“Terms”) govern your access to and use of the

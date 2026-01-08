@@ -1,4 +1,4 @@
-// apps/aacpinfra-site/src/components/Footer.tsx
+
 import Link from 'next/link';
 import { siteConfig } from '@/data/siteConfig';
 
@@ -30,7 +30,7 @@ export default function Footer() {
           </ul>
         </div>
 
-        {/* Services (Could be dynamic from servicesData if desired) */}
+        {/* Services ) */}
         <div>
           <h3 className="text-xl font-semibold mb-4 text-blue-400">Our Services</h3>
           <ul className="space-y-2 text-gray-400 text-sm">

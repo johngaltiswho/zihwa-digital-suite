@@ -9,12 +9,12 @@ export default function NewsPage() {
   const totalPages = getTotalPages();
 
   return (
-    <main className="max-w-7xl mx-auto px-6 pt-6 pb-10">
+    <main className="max-w-7xl mx-auto px-4 pt-0 pb-10">
       <h1 className="text-5xl text-black font-serif font-semibold mb-3">
         News & Insights
       </h1>
 
-      <p className="text-gray-600 mb-6 max-w-3xl">
+      <p className="text-gray-600 mb-3 max-w-3xl">
         Latest updates, project highlights, and industry insights from AACP Infrastructure.
       </p>
 

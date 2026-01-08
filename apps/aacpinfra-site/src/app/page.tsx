@@ -12,13 +12,14 @@ import CtaSection from "@/components/CtaSection";
 import BoardSection from "@/components/BoardSection";
 import FooterTop from "@/components/footer/FooterTop";
 
-import HeroSlider from "@/components/HeroSlider";
+// import HeroSlider from "@/components/HeroSlider";
+import { HeroSlider } from "@repo/ui"; // IMPORT FROM SHARED
 
 
 export default function HomePage() {
   const home = homepageData;
 
-  /* ================= HARD SCROLL FIX (HERO SLIDER SAFE) ================= */
+  /* =================  (HERO SLIDER) ================= */
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (window.location.hash !== "#services") return;
@@ -45,55 +46,55 @@ export default function HomePage() {
       image: "/hero/slide-1.jpg",
       title: "Establishing Our Forte in Building Construction",
       subtitle: "External Development Works at Molex India Ltd.",
-      cta: { label: "Learn More", href: "/projects" },
+      cta: { label: "Learn More", href: "news/External-Development-at-Molex" },
     },
     {
       image: "/hero/slide-2.jpg",
       title: "Sustainable Development of Manufacturing Units",
       subtitle: "Eco Zone Development Works at Toyota Kirloskar Motors Ltd.",
-      cta: { label: "Learn More", href: "/projects" },
+      cta: { label: "Learn More", href: "news/eco-zone-development" },
     },
     {
       image: "/hero/slide-3.jpg",
       title: "Conserving Lakes & Water Bodies",
       subtitle: "Rejuvenation of Abbanakuppe Lake",
-      cta: { label: "Learn More", href: "/projects" },
+      cta: { label: "Learn More", href: "news/abbankuppe-lake" },
     },
     {
       image: "/hero/slide-4.jpg",
-      title: "Urban Infrastructure Development",
-      subtitle: "Integrated Roads, Drainage & Utility Works",
-      cta: { label: "Explore Services", href: "/#services" },
+      title: "Sustaining Water",
+      subtitle: "Rain Water Harvesting Pond at Toyota Kirloskar Auto Parts(TKAP)",
+      cta: { label: "Learn More", href: "news/pond-modification" },
     },
     {
       image: "/hero/slide-5.jpg",
-      title: "Precast & Industrial Infrastructure",
-      subtitle: "High-quality precast and industrial construction solutions",
-      cta: { label: "View Capabilities", href: "/precast" },
+      title: "Infrastructure Support For Real Estate",
+      subtitle: "External Development Works at Brigade Orchards,Devanahali",
+      cta: { label: "Learn More", href: "news/road-external-development" },
     },
     {
       image: "/hero/slide-6.jpg",
-      title: "Roads, Highways & Connectivity",
-      subtitle: "Durable road infrastructure for growing cities",
-      cta: { label: "View Projects", href: "/projects" },
+      title: "Solar Solutions for Manufacturing Units",
+      subtitle: "Earthwork,Roadworks & Civil Works for Solar Projects at BOSCH ",
+      cta: { label: "Learn More", href: "news/solar-plant-bosch" },
     },
     {
       image: "/hero/slide-7.jpg",
-      title: "Future-Ready & Sustainable Infrastructure",
-      subtitle: "Building resilient infrastructure with innovation and care",
-      cta: { label: "About Us", href: "/about" },
+      title: "Infrastructure Support for Manufacturing Units",
+      subtitle: "Road Rectification Works at Toyota Kirloskar Motors Ltd.",
+      cta: { label: "Learn More", href: "news/plant-1-shuttle-yard" },
     },
     {
       image: "/hero/slide-8.jpg",
-      title: "Engineering Excellence Across Sectors",
-      subtitle: "Delivering complex infrastructure projects with precision",
-      cta: { label: "Our Expertise", href: "/#services" },
+      title: "New Technologies",
+      subtitle: "Cold Ready Mix Asphalt Laying at Toyota Kirloskar Motors(TKM)",
+      cta: { label: "Learn More", href: "news/new-project-fixing" },
     },
     {
       image: "/hero/slide-9.jpg",
-      title: "Infrastructure That Shapes Tomorrow",
-      subtitle: "Committed to quality, safety, and sustainability",
-      cta: { label: "Contact Us", href: "/contact" },
+      title: "Solidifying Our Forte in External Development Works",
+      subtitle: "External Development Works at Kennmental Industries",
+      cta: { label: "Learn More", href: "/news/industrial-site-development" },
     },
   ];
 

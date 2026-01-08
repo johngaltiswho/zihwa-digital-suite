@@ -21,7 +21,7 @@ export default function NewsCategories() {
   };
 
   return (
-    <div className="mb-12">
+    <div className="mb-4">
       {/* Rounded container */}
       <div className="inline-flex flex-wrap gap-3 rounded-full border border-gray-200 bg-gray-50 p-2">
         {categories.map((cat) => {

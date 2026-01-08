@@ -3,11 +3,6 @@ import Link from "next/link";
 interface Props {
   currentPage: number;
   totalPages: number;
-  /**
-   * Examples:
-   * /news
-   * /news/category/project
-   */
   basePath?: string;
 }
 
@@ -20,11 +15,6 @@ export default function Pagination({
 
   const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
 
-  /**
-   * IMPORTANT:
-   * - Page 1 → basePath
-   * - Page N → `${basePath}/page/${N}`
-   */
   const pageHref = (page: number) => {
     if (page <= 1) return basePath;
     return `${basePath}/page/${page}`;

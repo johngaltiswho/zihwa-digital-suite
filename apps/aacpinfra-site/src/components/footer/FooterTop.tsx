@@ -17,10 +17,10 @@ export default function FooterTop() {
 
     emailjs
       .sendForm(
-        "service_z5rd14m",        // ✅ YOUR SERVICE ID
-        "template_leoojjk",    // ✅ YOUR TEMPLATE ID
+        "service_z5rd14m",        //  YOUR SERVICE ID
+        "template_leoojjk",    //  YOUR TEMPLATE ID
         formRef.current!,
-        "cvKw9esznnmzIfSPC"         // ✅ YOUR PUBLIC KEY
+        "cvKw9esznnmzIfSPC"         //  YOUR PUBLIC KEY
       )
       .then(
         () => {

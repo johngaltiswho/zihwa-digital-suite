@@ -38,7 +38,7 @@ export default function StrategyPage() {
         </motion.h1>
       </section>
 
-      {/* ================= STRATEGY SNAPSHOT (UNIQUE) ================= */}
+      {/* ================= STRATEGY ================= */}
       <section className="-mt-18 relative z-10">
         <div className="max-w-6xl mx-auto px-4">
           <motion.div
@@ -72,7 +72,6 @@ export default function StrategyPage() {
       {/* ================= CONTENT ================= */}
       <section className="max-w-6xl mx-auto px-6 pt-18 pb-24 space-y-18">
 
-        {/* PHILOSOPHY */}
         <motion.div
           variants={fadeUp}
           initial="hidden"
@@ -146,7 +145,7 @@ export default function StrategyPage() {
               manufacturing support quality consistency and supply-chain
               reliability. By venturing into Design Bid Build (DBB) projects, Joint Ventures (JV) for commercial development, 
               Turnkey Projects and most importantly our long-standing goal of construction products (spun pipes, cold ready mix asphalt, etc.),
-               we will be able to leverage the infrastructure boom in India to achieve our strategic vision.   
+              we will be able to leverage the infrastructure boom in India to achieve our strategic vision.   
 
 ​
             </p>

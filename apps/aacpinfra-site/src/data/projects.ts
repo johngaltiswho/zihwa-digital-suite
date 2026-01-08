@@ -1,15 +1,15 @@
-// apps/aacpinfra-site/src/data/projects.ts
+
 
 export interface ProjectItem {
     id: string;
     title: string;
-    slug: string; // Used for unique URLs like /projects/project-title-slug
-    category: string; // e.g., "Roads", "Bridges", "Urban Development"
+    slug: string; 
+    category: string; 
     location: string;
     client: string;
-    date: string; // e.g., "Completed: 2023"
-    descriptionHtml: string; // Detailed description for the project's own page
-    imageUrls: string[]; // Array of image URLs for the project gallery
+    date: string;
+    descriptionHtml: string;
+    imageUrls: string[];
   }
   
   export const projectsData: ProjectItem[] = [

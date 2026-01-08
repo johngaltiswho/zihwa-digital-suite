@@ -23,7 +23,7 @@ export default function FeaturedProjects({ projects }: Props) {
     setPage(1);
   }, [projects]);
 
-  /* ✅ SORT PROJECTS BY YEAR (DESCENDING) */
+  /* SORT PROJECTS BY YEAR (DESCENDING) */
   const sortedProjects = useMemo(() => {
     return [...projects].sort((a, b) => {
       const yearA = Number(a.date ?? 0);
@@ -34,7 +34,7 @@ export default function FeaturedProjects({ projects }: Props) {
 
   const totalPages = Math.ceil(sortedProjects.length / ITEMS_PER_PAGE);
 
-  /* ✅ PAGINATE SORTED PROJECTS */
+  /*  PAGINATE SORTED PROJECTS */
   const paginatedProjects = useMemo(() => {
     const start = (page - 1) * ITEMS_PER_PAGE;
     return sortedProjects.slice(start, start + ITEMS_PER_PAGE);
@@ -82,7 +82,7 @@ export default function FeaturedProjects({ projects }: Props) {
                     }}
                   />
 
-                  {/* ✅ YEAR BADGE */}
+                  {/*  YEAR  */}
                   {project.date && (
                     <span className="absolute top-3 left-3 bg-black/40 text-white text-xs font-semibold px-3 py-1 rounded-full backdrop-blur-sm">
                       {project.date}

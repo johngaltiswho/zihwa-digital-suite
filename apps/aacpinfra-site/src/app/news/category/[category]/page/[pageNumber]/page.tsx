@@ -27,14 +27,13 @@ export default async function CategoryNewsPageNumber({
   const currentPage = Number(pageNumber);
   const category = resolveNewsCategory(rawCategory);
 
-  // ✅ Invalid category → 404
   if (!category) {
     notFound();
   }
 
   const totalPages = getTotalPagesByCategory(category);
 
-  // ✅ Invalid page number → 404
+  
   if (
     Number.isNaN(currentPage) ||
     currentPage < 1 ||
@@ -50,7 +49,7 @@ export default async function CategoryNewsPageNumber({
   }
 
   return (
-    <main className="max-w-7xl mx-auto px-6 pt-10 pb-20">
+    <main className="max-w-7xl mx-auto px-6 pt-1 pb-20">
       <h1 className="text-4xl text-black font-serif font-bold mb-6 capitalize">
         {category === "All"
           ? "All News"

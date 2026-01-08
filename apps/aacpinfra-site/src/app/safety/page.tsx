@@ -77,11 +77,11 @@ export default function SafetyPage() {
             transition={{ duration: 1 }}
           >
   <Image
-    src={slide.image}          // ✅ use slide image
+    src={slide.image}
     alt={slide.title}
-    fill                        // ✅ full width & height
-    priority={index === 0}      // ✅ CLS optimization
-    sizes="100vw"               // ✅ Cloudflare safe
+    fill
+    priority={index === 0}
+    sizes="100vw"
     className="object-cover"
   />
 

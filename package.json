@@ -24,5 +24,11 @@
     "lucide-react": "^0.562.0",
     "react-icons": "^5.5.0",
     "swiper": "^12.0.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "@types/react": "19.1.0",
+      "@types/react-dom": "19.1.1"
+    }
   }
 }
