@@ -30,12 +30,12 @@ export default async function NewsPageNumber({
   }
 
   return (
-    <main className="max-w-7xl mx-auto px-6 pt-10 pb-20">
+    <main className="max-w-7xl mx-auto px-6 pt-1 pb-20">
       <h1 className="text-5xl font-serif text-black font-bold mb-4">
         News & Insights
       </h1>
 
-      <p className="text-gray-600 mb-10 max-w-3xl">
+      <p className="text-gray-600 mb-4 max-w-3xl">
         Latest updates, project highlights, and industry insights from AACP Infrastructure.
       </p>
 

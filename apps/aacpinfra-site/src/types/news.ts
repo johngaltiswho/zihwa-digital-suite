@@ -6,7 +6,7 @@ export type NewsCategory =
 
 export interface NewsDocument {
   label: string;
-  file: string; // pdf / ppt path
+  file: string; // pdf 
 }
 export interface NewsListItem {
   id: number;
@@ -28,20 +28,9 @@ export interface NewsItem {
   categories: NewsCategory[];
 
   /* ================= IMAGES ================= */
-
-  /** HERO SECTION – slider images */
   heroImages?: string[];
-
-  /** GALLERY AFTER CONCLUSION */
   gallery?: string[];
-
-  /**
-   * Thumbnail image for listing cards
-   * (can be derived from heroImages[0])
-   */
   image?: string;
-
-  /* ================= PROJECT META ================= */
   client?: string;
   natureOfWork?: string;
   structuralDesigner?: string;
@@ -55,29 +44,13 @@ export interface NewsItem {
   project_type?: string;
   scope?: string;
   status?: string;
-
-  /* ================= CONTENT ================= */
-
-  /** Short intro shown in detail page */
   introduction?: string;
-
-  /** Main article / project content */
   content: string[];
-
-  /** Optional bullets */
   bulletPoints?: string[];
-
   conclusion?: string;
-
-  /** Used in listing cards */
   excerpt?: string;
-
   description?: string;
-
-  /* ================= ATTACHMENTS ================= */
   documents?: NewsDocument[];
-
-  /* ================= META ================= */
   date?: string;
   keywords?: string[];
 }

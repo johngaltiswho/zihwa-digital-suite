@@ -1,4 +1,4 @@
-// apps/aacpinfra-site/src/data/aboutpage.ts
+
 
 export const aboutPageData = {
     heroTitle: "About Us",
@@ -7,7 +7,7 @@ export const aboutPageData = {
       contentHtml: `
         <p>AACP Infrastructure Systems Pvt. Ltd. is a dynamic and forward-thinking industrial manufacturing and construction company based in Bangalore, Karnataka, India. We are at the forefront of delivering complex projects across various sectors, including civil construction, road development, and urban planning.</p>
         <p>Our unique approach blends traditional project management practices with modern technology like Data Analytics, Building Information Modelling (BIM), Lean Construction, and Green Construction. We are fundamentally committed to eliminating cost and budget overruns and ensuring paramount workplace safety, building not just structures, but a legacy of trust and innovation.</p>
-      `, // Updated with details from summary
+      `,
     },
     ourMission: {
       title: "Our Mission",

@@ -18,9 +18,6 @@ export default function PrivacyPolicyPage() {
             <h1 className="text-4xl font-semibold text-black tracking-wide">
               Privacy Policy
             </h1>
-            {/* <p className="text-sm text-gray-600 mt-1">
-              Your trust. Our responsibility.
-            </p> */}
           </div>
         </div>
 
@@ -31,11 +28,6 @@ export default function PrivacyPolicyPage() {
       {/* ================= CONTENT ================= */}
       <main className="bg-white">
         <div className="max-w-5xl mx-auto px-4 py-6 text-gray-800 text-[15px] leading-relaxed space-y-7">
-          {/* Effective Date
-          <p className="text-sm text-gray-600">
-            <strong>Effective Date:</strong> 31/12/2025
-          </p> */}
-
           {/* Introduction */}
           <p>
             AACP Infrastructure (“we”, “our”, “us”, or “the Company”) respects

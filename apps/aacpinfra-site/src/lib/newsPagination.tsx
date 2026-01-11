@@ -3,12 +3,7 @@ import Link from "next/link";
 interface Props {
   currentPage: number;
   totalPages: number;
-  /**
-   * Base path for pagination.
-   * Examples:
-   *  - "/news"
-   *  - "/news/category/Project"
-   */
+
   basePath?: string;
 }
 

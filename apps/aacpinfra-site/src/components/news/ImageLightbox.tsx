@@ -45,7 +45,7 @@ export default function ImageLightbox({
     return () => document.removeEventListener("keydown", handleKey);
   }, [next, prev, onClose]);
 
-  /* ================= SAFE GUARD (AFTER ALL HOOKS) ================= */
+  /* ================= SAFE GUARD ================= */
 
   if (!Array.isArray(images) || images.length === 0) {
     return null;

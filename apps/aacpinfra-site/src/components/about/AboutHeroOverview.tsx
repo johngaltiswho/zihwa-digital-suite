@@ -16,7 +16,7 @@ export default function AboutHero() {
     <section className="relative h-[90vh] w-full text-white">
       {/* Background Image */}
       <Image
-        src="/images/about-hero.jpg" // use same image you downloaded
+        src="/images/about-hero.jpg"
         alt="AACP Infrastructure operations"
         fill
         priority

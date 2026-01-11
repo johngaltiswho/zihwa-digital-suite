@@ -9,7 +9,6 @@ import { NewsItem } from "@/types/news";
 
 import NewsImageSlider from "@/components/news/NewsImageSlider";
 import ImageLightbox from "@/components/news/ImageLightbox";
-import NewsComments from "@/components/news/NewsComments";
 
 export default function NewsDetailPage() {
   const params = useParams<{ slug: string }>();
@@ -27,11 +26,11 @@ export default function NewsDetailPage() {
   }
 
   return (
-    <section className="max-w-6xl mx-auto bg-white px-6 py-8 grid grid-cols-1 lg:grid-cols-3 gap-16">
+    <section className="max-w-6xl mx-auto bg-white px-6 py-0 grid grid-cols-1 lg:grid-cols-3 gap-16">
       {/* ================= MAIN CONTENT ================= */}
-      <article className="lg:col-span-2 space-y-6">
+      <article className="lg:col-span-2 space-y-4">
         {/* ================= TITLE ================= */}
-        <h1 className="text-4xl font-serif text-black leading-tight">
+        <h1 className="text-4xl font-semibold text-black leading-tight">
           {news.title}
         </h1>
 
@@ -283,8 +282,8 @@ export default function NewsDetailPage() {
           </div>
         )}
 
-        {/* ================= COMMENTS ================= */}
-        <NewsComments />
+        {/* ================= COMMENTS =================
+        <NewsComments /> */}
       </article>
 
       {/* ================= SIDEBAR ================= */}

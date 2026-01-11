@@ -1,4 +1,6 @@
- @import "tailwindcss"; 
+ @import "tailwindcss";
+
+
 
  html,
 body {
@@ -28,7 +30,6 @@ body {
     --foreground: #ededed;
   }
 }
-/* Force white background for website (ignore system dark mode) */
 html,
 body {
   background-color: #ffffff !important;

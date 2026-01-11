@@ -18,7 +18,7 @@ export default async function JobDetailPage({
   return (
     <main className="bg-white text-gray-900 scroll-smooth">
       {/* ================= HERO ================= */}
-      <header className="relative h-[60vh] flex items-center">
+      <header className="relative h-[75vh] md:h-[80vh] flex items-center">
         <Image
           src={job.image}
           alt={job.title}

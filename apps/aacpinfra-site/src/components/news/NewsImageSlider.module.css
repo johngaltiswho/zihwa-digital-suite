@@ -1,0 +1,27 @@
+.newsSliderAutoWidth .swiper-slide {
+  opacity: 0.4;
+  transition: opacity 0.3s ease;
+}
+
+.newsSliderAutoWidth .swiper-slide-active {
+  opacity: 1;
+}
+
+.newsSliderAutoWidth .swiper-button-next,
+.newsSliderAutoWidth .swiper-button-prev {
+  color: #000 !important;
+  width: 45px;
+  height: 40px;
+  border-radius: 50%;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.newsSliderAutoWidth .swiper-button-next:after,
+.newsSliderAutoWidth .swiper-button-prev:after {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.newsSliderAutoWidth .swiper-pagination-bullet-active {
+  background: #000 !important;
+}

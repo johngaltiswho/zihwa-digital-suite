@@ -94,7 +94,7 @@ export default function AboutPage() {
   return (
     <>
       {/* ================= HERO ================= */}
-      <section className="relative h-[90vh] w-full">
+      <section className="relative h-[75vh] md:h-[80vh] w-full flex flex-col bg-black">
         <Image
           src="/images/about-hero.jpg"
           alt="About AACP Infrastructure"
@@ -105,19 +105,20 @@ export default function AboutPage() {
 
         <div className="absolute inset-0 bg-black/60" />
 
-        <div className="relative z-10 max-w-7xl mx-auto px-6 h-full flex flex-col justify-center">
+        <div className="relative z-10 max-w-7xl mx-auto px-6 pt-10 pb-10 md:pt-20 md:pb-0 h-full flex flex-col justify-center md:justify-start">
           <h1 className="text-5xl md:text-6xl font-light tracking-wide mb-6 text-white">
             ABOUT AACP INFRASTRUCTURE
           </h1>
 
-          <p className="max-w-4xl text-lg md:text-xl text-gray-200 leading-relaxed">
-            Building strong, safe, and sustainable infrastructure for the future.
+          <p className="max-w-4xl text-m md:text-m text-gray-200 leading-relaxed">
+            Here you can learn more about AACP - one of the leading general contracting and construction groups - and our purpose of building a better society. We are at the exciting growth stage of the business cycle and look forward to entering new markets and expanding our portfolio of projects and services. You can also find information about our strategy, services and business model in this section.
           </p>
 
           {/* ================= HERO NAV ================= */}
-          <div className="mt-16 grid grid-cols-2 md:grid-cols-5 gap-12">
+          <div className="mt-4 md:mt-14 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 md:gap-10">
             {heroNav.map((item) => {
-              const baseClasses = `p-6 text-center border backdrop-blur-sm transition
+              {/* Reduced padding from 6 to 3 for mobile */}
+const baseClasses = `h-24 md:h-32 flex flex-col items-center justify-center p-2 md:p-2 text-center border backdrop-blur-sm transition
                 ${
                   item.type === "scroll" && activeSection === item.target
                     ? "bg-white/30 border-white"
@@ -131,7 +132,7 @@ export default function AboutPage() {
                     onClick={goToServices}
                     className={baseClasses}
                   >
-                    <p className="text-5xl font-light text-white mb-2">
+                   <p className="text-2xl md:text-5xl font-light text-white mb-1">
                       {item.id}
                     </p>
                     <span className="text-sm tracking-widest uppercase text-white">
@@ -144,7 +145,7 @@ export default function AboutPage() {
               if (item.type === "link") {
                 return (
                   <Link key={item.id} href={item.target} className={baseClasses}>
-                    <p className="text-5xl font-light text-white mb-2">
+                    <p className="text-2xl md:text-5xl font-light text-white mb-2">
                       {item.id}
                     </p>
                     <span className="text-sm tracking-widest uppercase text-white">
@@ -160,7 +161,7 @@ export default function AboutPage() {
                   onClick={() => scrollToSection(item.target)}
                   className={baseClasses}
                 >
-                  <p className="text-5xl font-light text-white mb-2">
+                  <p className="text-2xl md:text-5xl font-light text-white mb-1">
                     {item.id}
                   </p>
                   <span className="text-sm tracking-widest uppercase text-white">

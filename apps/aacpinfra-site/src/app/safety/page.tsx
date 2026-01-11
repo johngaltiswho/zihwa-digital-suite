@@ -67,7 +67,7 @@ export default function SafetyPage() {
   return (
     <main className="bg-white text-black">
       {/* ================= HERO SLIDER ================= */}
-      <section className="relative h-[60vh] overflow-hidden">
+      <section className="relative h-[75vh] md:h-[80vh] overflow-hidden">
         {slides.map((slide, index) => (
           <motion.div
             key={index}
@@ -77,11 +77,11 @@ export default function SafetyPage() {
             transition={{ duration: 1 }}
           >
   <Image
-    src={slide.image}          // ✅ use slide image
+    src={slide.image}
     alt={slide.title}
-    fill                        // ✅ full width & height
-    priority={index === 0}      // ✅ CLS optimization
-    sizes="100vw"               // ✅ Cloudflare safe
+    fill
+    priority={index === 0}
+    sizes="100vw"
     className="object-cover"
   />
 

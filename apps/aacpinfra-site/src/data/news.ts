@@ -1025,42 +1025,51 @@ export const newsData: NewsItem[] = [
 
 {
   id: 33,
-  slug: "road-rectification",
-  title: "Surface Reconstruction & Well Construction",
+  slug: "External-Development-at-Molex",
+  title: "External Development at Molex",
   categories: ["Project"],
-  heroImages: ["/news/Surface-Reconstruction.jpg",
-                "/news/Surface-Reconstruction-2.jpg",
-                "/news/Surface-Reconstruction-3.jpg",
-                "/news/Surface-Reconstruction-4.jpg",
-                "/news/Surface-Reconstruction-5.jpg",
+  heroImages: ["/news/External-Development-at-Molex.jpg",
+              "/news/External-Development-at-Molex-2.jpg",
+              "/news/External-Development-at-Molex-3.jpg",
+              "/news/External-Development-at-Molex-4.jpg",
+              "/news/External-Development-at-Molex-5.jpg",
+              "/news/External-Development-at-Molex-6.jpg",
+              "/news/External-Development-at-Molex-7.jpg",
+              "/news/External-Development-at-Molex-8.jpg",
   ],
-  gallery: ["/news/Surface-Reconstruction.jpg",
-            "/news/Surface-Reconstruction-2.jpg",
-            "/news/Surface-Reconstruction-3.jpg",
-            "/news/Surface-Reconstruction-4.jpg",
-            "/news/Surface-Reconstruction-5.jpg",
+  gallery:["/news/External-Development-at-Molex.jpg",
+              "/news/External-Development-at-Molex-2.jpg",
+              "/news/External-Development-at-Molex-3.jpg",
+              "/news/External-Development-at-Molex-4.jpg",
+              "/news/External-Development-at-Molex-5.jpg",
+              "/news/External-Development-at-Molex-6.jpg",
+              "/news/External-Development-at-Molex-7.jpg",
+              "/news/External-Development-at-Molex-8.jpg",
   ],
   date:"2021",
-  client: "Transystem Logistics India Pvt. Ltd.",
-  projectManagementConsultant:"AACP",
-  natureOfWork:"Barrication, Rectification & Asphalting Works.",
+  client: "Molex India Pvt.Ltd",
+  projectManagementConsultant:"NU Associates",
+  natureOfWork:"Roads,Drains& External Development",
   introduction:
-    "Rectification of damaged road surfaces.",
-  content: [
-  "Few months ago due to incessant rains the parking yard at Transystem Logistics India (TLI) was undergoing severe problems by to the settling of surface due to the rise in the water table.",
-  "Problem Identification:",
-  "AACP having dealt with problems of similar nature in the past were called upon to come up with a solution to fix this issue.",
-  "Proposed Solution:",
-  "We suggested them to relay the fault surface with compacted soil, murrum & Water Bound Macadam (WBM) and also dig collection pits at specific locations to lower the water table.",
-  "Client Evaluation and Contract Award:",
-  "Having inquired from other consultancies, TLI identified our solution to be the best as well as most const effective, thus giving us the contract to execute the works.",
-  "Design Phase Collaboration:",
-  "We are once again happy the more of our clients are approaching us during the design phase of the contract so, we can provide our expertise and help work towards a more cost effective solution.",
+  "External infrastructure development for Molex India Pvt. Ltd.",
+
+content: [
+  "Molex India Pvt. Ltd. is setting up its second manufacturing plant in India to leverage the rapidly growing connector market.",
+  "With increasing demand across automotive, industrial, and electronics sectors, the expansion marks a significant milestone in Molex’s growth strategy in India.",
+  "AACP Infrastructure Systems Pvt. Ltd., having successfully delivered projects for global leaders such as Toyota and BOSCH, was selected for this assignment based on its strong reputation for quality, safety, and execution excellence.",
+  "Scope of Work:",
+  "The scope includes external development activities such as storm water drains (SWD), sewer water drains (SWR), electrical and utility pipelines, internal road works, and other allied infrastructure works.",
+  "Project Challenges:",
+  "The project is being executed under severe time constraints, with approximately ₹10 Crores worth of work required to be completed within a span of just three months.",
+  "Execution Strategy:",
+  "Despite the aggressive schedule, AACP is committed to deploying optimized construction methodologies, strict safety protocols, and effective resource planning to meet the deadlines.",
   "Project Milestone:",
-  "This is our 2nd Turnkey Project."
+  "This project further reinforces AACP’s capability to deliver high-value industrial infrastructure projects within demanding timelines while maintaining uncompromised quality standards."
 ],
-  conclusion:
-    "Road safety and quality improved."
+
+conclusion:
+  "AACP looks forward to successfully completing the project and supporting Molex’s expansion in India with timely and high-quality infrastructure delivery."
+
 },
 
 /* =====================================================
@@ -1620,13 +1629,11 @@ content: [
     "/news/tvs-bus-bay-2.jpeg",
     "/news/tvs-bus-bay-3.jpeg",
     "/news/tvs-bus-bay-4.jpeg",
-    "/news/tvs-bus-bay-5.jpeg",
     "/news/tvs-bus-bay-6.jpeg",
     "/news/tvs-bus-bay-7.jpeg",
     "/news/tvs-bus-bay-8.jpeg",
     "/news/tvs-bus-bay-9.jpeg",
     "/news/tvs-bus-bay-10.jpeg",
-    "/news/tvs-bus-bay-11.jpeg",
 
   ],
   gallery: [

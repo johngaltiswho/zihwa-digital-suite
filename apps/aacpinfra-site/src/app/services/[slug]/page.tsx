@@ -3,9 +3,7 @@ import Link from "next/link";
 import { servicesData } from "@/data/services";
 import { notFound } from "next/navigation";
 
-/**
- * Generate static params for SSG
- */
+
 export async function generateStaticParams() {
   return servicesData.map((service) => ({
     slug: service.slug,
@@ -62,7 +60,7 @@ export default async function ServicePage({
       </header>
 
       {/* Hero */}
-      <section className="relative h-[40vh] md:h-[50vh] flex items-center justify-center text-center text-white">
+      <section className="relative h-[75vh] md:h-[80vh] flex items-center justify-center text-center text-white">
         {service.featured_image_url && (
           <Image
             src={service.featured_image_url}
