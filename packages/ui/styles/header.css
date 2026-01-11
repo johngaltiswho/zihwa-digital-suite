@@ -55,8 +55,11 @@
 }
 
 
-.sh-mobile-toggle { display: none; }
-.sh-mobile-overlay { display: none; }
+/* Hide mobile elements by default on desktop */
+@media (min-width: 1025px) {
+  .sh-mobile-toggle { display: none !important; }
+  .sh-mobile-overlay { display: none !important; }
+}
 
 /* ================= MOBILE VIEW (Sandwich Menu) ================= */
 
@@ -88,62 +91,78 @@
     transform: translateY(11px); 
   }
 
-  /* 3. SHOW THE OVERLAY ON TOP OF EVERYTHING */
+  /* 3. MOBILE BACKDROP */
+  .sh-mobile-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9998;
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* 4. SIDEBAR OVERLAY */
+  .sh-mobile-overlay {
+    display: block; /* Override the default display: none */
+    position: fixed;
+    top: 0;
+    right: -100%; /* Start hidden off-screen */
+    width: 280px;
+    height: 100vh;
+    background-color: #ffffff;
+    z-index: 9999;
+    box-shadow: -4px 0 15px rgba(0,0,0,0.15);
+    transition: right 0.3s ease-in-out;
+  }
+
   .sh-mobile-overlay.active {
-  display: block !important;
-  position: fixed;
-  top: 70px; /* Adjust to match header height */
-  left: 0;
-  width: 100%;
-  
-  
-  height: auto; 
-  
-  background-color: #ffffff;
-  z-index: 9999;
-  box-shadow: 0 10px 15px rgba(0,0,0,0.1);
-}
+    right: 0; /* Slide in from right */
+  }
 
   .sh-mobile-list {
-    display: flex;
+    display: flex !important;
     flex-direction: column;
-    padding: 20px;
-    gap: 10px;
-  }
-
-  .sh-mobile-item {
-    font-size: 12px;
-    font-weight: 700;
-    color: #333;
-    text-decoration: none;
-    padding: 15px 0;
-    border-bottom: 1px solid #f5f5f5;
-  }
-
-  .sh-mobile-item.active {
-    color: #000;
-    border-left: 5px solid #000;
-    padding-left: 15px;
-  }
-  .sh-mobile-list {
-    display: flex;
-    flex-direction: column;
-    padding: 10px 20px;
+    padding: 80px 24px 24px 24px; /* Add top padding for logo space */
     gap: 0;
+    height: 100%;
+    width: 100%;
+    overflow-y: auto;
   }
 
   .sh-mobile-item {
-    font-size: 15px;
-    font-weight: 700;
-    color: #333;
-    text-decoration: none;
-    padding: 10px 0;
-    border-bottom: 1px solid #f5f5f5;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    color: #000 !important; /* Force dark text */
+    text-decoration: none !important;
+    padding: 16px 0 !important;
+    border-bottom: 1px solid #f0f0f0 !important;
+    transition: all 0.2s ease;
+    display: block !important;
+    opacity: 1 !important; /* Ensure full opacity */
+    width: 100% !important;
+    box-sizing: border-box !important;
+    min-height: 50px !important;
+    line-height: 1.4 !important;
+  }
+
+  .sh-mobile-item:hover {
+    background-color: #f8f9fa;
+    padding-left: 12px;
+    color: #000 !important;
   }
 
   .sh-mobile-item.active {
-    color: #000;
+    color: #000 !important;
+    font-weight: 700;
     border-left: 4px solid #000;
-    padding-left: 12px; 
+    padding-left: 12px;
+    background-color: #f8f9fa;
   }
 }
