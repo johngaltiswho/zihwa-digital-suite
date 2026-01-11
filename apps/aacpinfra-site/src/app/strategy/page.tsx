@@ -18,7 +18,7 @@ export default function StrategyPage() {
     <main className="bg-white text-gray-800">
 
       {/* ================= HERO ================= */}
-      <section className="relative w-full h-[70vh] flex items-center justify-center overflow-hidden">
+      <section className="relative w-full h-[75vh] md:h-[80vh] flex items-center justify-center overflow-hidden">
         <Image
           src="/strategy/hero.jpg"
           alt="AACP Strategy"

@@ -9,6 +9,7 @@ import NewsGallery from "./NewsGallery";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
+import styles from "./NewsImageSlider.module.css";
 
 interface Props {
   images: string[];
@@ -32,7 +33,7 @@ export default function NewsImageSlider({ images }: Props) {
         slidesPerView={"auto"} 
         centeredSlides={true}
         spaceBetween={20}
-        className="w-full h-[350px] md:h-[550px] bg-white"
+        className={`${styles.newsSliderAutoWidth} w-full h-[350px] md:h-[550px] bg-white`}
       >
         {images.map((img, i) => (
           <SwiperSlide 
@@ -78,33 +79,6 @@ export default function NewsImageSlider({ images }: Props) {
         />
       )}
 
-      {/* CUSTOM STYLING FOR AUTO-WIDTH LOOK */}
-      <style jsx global>{`
-        .news-slider-auto-width .swiper-slide {
-          opacity: 0.4;
-          transition: opacity 0.3s ease;
-        }
-        .news-slider-auto-width .swiper-slide-active {
-          opacity: 1;
-        }
-        .news-slider-auto-width .swiper-button-next,
-        .news-slider-auto-width .swiper-button-prev {
-          color: #000 !important;
-          // background: rgba(255, 255, 255, 0.8);
-          width: 45px;
-          height: 40px;
-          border-radius: 50%;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-        .news-slider-auto-width .swiper-button-next:after,
-        .news-slider-auto-width .swiper-button-prev:after {
-          font-size: 18px;
-          font-weight: bold;
-        }
-        .news-slider-auto-width .swiper-pagination-bullet-active {
-          background: #000 !important;
-        }
-      `}</style>
     </div>
   );
 }

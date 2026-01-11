@@ -18,7 +18,7 @@ export default function InnovationPage() {
     <main className="bg-white text-black">
 
       {/* ================= HERO ================= */}
-      <section className="relative h-[75vh] w-full">
+      <section className="relative h-[75vh] md:h-[80vh] w-full">
         <Image
           src="/innovation/innovation-hero.jpg"
           alt="Innovation at AACP Infrastructure"

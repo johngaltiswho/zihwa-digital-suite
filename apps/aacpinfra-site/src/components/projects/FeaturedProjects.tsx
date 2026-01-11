@@ -76,9 +76,8 @@ export default function FeaturedProjects({ projects }: Props) {
                     width={600}
                     height={400}
                     className="h-[240px] w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src =
-                        "/news/placeholder.jpg";
+                    onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                      e.currentTarget.src = "/news/placeholder.jpg";
                     }}
                   />
 

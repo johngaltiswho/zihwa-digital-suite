@@ -67,7 +67,7 @@ export default function SafetyPage() {
   return (
     <main className="bg-white text-black">
       {/* ================= HERO SLIDER ================= */}
-      <section className="relative h-[60vh] overflow-hidden">
+      <section className="relative h-[75vh] md:h-[80vh] overflow-hidden">
         {slides.map((slide, index) => (
           <motion.div
             key={index}

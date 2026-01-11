@@ -94,7 +94,7 @@ export default function AboutPage() {
   return (
     <>
       {/* ================= HERO ================= */}
-      <section className="relative min-h-[95vh] md:h-[80vh] w-full flex flex-col bg-black">
+      <section className="relative h-[75vh] md:h-[80vh] w-full flex flex-col bg-black">
         <Image
           src="/images/about-hero.jpg"
           alt="About AACP Infrastructure"
