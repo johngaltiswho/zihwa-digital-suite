@@ -1,11 +1,9 @@
 // API configuration and service functions for Humility DB
-const API_BASE_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000';
-const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || 'pk_test_development';
+const API_BASE_URL = process.env.NEXT_PUBLIC_VENDURE_API_URL || 'http://localhost:3000/shop-api';
 
 // Common headers for API requests
 const getHeaders = () => ({
   'Content-Type': 'application/json',
-  'x-publishable-api-key': PUBLISHABLE_KEY,
 });
 
 export interface Technique {
