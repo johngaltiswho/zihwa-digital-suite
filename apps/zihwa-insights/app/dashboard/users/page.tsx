@@ -182,7 +182,7 @@ export default function UsersPage() {
                 await refreshData()
               } catch (e) {
                 console.error('Sync failed', e)
-                alert('Failed to sync users from Clerk')
+                alert('Failed to sync users from Supabase')
               } finally {
                 setSyncing(false)
               }

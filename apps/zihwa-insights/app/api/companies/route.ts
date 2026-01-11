@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { getRouteAuth } from '@/lib/auth'
 
 // Validation schema for company data
 const companySchema = z.object({
@@ -22,9 +22,9 @@ const companySchema = z.object({
 
 export async function GET() {
   try {
-    const { userId } = await auth()
-    
-    if (!userId) {
+    const { user } = await getRouteAuth()
+
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -53,9 +53,9 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth()
-    
-    if (!userId) {
+    const { user } = await getRouteAuth()
+
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

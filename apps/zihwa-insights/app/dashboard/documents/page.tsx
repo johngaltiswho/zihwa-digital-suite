@@ -1,4 +1,3 @@
-import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
@@ -7,6 +6,7 @@ import DocumentUpload from './components/DocumentUpload'
 import DocumentsFilter from './components/DocumentsFilter'
 import { Building2, Plus, FileText, Upload } from 'lucide-react'
 import { ensureDocumentTypes } from '@/lib/document-type-seed'
+import { getServerAuth } from '@/lib/auth'
 
 type DocumentWithCompany = {
   id: string
@@ -58,9 +58,9 @@ interface PageProps {
 }
 
 export default async function DocumentsPage({ searchParams }: PageProps) {
-  const { userId } = await auth()
-  
-  if (!userId) {
+  const { user } = await getServerAuth()
+
+  if (!user) {
     redirect('/sign-in')
   }
 

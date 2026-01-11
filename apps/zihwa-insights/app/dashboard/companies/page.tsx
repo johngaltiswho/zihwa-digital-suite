@@ -1,8 +1,8 @@
-import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import CompanyForm from './components/CompanyForm'
 import { Plus, Building2, Users, Calendar, FileText, MoreHorizontal } from 'lucide-react'
+import { getServerAuth } from '@/lib/auth'
 
 interface SearchParams {
   action?: string
@@ -21,9 +21,9 @@ type CompanyWithCounts = Awaited<ReturnType<typeof prisma.company.findMany>>[num
 }
 
 export default async function CompaniesPage({ searchParams }: PageProps) {
-  const { userId } = await auth()
-  
-  if (!userId) {
+  const { user } = await getServerAuth()
+
+  if (!user) {
     redirect('/sign-in')
   }
 

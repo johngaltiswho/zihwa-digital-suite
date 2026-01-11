@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { UserRole } from '@prisma/client'
+import { getRouteAuth } from '@/lib/auth'
 
 export async function GET() {
   try {
-    const { userId } = await auth()
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { user } = await getRouteAuth()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const users = await prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
@@ -26,8 +26,8 @@ export async function GET() {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const { userId } = await auth()
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { user } = await getRouteAuth()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await request.json()
     const { id, role } = body as { id?: string; role?: UserRole }

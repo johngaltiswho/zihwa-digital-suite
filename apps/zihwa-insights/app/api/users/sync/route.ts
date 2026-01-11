@@ -1,57 +1,49 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
-
-type ClerkUser = {
-  id: string
-  first_name: string | null
-  last_name: string | null
-  email_addresses: { email_address: string }[]
-}
+import { getRouteAuth } from '@/lib/auth'
+import { getSupabaseServiceRole } from '@/lib/supabase'
 
 export async function POST() {
   try {
-    const { userId } = await auth()
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { user } = await getRouteAuth()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const res = await fetch('https://api.clerk.com/v1/users?limit=200', {
-      headers: {
-        Authorization: `Bearer ${process.env.CLERK_SECRET_KEY}`,
-      },
-      cache: 'no-store',
-    })
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      return NextResponse.json(
-        { success: false, error: err?.errors?.[0]?.message || 'Failed to fetch Clerk users' },
-        { status: res.status },
-      )
+    const admin = getSupabaseServiceRole()
+    if (!admin) {
+      return NextResponse.json({ success: false, error: 'Supabase admin client not available' }, { status: 500 })
     }
 
-    const users = (await res.json()) as ClerkUser[]
+    const { data, error } = await admin.auth.admin.listUsers()
+    if (error) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 400 })
+    }
 
-    for (const clerkUser of users) {
-      const email = clerkUser.email_addresses?.[0]?.email_address
+    for (const supabaseUser of data.users) {
+      const email = supabaseUser.email
       if (!email) continue
 
+      const fullName =
+        (supabaseUser.user_metadata?.full_name as string | undefined) ||
+        (supabaseUser.user_metadata?.name as string | undefined) ||
+        email
+
       await prisma.user.upsert({
-        where: { clerkId: clerkUser.id },
+        where: { authId: supabaseUser.id },
         update: {
           email,
-          name: [clerkUser.first_name, clerkUser.last_name].filter(Boolean).join(' ') || null,
+          name: fullName,
         },
         create: {
-          clerkId: clerkUser.id,
+          authId: supabaseUser.id,
           email,
-          name: [clerkUser.first_name, clerkUser.last_name].filter(Boolean).join(' ') || null,
+          name: fullName,
         },
       })
     }
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Failed to sync users from Clerk', error)
+    console.error('Failed to sync users from Supabase', error)
     return NextResponse.json({ success: false, error: 'Failed to sync users' }, { status: 500 })
   }
 }

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { DocumentComplianceStatus } from '@prisma/client'
 import { z } from 'zod'
 import { ensureDocumentTypes } from '@/lib/document-type-seed'
+import { getRouteAuth } from '@/lib/auth'
 
 const upsertStatusSchema = z.object({
   companyId: z.string().min(1),
@@ -18,8 +18,8 @@ const upsertStatusSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
+    const { user } = await getRouteAuth()
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -64,8 +64,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
+    const { user } = await getRouteAuth()
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

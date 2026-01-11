@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { DocumentCategory, DocumentComplianceStatus, Prisma } from '@prisma/client'
 import { z } from 'zod'
 import { ensureDocumentTypes } from '@/lib/document-type-seed'
+import { getRouteAuth } from '@/lib/auth'
 
 // Validation schema for document data
 const documentSchema = z.object({
@@ -23,9 +23,9 @@ const documentSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth()
-    
-    if (!userId) {
+    const { user } = await getRouteAuth()
+
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -98,9 +98,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth()
-    
-    if (!userId) {
+    const { user } = await getRouteAuth()
+
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
       where: { 
         companyId: data.companyId,
         user: {
-          clerkId: userId
+          authId: user.id
         }
       },
       include: {
@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
         fileSize: data.fileSize,
         mimeType: data.mimeType,
         companyId: data.companyId,
-        uploadedById: userId,
+        uploadedById: user.id,
         status: DocumentComplianceStatus.SUBMITTED,
       },
       include: {
@@ -237,9 +237,9 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const { userId } = await auth()
-    
-    if (!userId) {
+    const { user } = await getRouteAuth()
+
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

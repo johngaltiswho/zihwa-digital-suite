@@ -1,11 +1,11 @@
-import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { getServerAuth } from '@/lib/auth'
 
 export default async function Home() {
-  const { userId } = await auth()
-  
-  if (userId) {
+  const { user } = await getServerAuth()
+
+  if (user) {
     redirect('/dashboard')
   }
 

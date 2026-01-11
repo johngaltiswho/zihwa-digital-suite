@@ -1,9 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { UserButton, useUser } from '@clerk/nextjs'
 import { Building2, Calendar, FileText, Users, Home, CreditCard, ChevronLeft, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useSupabase } from '@/components/providers/SupabaseProvider'
+import { useEffect, useState as useUserState } from 'react'
+import { User } from '@supabase/supabase-js'
 
 export default function DashboardLayout({
   children,
@@ -11,7 +14,37 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const [collapsed, setCollapsed] = useState(false)
-  const { user } = useUser()
+  const [user, setUser] = useUserState<User | null>(null)
+  const router = useRouter()
+  const supabase = useSupabase()
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+    }
+    
+    getUser()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user || null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [supabase, setUser])
+
+  const fullName =
+    (user?.user_metadata?.full_name as string | undefined) ||
+    (user?.user_metadata?.name as string | undefined) ||
+    user?.email ||
+    'Guest User'
+
+  const email = user?.email ?? ''
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/sign-in')
+  }
 
   const navItems = [
     { href: '/dashboard', label: 'Home', icon: Home },
@@ -80,10 +113,16 @@ export default function DashboardLayout({
             </div>
             <div className="flex items-center gap-3">
               <div className="text-right">
-                <p className="text-sm font-semibold text-gray-900">{user?.fullName ?? 'Guest User'}</p>
-                <p className="text-xs text-gray-500">{user?.primaryEmailAddress?.emailAddress ?? 'Signed in'}</p>
+                <p className="text-sm font-semibold text-gray-900">{fullName}</p>
+                <p className="text-xs text-gray-500">{email || 'Signed in'}</p>
               </div>
-              <UserButton afterSignOutUrl="/" />
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="rounded-md border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Sign out
+              </button>
             </div>
           </header>
           <div className="w-full px-8 py-8 overflow-x-hidden">{children}</div>
