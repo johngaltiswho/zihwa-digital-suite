@@ -1,5 +1,11 @@
 "use client";
 
+import React from "react";
+// Add these imports at the top of Footer.tsx
+import { Tag, Heart, ShoppingCart, ChefHat, ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+
 type LinkProps = {
   href: string;
   children: React.ReactNode;
@@ -13,13 +19,16 @@ function AppLink({ href, children, target, rel }: LinkProps) {
       href={href}
       target={target}
       rel={rel}
-      style={{ textDecoration: "none", color: "inherit" }}
+      style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "center" }}
     >
       {children}
     </a>
   );
 }
 
+// ==========================================
+// 1. AACP FOOTER
+// ==========================================
 export function Footer() {
   return (
     <footer
@@ -61,14 +70,11 @@ export function Footer() {
 
         {/* RIGHT SOCIAL */}
         <div style={{ display: "flex", gap: "14px" }}>
-
-
           <AppLink
-            href="https://www.facebook.com/"
+            href="https://www.facebook.com/aacpinfra/"
             target="_blank"
             rel="noopener noreferrer"
           >
-            {/* SVG */}
             <svg width="32" height="32" viewBox="0 0 24 24" fill="black">
               <path d="M22 12c0-5.522-4.477-10-10-10S2 6.478 2 12c0 5.004 3.657 9.128 8.438 9.878v-6.987H7.898V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.891h-2.33v6.987C18.343 21.128 22 17.004 22 12z" />
             </svg>
@@ -93,9 +99,117 @@ export function Footer() {
               <path d="M4.98 3.5C4.98 4.88 3.88 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1 4.98 2.12 4.98 3.5zM0 8h5v16H0zM8 8h4.8v2.2h.07c.67-1.2 2.3-2.47 4.73-2.47 5.06 0 6 3.33 6 7.66V24h-5v-7.98c0-1.9-.03-4.34-2.64-4.34-2.64 0-3.04 2.06-3.04 4.2V24H8z" />
             </svg>
           </AppLink>
-
         </div>
       </div>
     </footer>
+  );
+}
+
+
+export function StalknSpiceFooter() {
+  const router = useRouter();
+
+  return (
+    <>
+      <footer
+        className="pb-24 md:pb-8"
+        style={{
+          width: "100%",
+          backgroundColor: "#f9f9f9",
+          paddingTop: "30px",
+          fontFamily: "Arial, sans-serif",
+        }}
+      >
+        <div className="max-w-[1100px] mx-auto px-5 flex flex-col md:flex-row justify-between items-center gap-6 md:gap-0">
+          {/* 1. Payment Methods */}
+          <div style={{ display: "flex", gap: "10px", alignItems: "center", flexDirection: "row" }}>
+            <div style={{ border: "1.5px solid #000", padding: "4px 10px", borderRadius: "2px", backgroundColor: "#fff" }}>
+              <span style={{ fontWeight: "900", fontStyle: "italic", fontSize: "16px", letterSpacing: "-1px" }}>VISA</span>
+            </div>
+            <div style={{ backgroundColor: "#000", color: "#fff", padding: "6px 12px", borderRadius: "3px", display: "flex", alignItems: "center" }}>
+              <span style={{ fontWeight: "bold", fontStyle: "italic", fontSize: "14px" }}>PayPal</span>
+            </div>
+            <div style={{ backgroundColor: "#000", padding: "4px 8px", borderRadius: "3px", height: "32px", display: "flex", alignItems: "center" }}>
+              <svg width="50" height="24" viewBox="0 0 60 30">
+                 <circle cx="22" cy="15" r="11" fill="white" fillOpacity="0.8" />
+                 <circle cx="38" cy="15" r="11" fill="white" fillOpacity="0.8" />
+                 <text x="30" y="17" textAnchor="middle" style={{ fontSize: "8px", fontWeight: "bold", fill: "#000" }}>Maestro</text>
+              </svg>
+            </div>
+          </div>
+
+          {/* 2. Copyright */}
+          <div style={{ fontSize: "18px", color: "#000", fontWeight: "400", textAlign: "center" }}>
+            © Zihwa Insights . All Rights Reserved.
+          </div>
+
+          {/* 3. Social Icons */}
+          <div style={{ display: "flex", gap: "10px", flexDirection: "row" }}>
+            <AppLink href="https://www.facebook.com/stalksnspice1997" target="_blank">
+              <svg width="40" height="40" viewBox="0 0 40 40">
+                <circle cx="20" cy="20" r="19" fill="none" stroke="black" strokeWidth="1.5" />
+                <path d="M23 15h-2c-.55 0-1 .45-1 1v2h3l-.5 3h-2.5v7h-3v-7h-2v-3h2v-2c0-2.21 1.79-4 4-4h2v3z" fill="black" />
+              </svg>
+            </AppLink>
+             {/* Instagram */}
+          <AppLink href="https://www.instagram.com/stalksnspice/" target="_blank">
+            <svg width="40" height="40" viewBox="0 0 40 40">
+              <circle cx="20" cy="20" r="19" fill="none" stroke="black" strokeWidth="1.5" />
+              <rect x="12" y="12" width="16" height="16" rx="4" fill="none" stroke="black" strokeWidth="1.5" />
+              <circle cx="20" cy="20" r="3.5" fill="none" stroke="black" strokeWidth="1.5" />
+              <circle cx="24.5" cy="15.5" r="1" fill="black" />
+            </svg>
+          </AppLink>
+
+          {/* Twitter/X */}
+          <AppLink href="https://x.com/stalksnspice" target="_blank">
+            <svg width="40" height="40" viewBox="0 0 40 40">
+              <circle cx="20" cy="20" r="19" fill="none" stroke="black" strokeWidth="1.5" />
+              <path d="M28 15c-.6.3-1.2.4-1.9.5.7-.4 1.2-1.1 1.4-1.9-.6.4-1.3.6-2.1.8-.6-.6-1.5-1-2.4-1-1.8 0-3.3 1.5-3.3 3.3 0 .3 0 .5.1.8-2.7-.1-5.2-1.4-6.8-3.4-.3.5-.4 1.1-.4 1.7 0 1.1.6 2.1 1.5 2.7-.5 0-1-.2-1.5-.4 0 1.6 1.1 2.9 2.6 3.2-.3.1-.6.1-.9.1-.2 0-.4 0-.6-.1.4 1.3 1.6 2.3 3.1 2.3-1.1.9-2.5 1.4-4.1 1.4h-.8c1.5 1 3.2 1.5 5.2 1.5 6.2 0 9.6-5.1 9.6-9.6v-.4c.7-.5 1.2-1.1 1.7-1.8z" fill="black" />
+            </svg>
+          </AppLink>
+          </div>
+        </div>
+      </footer>
+
+      {/* ========================================== */}
+      {/* MOBILE BOTTOM NAVIGATION */}
+      {/* ========================================== */}
+      <div className="lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-100 z-[9999] h-[65px] flex justify-around items-center text-gray-400 shadow-[0_-5px_25px_rgba(0,0,0,0.07)]">
+        
+        <button onClick={() => router.back()} className="flex flex-col items-center gap-1 w-16">
+          <ArrowLeft size={22} />
+          <span className="text-[10px] font-bold uppercase tracking-tighter">Back</span>
+        </button>
+
+        <Link href="/offers" className="flex flex-col items-center gap-1 w-16">
+          <Tag size={22} />
+          <span className="text-[10px] font-bold uppercase tracking-tighter">Offers</span>
+        </Link>
+        
+        {/* Centered "Home" button with Raised Design */}
+        <Link href="/" className="relative -top-6 flex flex-col items-center">
+          <div className="p-1.5 bg-white rounded-full shadow-md">
+             <div className="w-14 h-14 bg-[#8B2323] text-white rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform">
+                <ChefHat size={30} />
+             </div>
+          </div>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-[#8B2323] mt-1">Home</span>
+        </Link>
+        
+        <Link href="/wishlist" className="flex flex-col items-center gap-1 w-16">
+          <Heart size={22} />
+          <span className="text-[10px] font-bold uppercase tracking-tighter">Wishlist</span>
+        </Link>
+
+        <Link href="/cart" className="flex flex-col items-center gap-1 w-16">
+          <div className="relative">
+            <ShoppingCart size={22} />
+            <span className="absolute -top-1 -right-1 bg-[#8B2323] text-white text-[8px] w-4 h-4 flex items-center justify-center rounded-full">0</span>
+          </div>
+          <span className="text-[10px] font-bold uppercase tracking-tighter">Cart</span>
+        </Link>
+      </div>
+    </>
   );
 }
