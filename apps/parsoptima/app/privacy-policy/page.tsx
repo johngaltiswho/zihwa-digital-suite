@@ -1,143 +1,103 @@
-import Link from 'next/link';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-
-export const metadata = {
-  title: 'Privacy Policy - Pars Optima Enterprises LLP',
-  description: 'Privacy Policy for Pars Optima Enterprises LLP - Learn how we collect, use, and protect your personal information.',
-};
+"use client";
+import React from "react";
 
 export default function PrivacyPolicy() {
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  });
+
   return (
-    <>
-      <Header />
-
-      {/* Hero Section */}
-      <section className="hero" style={{paddingTop: '100px', paddingBottom: '60px'}}>
-        <div className="container">
-          <div className="hero-content">
-            <h1>Privacy Policy</h1>
-            <p className="tagline">Your Privacy Matters to Us</p>
-          </div>
+    <div className="bg-white min-h-screen pt-12 pb-10 font-sans">
+      <div className="max-w-[1440px] mx-auto px-6 lg:px-12">
+        
+        {/* HEADER */}
+        <div className="border-b-2 border-black pb-8 mb-12">
+          <h1 className="text-5xl md:text-7xl font-black text-[#1a3a5a] tracking-tighter uppercase mb-4">
+            Privacy <span className="text-[#00a651]">Policy</span>
+          </h1>
+          <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">
+            Last Updated: {currentDate}
+          </p>
         </div>
-      </section>
 
-      {/* Privacy Policy Content */}
-      <section className="section">
-        <div className="container">
-          <div className="legal-content">
-            <div className="legal-section">
-              <h2>1. Information We Collect</h2>
-              <p>
-                Pars Optima Enterprises LLP ("we," "our," or "us") collects information you provide directly to us, such as when you:
-              </p>
-              <ul>
-                <li>Fill out contact forms on our website</li>
-                <li>Send us emails or communicate with us</li>
-                <li>Request information about our services</li>
-                <li>Apply for partnerships or business opportunities</li>
-              </ul>
-              <p>The types of information we may collect include:</p>
-              <ul>
-                <li>Name and contact information (email, phone number)</li>
-                <li>Company name and business information</li>
-                <li>Messages and communications you send to us</li>
-              </ul>
-            </div>
+        {/* CONTENT BODY */}
+        <div className="prose prose-slate max-w-none space-y-10 text-slate-700">
+          
+          <section>
+            <p className="text-lg leading-relaxed">
+              At <span className="font-bold text-black uppercase">Pars Optima Enterprises</span>, accessible from our website, one of our main priorities is the privacy of our visitors. This Privacy Policy document contains types of information that is collected and recorded by Pars Optima Enterprises and how we use it.
+            </p>
+          </section>
 
-            <div className="legal-section">
-              <h2>2. How We Use Your Information</h2>
-              <p>We use the information we collect to:</p>
-              <ul>
-                <li>Respond to your inquiries and provide customer service</li>
-                <li>Process partnership applications and business requests</li>
-                <li>Send you information about our services and business opportunities</li>
-                <li>Improve our website and services</li>
-                <li>Comply with legal obligations</li>
-              </ul>
-            </div>
+          <section className="space-y-4">
+            <h2 className="text-2xl font-black text-[#1a3a5a] uppercase tracking-tight">1. Information We Collect</h2>
+            <p className="leading-relaxed">
+              The personal information that you are asked to provide, and the reasons why you are asked to provide it, will be made clear to you at the point we ask you to provide your personal information.
+            </p>
+            <ul className="list-disc pl-6 space-y-2 font-medium">
+              <li>Contact Information (Name, Email, Phone Number)</li>
+              <li>Shipping and Billing Address</li>
+              <li>Pharmaceutical Prescriptions (where legally required for medical products)</li>
+              <li>Payment Information (processed securely via encrypted gateways)</li>
+            </ul>
+          </section>
 
-            <div className="legal-section">
-              <h2>3. Information Sharing</h2>
-              <p>
-                We do not sell, trade, or otherwise transfer your personal information to third parties without your consent, except as described in this policy:
-              </p>
-              <ul>
-                <li><strong>Service Providers:</strong> We may share information with trusted third parties who assist us in operating our website and conducting business</li>
-                <li><strong>Legal Requirements:</strong> We may disclose information when required by law or to protect our rights and safety</li>
-                <li><strong>Business Transfers:</strong> Information may be transferred in connection with a merger, sale, or transfer of company assets</li>
-              </ul>
-            </div>
+          <section className="space-y-4">
+            <h2 className="text-2xl font-black text-[#1a3a5a] uppercase tracking-tight">2. How We Use Your Information</h2>
+            <p>We use the information we collect in various ways, including to:</p>
+            <ul className="list-disc pl-6 space-y-2">
+              <li>Provide, operate, and maintain our website and services</li>
+              <li>Improve, personalize, and expand our product range (Cosmetics & Pharmaceuticals)</li>
+              <li>Understand and analyze how you use our website</li>
+              <li>Develop new products, services, features, and functionality</li>
+              <li>Communicate with you, either directly or through one of our partners</li>
+              <li>Process your transactions and send you related information including purchase confirmations and invoices</li>
+            </ul>
+          </section>
 
-            <div className="legal-section">
-              <h2>4. Data Security</h2>
-              <p>
-                We implement appropriate security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. However, no method of transmission over the internet or electronic storage is 100% secure.
-              </p>
-            </div>
+          <section className="space-y-4">
+            <h2 className="text-2xl font-black text-[#1a3a5a] uppercase tracking-tight">3. Log Files</h2>
+            <p>
+              Pars Optima Enterprises follows a standard procedure of using log files. These files log visitors when they visit websites. The information collected by log files include internet protocol (IP) addresses, browser type, Internet Service Provider (ISP), date and time stamp, referring/exit pages, and possibly the number of clicks. These are not linked to any information that is personally identifiable.
+            </p>
+          </section>
 
-            <div className="legal-section">
-              <h2>5. Website Analytics</h2>
-              <p>
-                Our website may use analytics tools to collect information about how visitors use our site. This information helps us improve our website and services. Analytics data is typically anonymized and aggregated.
-              </p>
-            </div>
+          <section className="space-y-4">
+            <h2 className="text-2xl font-black text-[#1a3a5a] uppercase tracking-tight">4. Cookies and Web Beacons</h2>
+            <p>
+              Like any other website, Pars Optima Enterprises uses &apos;cookies&apos;. These cookies are used to store information including visitors&apos; preferences, and the pages on the website that the visitor accessed or visited. The information is used to optimize the users&apos; experience by customizing our web page content based on visitors&apos; browser type and/or other information.
+            </p>
+          </section>
 
-            <div className="legal-section">
-              <h2>6. Your Rights</h2>
-              <p>You have the right to:</p>
-              <ul>
-                <li>Access the personal information we hold about you</li>
-                <li>Request correction of inaccurate information</li>
-                <li>Request deletion of your personal information</li>
-                <li>Opt out of marketing communications</li>
-                <li>Contact us with privacy-related concerns</li>
-              </ul>
-            </div>
+          <section className="space-y-4">
+            <h2 className="text-2xl font-black text-[#1a3a5a] uppercase tracking-tight">5. Third Party Privacy Policies</h2>
+            <p>
+              Pars Optima Enterprises&apos;s Privacy Policy does not apply to other advertisers or websites. Thus, we are advising you to consult the respective Privacy Policies of these third-party ad servers for more detailed information. It may include their practices and instructions about how to opt-out of certain options.
+            </p>
+          </section>
 
-            <div className="legal-section">
-              <h2>7. Data Retention</h2>
-              <p>
-                We retain personal information for as long as necessary to fulfill the purposes outlined in this policy, unless a longer retention period is required or permitted by law.
-              </p>
-            </div>
+          <section className="space-y-4">
+            <h2 className="text-2xl font-black text-[#1a3a5a] uppercase tracking-tight">6. Data Protection Rights</h2>
+            <p>We would like to make sure you are fully aware of all of your data protection rights. Every user is entitled to the following:</p>
+            <ul className="list-disc pl-6 space-y-2">
+              <li><strong>The right to access</strong> – You have the right to request copies of your personal data.</li>
+              <li><strong>The right to rectification</strong> – You have the right to request that we correct any information you believe is inaccurate.</li>
+              <li><strong>The right to erasure</strong> – You have the right to request that we erase your personal data, under certain conditions.</li>
+            </ul>
+          </section>
 
-            <div className="legal-section">
-              <h2>8. International Data Transfers</h2>
-              <p>
-                Your information may be transferred to and processed in countries other than your own. We take steps to ensure appropriate safeguards are in place to protect your information.
-              </p>
-            </div>
+          <section className="p-8 bg-slate-50 border-l-4 border-[#00a651] mt-12">
+            <h2 className="text-xl font-black text-[#1a3a5a] uppercase tracking-tight mb-2">Contact Us</h2>
+            <p className="text-sm">
+              If you have additional questions or require more information about our Privacy Policy, do not hesitate to contact us at 
+              <span className="font-bold text-[#00a651]"> support@parsoptima.com</span>
+            </p>
+          </section>
 
-            <div className="legal-section">
-              <h2>9. Changes to This Policy</h2>
-              <p>
-                We may update this Privacy Policy from time to time. We will notify you of any significant changes by posting the new policy on our website with an updated effective date.
-              </p>
-            </div>
-
-            <div className="legal-section">
-              <h2>10. Contact Information</h2>
-              <p>
-                If you have any questions about this Privacy Policy or our data practices, please contact us at:
-              </p>
-              <div className="contact-details">
-                <p><strong>Pars Optima Enterprises LLP</strong></p>
-                <p>Email: <a href="mailto:parsoptima@yahoo.com">parsoptima@yahoo.com</a></p>
-                <p>Phone: +91-9972508616</p>
-                <p>Address: Bangalore, Karnataka, India</p>
-              </div>
-            </div>
-
-            <div className="effective-date">
-              <p><strong>Effective Date:</strong> January 1, 2024</p>
-              <p><strong>Last Updated:</strong> January 1, 2024</p>
-            </div>
-          </div>
         </div>
-      </section>
-
-      <Footer />
-    </>
+      </div>
+    </div>
   );
 }

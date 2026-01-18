@@ -171,6 +171,7 @@ export function StalknSpiceFooter() {
           </div>
         </div>
       </footer>
+      
 
       {/* ========================================== */}
       {/* MOBILE BOTTOM NAVIGATION */}
@@ -211,5 +212,147 @@ export function StalknSpiceFooter() {
         </Link>
       </div>
     </>
+  );
+}
+export function ParsOptimaFooter() {
+  // Define link arrays with actual routes
+  const companyLinks = [
+    { name: "About Us", href: "/about" },
+    { name: "Careers", href: "/careers" },
+    { name: "FAQ'S", href: "/faqs" },
+    { name: "Contact Us", href: "/contact" },
+  ];
+
+  const orderLinks = [
+    { name: "Track Delivery", href: "/track" },
+    { name: "Return Meds", href: "/returns" },
+    { name: "Help Center", href: "/contact" },
+  ];
+
+  const policyLinks = [
+    { name: "Privacy Policy", href: "/privacy-policy" },
+    { name: "Terms & Conditions", href: "/terms-conditions" },
+    { name: "Refund Policy", href: "/refund-policy" },
+    { name: "Shipping Policy", href: "/shipping-policy" },
+  ];
+
+  return (
+    <footer className="w-full bg-white font-sans border-t border-slate-100">
+      {/* --- FOOTER TOP: MULTI-COLUMN LINKS --- */}
+      <section className="py-10 max-w-[1440px] mx-auto px-12 lg:px-12 border-b border-slate-50">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-12">
+          
+          {/* Column 1: Our Company */}
+          <div className="space-y-2">
+            <h5 className="font-bold text-[#1a3a5a] uppercase text-medium tracking-widest border-b border-slate-100 pb-3">Our Company</h5>
+            <ul className="space-y-2">
+              {companyLinks.map((link) => (
+                <li key={link.name}>
+                  <Link href={link.href} className="text-slate-500 text-[13px] hover:text-[#00a651] font-bold uppercase transition-colors">
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Column 2: Order Hub */}
+          <div className="space-y-2">
+            <h5 className="font-bold text-[#1a3a5a] uppercase text-medium tracking-widest border-b border-slate-100 pb-3">Order Hub</h5>
+            <ul className="space-y-2">
+              {orderLinks.map((link) => (
+                <li key={link.name}>
+                  <Link href={link.href} className="text-slate-500 text-[13px] hover:text-[#00a651] font-bold uppercase transition-colors">
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Column 3: Our Policies */}
+          <div className="space-y-2">
+            <h5 className="font-bold text-[#1a3a5a] uppercase text-medium tracking-widest border-b border-slate-100 pb-3">Our Policies</h5>
+            <ul className="space-y-2">
+              {policyLinks.map((link) => (
+                <li key={link.name}>
+                  <Link href={link.href} className="text-slate-500 text-[13px] hover:text-[#00a651] font-bold uppercase transition-colors">
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Column 4 & 5: Newsletter (Spans 2 columns on large screens) */}
+          <div className="col-span-2 space-y-6">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900">NEWSLETTER</h2>
+            <div className="flex flex-col md:flex-row max-w-md border-black border-[1.2px] rounded-sm overflow-hidden shadow-md">
+              <input 
+                type="email" 
+                placeholder="ENTER YOUR EMAIL HERE" 
+                className="flex-1 p-4 outline-none text-left text-sm font-medium placeholder-gray-400"
+              />
+              <button className="bg-black text-white px-8 py-4 font-bold hover:bg-gray-800 transition-all uppercase text-sm tracking-widest whitespace-nowrap">
+                Submit
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* --- FOOTER BASE --- */}
+      <div className="bg-[#f9f9f9] py-8">
+        <div className="max-w-[1440px] mx-auto px-6 lg:px-12 flex flex-col md:flex-row justify-between items-center gap-8 md:gap-0">
+          
+          {/* Payment Methods */}
+          <div className="flex gap-3 items-center">
+            <div className="border-[1.5px] border-black px-2.5 py-1 rounded-[2px] bg-white">
+              <span className="font-black italic text-[14px] tracking-tighter text-black">VISA</span>
+            </div>
+            <div className="bg-black text-white px-3 py-1.5 rounded-[3px] flex items-center">
+              <span className="font-bold italic text-[12px]">PayPal</span>
+            </div>
+            <div className="bg-black px-2 py-1 rounded-[3px] h-8 flex items-center">
+              <svg width="45" height="20" viewBox="0 0 60 30">
+                <circle cx="22" cy="15" r="11" fill="white" fillOpacity="0.8" />
+                <circle cx="38" cy="15" r="11" fill="white" fillOpacity="0.8" />
+                <text x="30" y="17" textAnchor="middle" className="text-[8px] font-bold fill-black">Maestro</text>
+              </svg>
+            </div>
+          </div>
+
+          {/* Copyright */}
+          <div className="text-[13px] text-gray-500 font-medium text-center">
+            © {new Date().getFullYear()} <span className="text-black font-semibold uppercase">Pars Optima Enterprises</span>. All Rights Reserved.
+          </div>
+
+          {/* Social Icons */}
+          <div className="flex gap-2">
+            <Link href="https://facebook.com" target="_blank" className="hover:scale-110 transition-transform">
+              <svg width="36" height="36" viewBox="0 0 40 40">
+                <circle cx="20" cy="20" r="19" fill="none" stroke="black" strokeWidth="1.2" />
+                <path d="M23 15h-2c-.55 0-1 .45-1 1v2h3l-.5 3h-2.5v7h-3v-7h-2v-3h2v-2c0-2.21 1.79-4 4-4h2v3z" fill="black" />
+              </svg>
+            </Link>
+            <Link href="https://instagram.com" target="_blank" className="hover:scale-110 transition-transform">
+              <svg width="36" height="36" viewBox="0 0 40 40">
+                <circle cx="20" cy="20" r="19" fill="none" stroke="black" strokeWidth="1.2" />
+                <rect x="12" y="12" width="16" height="16" rx="4" fill="none" stroke="black" strokeWidth="1.2" />
+                <circle cx="20" cy="20" r="3.5" fill="none" stroke="black" strokeWidth="1.2" />
+                <circle cx="24.5" cy="15.5" r="1" fill="black" />
+              </svg>
+            </Link>
+            <Link href="https://twitter.com" target="_blank" className="hover:scale-110 transition-transform">
+              <svg width="36" height="36" viewBox="0 0 40 40">
+                <circle cx="20" cy="20" r="19" fill="none" stroke="black" strokeWidth="1.2" />
+                <path d="M28 15c-.6.3-1.2.4-1.9.5.7-.4 1.2-1.1 1.4-1.9-.6.4-1.3.6-2.1.8-.6-.6-1.5-1-2.4-1-1.8 0-3.3 1.5-3.3 3.3 0 .3 0 .5.1.8-2.7-.1-5.2-1.4-6.8-3.4-.3.5-.4 1.1-.4 1.7 0 1.1.6 2.1 1.5 2.7-.5 0-1-.2-1.5-.4 0 1.6 1.1 2.9 2.6 3.2-.3.1-.6.1-.9.1-.2 0-.4 0-.6-.1.4 1.3 1.6 2.3 3.1 2.3-1.1.9-2.5 1.4-4.1 1.4h-.8c1.5 1 3.2 1.5 5.2 1.5 6.2 0 9.6-5.1 9.6-9.6v-.4c.7-.5 1.2-1.1 1.7-1.8z" fill="black" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+      </div>
+    </footer>
   );
 }
