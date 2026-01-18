@@ -3,6 +3,7 @@
 import { StalksHeader } from "@repo/ui";
 import { useAuth } from "@/lib/vendure/auth-context";
 import { useRouter } from "next/navigation";
+import CartIcon from "./CartIcon";
 
 interface NavItem {
   label: string;
@@ -25,12 +26,18 @@ export default function HeaderWrapper({ navItems, logoSrc, isEcommerce }: Header
   };
 
   return (
-    <StalksHeader
-      navItems={navItems}
-      logoSrc={logoSrc}
-      isEcommerce={isEcommerce}
-      customer={customer}
-      onLogout={handleLogout}
-    />
+    <>
+      <StalksHeader
+        navItems={navItems}
+        logoSrc={logoSrc}
+        isEcommerce={isEcommerce}
+        customer={customer}
+        onLogout={handleLogout}
+      />
+      {/* Floating Cart Icon - Positioned absolutely */}
+      <div className="fixed top-4 right-4 z-[200] lg:top-[72px] lg:right-8">
+        <CartIcon />
+      </div>
+    </>
   );
 }

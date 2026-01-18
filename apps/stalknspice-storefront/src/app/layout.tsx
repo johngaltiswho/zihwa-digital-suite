@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { StalknSpiceFooter } from "@repo/ui";
 import { AuthProvider } from "@/lib/vendure/auth-context";
+import { CartProvider } from "@/lib/vendure/cart-context";
 import HeaderWrapper from "@/components/HeaderWrapper"; 
 
 const inter = Inter({ subsets: ["latin"] });
@@ -35,16 +36,18 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <AuthProvider>
-          <HeaderWrapper
-            navItems={stalkNavItems}
-            logoSrc="/images/sns-logo.png"
-            isEcommerce={true}
-          />
+          <CartProvider>
+            <HeaderWrapper
+              navItems={stalkNavItems}
+              logoSrc="/images/sns-logo.png"
+              isEcommerce={true}
+            />
 
-          <main className="min-h-screen">
-            {children}
-          </main>
-          <StalknSpiceFooter />
+            <main className="min-h-screen">
+              {children}
+            </main>
+            <StalknSpiceFooter />
+          </CartProvider>
         </AuthProvider>
       </body>
     </html>

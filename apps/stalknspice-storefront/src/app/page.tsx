@@ -6,11 +6,15 @@ import Newsletter from "../components/NewsLetter";
 import RecipeGrid from "../components/RecipeGrid";
 import { HeroSliderSNS } from "@repo/ui";
 import VerticalCategoryMenu from "../components/VerticalCategoryMenu";
+import ProductGrid from "../components/ProductGrid";
+import { vendureClient } from "@/lib/vendure/client";
+import { GET_PRODUCTS } from "@/lib/vendure/queries/products";
+import type { Product } from "@/lib/vendure/types";
 
 export default function Home() {
   // Slider State for Hero (6 slides)
   const [heroIndex, setHeroIndex] = useState(0);
-  // const heroSlides = [1, 2, 3, 4, 5, 6]; 
+  // const heroSlides = [1, 2, 3, 4, 5, 6];
   const slides = [
     { id: 1, img: "/images/hero-1.jpg" },
     { id: 2, img: "/images/hero-2.jpg" },
@@ -20,6 +24,10 @@ export default function Home() {
     { id: 6, img: "/images/hero-6.jpg" },
   ];
 
+  // Products State
+  const [products, setProducts] = useState<Product[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [productsError, setProductsError] = useState<string | null>(null);
 
   // Slider State for Reviews
   const [reviewIndex, setReviewIndex] = useState(0);
@@ -29,6 +37,27 @@ export default function Home() {
     { text: "Mr. Raghunandan called me one day and requested to look into the website and several other products that they sell. I ended up ordering a lot of products as they have a little bit of everything! The service I got was fast, prompt and really organised. I have placed multiple orders with him post that and the service is perfect and timely. Thankful that he called me and requested to look up the website!", author: "Puja Singh" },
     { text: "Excellent experience, we are treated not only as a very important but a good friend. Raghunandan was very kind and helpful. We got our orders on time. Found it very helpful especially during the lockdown. Thank you.", author: "Satinee M" }
   ];
+
+  // Fetch products on mount
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setProductsLoading(true);
+        const data = await vendureClient.request(GET_PRODUCTS, {
+          options: { take: 6 } // Fetch 6 featured products for homepage
+        });
+        setProducts(data.products.items);
+        setProductsError(null);
+      } catch (error) {
+        console.error('Failed to fetch products:', error);
+        setProductsError('Failed to load products. Please try again later.');
+      } finally {
+        setProductsLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   
   return (
@@ -102,26 +131,20 @@ export default function Home() {
     ))}
   </div>
 </section>
-        {/* 4. FEATURED PRODUCTS (MATCHED TO YOUR FILES) */}
-<section className="py-10 text-center">
-  <h2 className="text-3xl md:text-4xl font-bold mb-10 text-gray-800">Featured Products</h2>
-  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8">
-    {[
-      { name: "XO Sauce", img: "/images/XO.jpg" },
-      { name: "Gochujang", img: "/images/gochujang.jpg" },
-      { name: "Nutella", img: "/images/nutella.jpg" },
-      { name: "Frozen Blueberries", img: "/images/delishh.jpg" },
-      { name: "Kewpie Mayonnaise", img: "/images/kewpie.jpg" },
-      { name: "Barilla Fettuccine", img: "/images/noodles-pasta.png" },
-    ].map((prod) => (
-      <div key={prod.name} className="flex flex-col items-center group cursor-pointer">
-        <div className="w-full aspect-square flex items-center justify-center mb-4 p-2">
-          <Image src={prod.img} width={160} height={160} alt={prod.name} className="group-hover:scale-105 transition-transform duration-300 object-contain" />
-        </div>
-        <span className="text-base font-semibold text-gray-700">{prod.name}</span>
-      </div>
-    ))}
-  </div>
+        {/* 4. FEATURED PRODUCTS */}
+<section className="py-10">
+  <h2 className="text-3xl md:text-4xl font-bold mb-10 text-gray-800 text-center">Featured Products</h2>
+  {productsLoading ? (
+    <div className="text-center py-12">
+      <p className="text-gray-600 text-lg">Loading products...</p>
+    </div>
+  ) : productsError ? (
+    <div className="text-center py-12">
+      <p className="text-red-600 text-lg">{productsError}</p>
+    </div>
+  ) : (
+    <ProductGrid products={products} />
+  )}
 </section>
 
        {/* 4. TOP OFFERS */}
