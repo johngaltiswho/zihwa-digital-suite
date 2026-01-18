@@ -1,13 +1,12 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { retrieveCustomer } from "@/lib/medusa-lib/data/customer";
 import AuthButton from '@/components/AuthButton';
 import HumilityDBClient from '@/components/HumilityDBClient';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
 export default async function HumilityDB() {
-  const customer = await retrieveCustomer().catch(() => null);
+  const customer = null; // TODO: Replace with Vendure customer authentication
   const isLoaded = true; // For now, just set this to true
   const activeTab = 'dashboard'; // Default tab
   

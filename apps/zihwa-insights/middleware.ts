@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const PUBLIC_PATHS = ['/', '/sign-in', '/sign-up']
+const PUBLIC_PATHS = ['/', '/sign-in', '/sign-up', '/reset-password']
 
 export async function middleware(request: NextRequest) {
   // Simple token check - Supabase handles the heavy lifting
@@ -19,10 +19,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl)
   }
 
+  // Allow password recovery users to stay on /sign-in to update password
+  const hasRecoveryCode = request.nextUrl.searchParams.has('code') ||
+                         request.nextUrl.hash.includes('type=recovery')
+
   if (
     hasValidSession &&
     (request.nextUrl.pathname.startsWith('/sign-in') ||
-      request.nextUrl.pathname.startsWith('/sign-up'))
+      request.nextUrl.pathname.startsWith('/sign-up')) &&
+    !hasRecoveryCode
   ) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }

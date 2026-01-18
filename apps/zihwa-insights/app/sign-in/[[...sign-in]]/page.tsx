@@ -1,39 +1,53 @@
 'use client'
 
-import { FormEvent, useState } from 'react'
-import Link from 'next/link'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { Auth } from '@supabase/auth-ui-react'
+import { ThemeSupa } from '@supabase/auth-ui-shared'
 import { useSupabase } from '@/components/providers/SupabaseProvider'
+
+type AuthView = 'sign_in' | 'sign_up' | 'forgotten_password' | 'update_password'
 
 export default function SignInPage() {
   const supabase = useSupabase()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [view, setView] = useState<AuthView | undefined>(
+    (searchParams?.get('view') as AuthView) ?? undefined
+  )
+  const nextRoute = searchParams?.get('redirectedFrom') || '/dashboard'
+  const redirectTo = useMemo(
+    () => (typeof window !== 'undefined' ? `${window.location.origin}/dashboard` : undefined),
+    [],
+  )
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setError(null)
-    setLoading(true)
+  // Detect password recovery from URL hash or query params
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash
+      const hasRecoveryInHash = hash.includes('type=recovery')
+      const hasRecoveryInQuery = searchParams?.get('type') === 'recovery'
+      const hasCode = searchParams?.get('code') // Supabase sends recovery with ?code= param
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+      if (hasRecoveryInHash || hasRecoveryInQuery || hasCode) {
+        console.log('Recovery detected:', { hasRecoveryInHash, hasRecoveryInQuery, hasCode })
+        setView('update_password')
+        return
+      }
+    }
+    const urlView = searchParams?.get('view') as AuthView | null
+    if (urlView) setView(urlView)
+  }, [searchParams])
+
+  useEffect(() => {
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN') {
+        router.push(nextRoute)
+      }
     })
 
-    setLoading(false)
-
-    if (signInError) {
-      setError(signInError.message)
-      return
-    }
-
-    const redirectTo = searchParams.get('redirectedFrom') || '/dashboard'
-    router.push(redirectTo)
-  }
+    return () => data.subscription.unsubscribe()
+  }, [nextRoute, router, supabase])
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
@@ -42,56 +56,34 @@ export default function SignInPage() {
           <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-gray-900 text-white text-xl font-semibold">
             ZI
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Welcome back</h1>
-          <p className="text-gray-500">Sign in to continue to Zihwa Insights</p>
+          <h1 className="text-3xl font-bold text-gray-900">Zihwa Insights</h1>
+          <p className="text-gray-500 text-sm">Secure sign-in and password management powered by Supabase.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="text-sm font-medium text-gray-700">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
-              className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
-              placeholder="you@company.com"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-700">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-              className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
-              placeholder="••••••••"
-            />
-          </div>
-
-          {error && (
-            <div className="rounded-lg border border-red-100 bg-red-50 px-4 py-2 text-sm text-red-700">
-              {error}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-gray-900 py-2.5 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-60"
-          >
-            {loading ? 'Signing in...' : 'Sign in'}
-          </button>
-        </form>
-
-        <p className="mt-6 text-center text-sm text-gray-500">
-          No account yet?{' '}
-          <Link href="/sign-up" className="font-semibold text-gray-900 hover:underline">
-            Create one
-          </Link>
-        </p>
+        <Auth
+          supabaseClient={supabase}
+          view={view}
+          redirectTo={redirectTo}
+          providers={[]}
+          magicLink={false}
+          showLinks
+          appearance={{
+            theme: ThemeSupa,
+            variables: {
+              default: {
+                colors: {
+                  brand: '#111827',
+                  brandAccent: '#0f172a',
+                },
+              },
+            },
+            className: {
+              button: 'bg-gray-900 hover:bg-gray-800 text-white',
+              anchor: 'text-gray-900 font-semibold',
+              input: 'rounded-lg border-gray-200 focus:border-gray-900 focus:ring-0',
+            },
+          }}
+        />
       </div>
     </div>
   )

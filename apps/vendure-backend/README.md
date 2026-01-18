@@ -21,7 +21,8 @@ npm run dev
 ```
 
 will start the Vendure server and [worker](https://www.vendure.io/docs/developer-guide/vendure-worker/) processes from
-the `src` directory.
+the `src` directory. Make sure the `PORT` in `.env` is free on your machine (default `3002`). Update it if another process
+is already bound to that port before running the dev command.
 
 ## Build
 
@@ -98,6 +99,30 @@ docker-compose up postgres_db
 docker-compose up redis
 ```
 
+## Supabase / Postgres configuration
+
+This repo is configured to run against the shared Supabase Postgres project instead of the default SQLite file.
+
+1. Create (or reuse) a schema inside Supabase (e.g. `vendure`) and grant your database role `USAGE` + `ALL PRIVILEGES`.
+2. Copy the Supabase connection details into [`apps/vendure-backend/.env`](./.env):
+   ```
+   DB_HOST=fbflxwzygztakprsrmpc.supabase.co   # pooler host resolves over IPv4
+   DB_PORT=6543                                # 5432 if you have IPv6 or the IPv4 add-on
+   DB_USERNAME=vendure_app
+   DB_PASSWORD=********
+   DB_NAME=postgres
+   DB_SCHEMA=vendure
+   DB_SYNCHRONIZE=true                         # only during the first bootstrap
+   ```
+3. Start the dev server (`pnpm --filter vendure-backend run dev`) so Vendure auto-creates the schema.
+4. Generate a baseline migration and disable auto-sync once the schema exists:
+   ```
+   pnpm --filter vendure-backend exec vendure migrate -g baseline --output ./src/migrations
+   ```
+   Then set `DB_SYNCHRONIZE=false` to make future schema changes migration-only.
+
+All existing migrations will run automatically on startup, so teammates only need the `.env` file and Supabase access.
+
 ## Plugins
 
 In Vendure, your custom functionality will live in [plugins](https://www.vendure.io/docs/plugins/).
@@ -144,4 +169,3 @@ You can also run any pending migrations manually, without starting the server vi
 - Make sure your Node version is ^18.17.0 || ^20.3.0 || >=21.0.0 to support the Sharp library.
 - Make sure your package manager is up to date.
 - **Not recommended**: if none of the above helps to resolve the issue, install sharp specifying your machines OS and Architecture. For example: `pnpm install sharp --config.platform=linux --config.architecture=x64` or `npm install sharp --os linux --cpu x64`
-

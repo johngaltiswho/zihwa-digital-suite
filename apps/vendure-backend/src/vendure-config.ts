@@ -7,14 +7,13 @@ import {
 } from '@vendure/core';
 import { defaultEmailHandlers, EmailPlugin, FileBasedTemplateLoader } from '@vendure/email-plugin';
 import { AssetServerPlugin } from '@vendure/asset-server-plugin';
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
+import { DashboardPlugin } from '@vendure/dashboard/plugin';
 import { GraphiqlPlugin } from '@vendure/graphiql-plugin';
 import 'dotenv/config';
 import path from 'path';
 
 const IS_DEV = process.env.APP_ENV === 'dev';
-// Use PORT=0 for dynamic port allocation, fallback to 3000 if not set
-const serverPort = process.env.PORT === '0' ? 0 : (+process.env.PORT || 3000);
+const serverPort = +process.env.PORT || 3000;
 
 export const config: VendureConfig = {
     apiOptions: {
@@ -39,20 +38,20 @@ export const config: VendureConfig = {
         cookieOptions: {
           secret: process.env.COOKIE_SECRET,
         },
+        requireVerification: false, // Disable email verification in development
     },
     dbConnectionOptions: {
         type: 'postgres',
-        host: process.env.DB_HOST || 'localhost',
-        port: parseInt(process.env.DB_PORT || '5432'),
-        username: process.env.DB_USERNAME || 'postgres',
-        password: process.env.DB_PASSWORD || 'postgres',
-        database: process.env.DB_NAME || 'vendure_db',
-        // See the README.md "Migrations" section for an explanation of
-        // the `synchronize` and `migrations` options.
-        synchronize: true, // Set to true for initial setup, false for production
+        host: process.env.DB_HOST,
+        port: parseInt(process.env.DB_PORT || '5432', 10),
+        username: process.env.DB_USERNAME,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+        schema: process.env.DB_SCHEMA,
+        synchronize: process.env.DB_SYNCHRONIZE !== 'false',
         migrations: [path.join(__dirname, './migrations/*.+(js|ts)')],
         logging: false,
-        ssl: process.env.DB_HOST?.includes('supabase.co') ? { rejectUnauthorized: false } : false,
+        ssl: { rejectUnauthorized: false },
     },
     paymentOptions: {
         paymentMethodHandlers: [dummyPaymentHandler],
@@ -81,19 +80,18 @@ export const config: VendureConfig = {
             templateLoader: new FileBasedTemplateLoader(path.join(__dirname, '../static/email/templates')),
             globalTemplateVars: {
                 // The following variables will change depending on your storefront implementation.
-                // Here we are assuming a storefront running at http://localhost:8080.
-                fromAddress: '"example" <noreply@example.com>',
-                verifyEmailAddressUrl: 'http://localhost:8080/verify',
-                passwordResetUrl: 'http://localhost:8080/password-reset',
-                changeEmailAddressUrl: 'http://localhost:8080/verify-email-address-change'
+                // Stalknspice storefront running at http://localhost:3003
+                fromAddress: '"Stalks N Spice" <noreply@stalknspice.com>',
+                verifyEmailAddressUrl: 'http://localhost:3003/verify',
+                passwordResetUrl: 'http://localhost:3003/password-reset',
+                changeEmailAddressUrl: 'http://localhost:3003/verify-email-address-change'
             },
         }),
-        AdminUiPlugin.init({
-            route: 'admin',
-            port: serverPort + 2,
-            adminUiConfig: {
-                apiPort: serverPort,
-            },
+        DashboardPlugin.init({
+            route: 'dashboard',
+            appDir: IS_DEV
+                ? path.join(__dirname, '../dist/dashboard')
+                : path.join(__dirname, 'dashboard'),
         }),
     ],
 };

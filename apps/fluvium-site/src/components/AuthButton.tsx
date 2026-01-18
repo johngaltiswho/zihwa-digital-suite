@@ -2,36 +2,28 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { retrieveCustomer, signout } from "@/lib/medusa-lib/data/customer";
-import { HttpTypes } from "@medusajs/types";
+
+// TODO: Replace with Vendure customer type
+interface Customer {
+  id: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+}
 
 export default function AuthButton() {
-  const [customer, setCustomer] = useState<HttpTypes.StoreCustomer | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [customer, setCustomer] = useState<Customer | null>(null);
+  const [loading, setLoading] = useState(false);
 
+  // TODO: Replace with Vendure authentication
   useEffect(() => {
-    const fetchCustomer = async () => {
-      try {
-        const customerData = await retrieveCustomer();
-        setCustomer(customerData);
-      } catch (error) {
-        console.error('Error fetching customer:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCustomer();
+    setLoading(false);
   }, []);
 
   const handleSignOut = async () => {
-    try {
-      await signout('in'); // Using 'in' as default country code
-      setCustomer(null);
-      window.location.reload(); // Refresh to update auth state
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
+    // TODO: Implement Vendure sign out
+    setCustomer(null);
+    window.location.reload();
   };
 
   if (loading) {

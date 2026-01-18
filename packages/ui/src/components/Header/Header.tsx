@@ -65,7 +65,18 @@ const MEGA_MENU_DATA: Record<string, { products: string[], brands: string[], pro
 };
 
 interface NavItem { label: string; href: string; }
-interface HeaderProps { navItems: NavItem[]; logoSrc: string; isEcommerce?: boolean; }
+interface Customer {
+  firstName: string;
+  lastName: string;
+  emailAddress: string;
+}
+interface HeaderProps {
+  navItems: NavItem[];
+  logoSrc: string;
+  isEcommerce?: boolean;
+  customer?: Customer | null;
+  onLogout?: () => void;
+}
 
 // --- 1. SHARED HEADER (FOR OTHER APPS) ---
 export function SharedHeader({ navItems, logoSrc }: HeaderProps) {
@@ -234,7 +245,7 @@ export function SharedHeader({ navItems, logoSrc }: HeaderProps) {
 }
 
 // --- 2. STALKS N SPICE HEADER ---
-export function StalksHeader({ navItems, logoSrc, isEcommerce = true }: HeaderProps) {
+export function StalksHeader({ navItems, logoSrc, isEcommerce = true, customer, onLogout }: HeaderProps) {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
@@ -281,7 +292,20 @@ export function StalksHeader({ navItems, logoSrc, isEcommerce = true }: HeaderPr
             <Link href="/tracking" className="flex items-center hover:text-red-800 transition-colors"><MapPin size={16} className="mr-1.5 text-gray-400" /> Tracking</Link>
             <Link href="/offers" className="flex items-center hover:text-red-800 transition-colors"><Tag size={16} className="mr-1.5 text-gray-400" /> Offers</Link>
             <Link href="/wishlist" className="flex items-center hover:text-red-800 transition-colors"><Heart size={16} className="mr-1.5 text-gray-400" /> Wishlist</Link>
-            <Link href="/login" className="flex items-center hover:text-red-800 transition-colors"><User size={16} className="mr-1.5 text-gray-400" /> Login</Link>
+
+            {/* Dynamic Auth Links */}
+            {customer ? (
+              <>
+                <span className="flex items-center text-gray-600"><User size={16} className="mr-1.5 text-gray-400" /> Hi, {customer.firstName}</span>
+                <Link href="/account" className="flex items-center hover:text-red-800 transition-colors font-bold">Account</Link>
+                <button onClick={onLogout} className="flex items-center hover:text-red-800 transition-colors">Logout</button>
+              </>
+            ) : (
+              <>
+                <Link href="/register" className="flex items-center hover:text-red-800 transition-colors"><User size={16} className="mr-1.5 text-gray-400" /> Register</Link>
+                <Link href="/login" className="flex items-center hover:text-red-800 transition-colors"><User size={16} className="mr-1.5 text-gray-400" /> Login</Link>
+              </>
+            )}
           </div>
         </div>
 
@@ -391,7 +415,7 @@ export function StalksHeader({ navItems, logoSrc, isEcommerce = true }: HeaderPr
             </Link>
           </div>
 
-          <Link href="/login" className="p-2 -mr-2">
+          <Link href={customer ? "/account" : "/login"} className="p-2 -mr-2">
             <User size={28} strokeWidth={1.5} />
           </Link>
         </div>
@@ -428,6 +452,44 @@ export function StalksHeader({ navItems, logoSrc, isEcommerce = true }: HeaderPr
                 </Link>
               </li>
             ))}
+            {/* Auth Links */}
+            {customer ? (
+              <>
+                <li className="border-b border-gray-50 pb-4">
+                  <div className="text-[14px] font-bold text-gray-600 uppercase flex items-center gap-2">
+                    <User size={18} />
+                    Hi, {customer.firstName}
+                  </div>
+                </li>
+                <li className="border-b border-gray-50 pb-4">
+                  <Link href="/account" onClick={() => setIsMenuOpen(false)} className="text-[16px] font-bold text-[#8B2323] uppercase flex items-center gap-2">
+                    <User size={18} />
+                    My Account
+                  </Link>
+                </li>
+                <li className="border-b border-gray-50 pb-4">
+                  <button onClick={() => { onLogout?.(); setIsMenuOpen(false); }} className="text-[16px] font-bold text-[#8B2323] uppercase flex items-center gap-2 w-full">
+                    <User size={18} />
+                    Logout
+                  </button>
+                </li>
+              </>
+            ) : (
+              <>
+                <li className="border-b border-gray-50 pb-4">
+                  <Link href="/register" onClick={() => setIsMenuOpen(false)} className="text-[16px] font-bold text-[#8B2323] uppercase flex items-center gap-2">
+                    <User size={18} />
+                    Register
+                  </Link>
+                </li>
+                <li className="border-b border-gray-50 pb-4">
+                  <Link href="/login" onClick={() => setIsMenuOpen(false)} className="text-[16px] font-bold text-[#8B2323] uppercase flex items-center gap-2">
+                    <User size={18} />
+                    Login
+                  </Link>
+                </li>
+              </>
+            )}
           </ul>
         </div>
       </aside>

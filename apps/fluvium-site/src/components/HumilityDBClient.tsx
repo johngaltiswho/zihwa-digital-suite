@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { apiService, type Technique, type FlowSession, type MindsetModule, getDifficultyColor, formatDuration } from '@/lib/api';
 import { TechniqueVideoPreview } from '@/components/YouTubePlayer';
 import TechniqueModal from '@/components/TechniqueModal';
-import { HttpTypes } from "@medusajs/types";
 
 interface Tab {
   id: string;
@@ -12,8 +11,16 @@ interface Tab {
   icon: string;
 }
 
+// TODO: Replace with Vendure customer type
+interface Customer {
+  id: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+}
+
 interface HumilityDBClientProps {
-  customer: HttpTypes.StoreCustomer | null;
+  customer: Customer | null;
   tabs: Tab[];
 }
 

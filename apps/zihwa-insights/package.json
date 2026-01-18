@@ -11,6 +11,10 @@
   },
   "dependencies": {
     "@prisma/client": "^6.0.1",
+    "@repo/types": "workspace:*",
+    "@repo/ui": "workspace:*",
+    "@supabase/auth-ui-react": "^0.4.7",
+    "@supabase/auth-ui-shared": "^0.1.8",
     "@supabase/ssr": "^0.5.2",
     "@supabase/storage-js": "^2.7.1",
     "@supabase/supabase-js": "^2.81.1",
@@ -22,11 +26,11 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "xlsx": "^0.18.5",
-    "zod": "^4.1.12",
-    "@repo/ui": "workspace:*",
-    "@repo/types": "workspace:*"
+    "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -35,9 +39,7 @@
     "eslint-config-next": "16.0.1",
     "prisma": "^6.0.1",
     "tailwindcss": "^4",
-    "typescript": "^5",
-    "@repo/eslint-config": "workspace:*",
-    "@repo/typescript-config": "workspace:*"
+    "typescript": "^5"
   },
   "packageManager": "pnpm@10.25.0"
 }
