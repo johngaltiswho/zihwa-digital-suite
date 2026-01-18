@@ -138,6 +138,20 @@ export interface Address {
   defaultBillingAddress?: boolean;
 }
 
+export interface CreateAddressInput {
+  fullName?: string;
+  company?: string;
+  streetLine1: string;
+  streetLine2?: string;
+  city: string;
+  province?: string;
+  postalCode: string;
+  countryCode: string;
+  phoneNumber?: string;
+  defaultShippingAddress?: boolean;
+  defaultBillingAddress?: boolean;
+}
+
 // ============================================================================
 // Order & Cart Types
 // ============================================================================
