@@ -121,19 +121,21 @@ export default function AccountPage() {
             </div>
           </Link>
 
-          {/* Settings */}
-          <div className="bg-white rounded-[30px] shadow-xl shadow-gray-200/50 p-8 border border-gray-100 hover:border-[#8B2323] transition-all cursor-pointer group opacity-50">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center group-hover:bg-[#8B2323] transition-all">
-                <Settings className="text-[#8B2323] group-hover:text-white" size={28} />
+          {/* Profile Settings */}
+          <Link href="/account/profile">
+            <div className="bg-white rounded-[30px] shadow-xl shadow-gray-200/50 p-8 border border-gray-100 hover:border-[#8B2323] transition-all cursor-pointer group">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center group-hover:bg-[#8B2323] transition-all">
+                  <Settings className="text-[#8B2323] group-hover:text-white" size={28} />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter">Profile</h3>
+                  <p className="text-gray-400 text-sm font-bold">Edit your information</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter">Settings</h3>
-                <p className="text-gray-400 text-sm font-bold">Coming Soon</p>
-              </div>
+              <p className="text-gray-600 text-sm">Update your profile and contact details</p>
             </div>
-            <p className="text-gray-600 text-sm">Update profile and preferences</p>
-          </div>
+          </Link>
         </div>
 
         {/* Continue Shopping */}
