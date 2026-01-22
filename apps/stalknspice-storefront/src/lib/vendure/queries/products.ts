@@ -133,10 +133,30 @@ export const GET_COLLECTIONS = `
         featuredAsset {
           id
           preview
+          source
         }
         parent {
           id
           name
+          slug
+        }
+        children {
+          id
+          name
+          slug
+          featuredAsset {
+            id
+            preview
+          }
+          children {
+            id
+            name
+            slug
+            featuredAsset {
+              id
+              preview
+            }
+          }
         }
       }
       totalItems
@@ -168,6 +188,15 @@ export const GET_COLLECTION = `
         featuredAsset {
           id
           preview
+        }
+        children {
+          id
+          name
+          slug
+          featuredAsset {
+            id
+            preview
+          }
         }
       }
     }

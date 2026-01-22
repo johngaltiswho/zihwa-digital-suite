@@ -70,12 +70,19 @@ interface Customer {
   lastName: string;
   emailAddress: string;
 }
+interface Collection {
+  id: string;
+  name: string;
+  slug: string;
+  children?: Collection[];
+}
 interface HeaderProps {
   navItems: NavItem[];
   logoSrc: string;
   isEcommerce?: boolean;
   customer?: Customer | null;
   onLogout?: () => void;
+  collections?: Collection[];
 }
 
 // --- 1. SHARED HEADER (FOR OTHER APPS) ---
@@ -245,7 +252,7 @@ export function SharedHeader({ navItems, logoSrc }: HeaderProps) {
 }
 
 // --- 2. STALKS N SPICE HEADER ---
-export function StalksHeader({ navItems, logoSrc, isEcommerce = true, customer, onLogout }: HeaderProps) {
+export function StalksHeader({ navItems, logoSrc, isEcommerce = true, customer, onLogout, collections = [] }: HeaderProps) {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
@@ -357,40 +364,105 @@ export function StalksHeader({ navItems, logoSrc, isEcommerce = true, customer, 
                       <ChevronDown size={14} className={`transition-transform duration-300 ${isCurrentlyActive ? 'rotate-180' : 'rotate-0'}`} />
                     </button>
 
-                    {/* MEGA MENU DRAWER CODE REMAINS THE SAME... */}
-                    {isCurrentlyActive && MEGA_MENU_DATA[megaMenuKey] && (
+                    {/* MEGA MENU DRAWER - DYNAMIC FROM VENDURE */}
+                    {isCurrentlyActive && (() => {
+                      // Find the matching collection
+                      const activeCollection = collections.find(c => c.name === item.label);
+                      if (!activeCollection || !activeCollection.children || activeCollection.children.length === 0) {
+                        // Fallback to hard-coded data if collection not found
+                        const hardcodedData = MEGA_MENU_DATA[megaMenuKey];
+                        if (!hardcodedData) return null;
+
+                        return (
+                          <div className="absolute left-0 top-full w-full bg-white shadow-[0_35px_90px_-20px_rgba(0,0,0,0.25)] border-t border-gray-100 animate-in fade-in slide-in-from-top-1 duration-200 z-[110]">
+                            <div className="max-w-[1400px] mx-auto flex p-5 gap-8">
+                              <div className="flex-1 flex flex-col gap-6">
+                                <div>
+                                  <h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest mb-2 border-b border-gray-100 pb-2">Products</h3>
+                                  <div className="grid grid-cols-4 gap-x-6 gap-y-3">
+                                    {hardcodedData.products.map((sub) => (
+                                      <Link key={sub} href="#" className="text-gray-600 hover:text-[#8B2323] text-[15px] font-medium flex items-center justify-center normal-case">
+                                        {sub}
+                                      </Link>
+                                    ))}
+                                  </div>
+                                </div>
+                                <div className="border-t border-gray-100 pt-2">
+                                  <div className="relative mb-4"><h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest border-b border-gray-100 pb-2">Brands</h3></div>
+                                  <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-4">
+                                    {hardcodedData.brands.map((brand) => (
+                                      <Link key={brand} href="#" className="text-[15px] font-semibold text-black hover:text-[#8B2323] transition-all uppercase">{brand}</Link>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="w-[380px]">
+                                <div className="bg-[#f9f9f9] rounded-[40px] p-12 h-full flex flex-col items-center justify-center border border-gray-100 text-center shadow-sm">
+                                  <p className="text-[12px] text-[#8B2323] font-bold uppercase tracking-[0.4em] mb-4">Featured</p>
+                                  <h4 className="text-gray-900 font-black text-3xl leading-tight mb-8 italic uppercase tracking-tighter">{hardcodedData.promoTitle}</h4>
+                                  <Link href={item.href} className="bg-[#8B2323] text-white text-[13px] font-bold uppercase tracking-[0.2em] px-12 py-4 rounded-full hover:bg-black transition-all shadow-md">View All</Link>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      // Use dynamic collection data from Vendure
+                      const productsCollection = activeCollection.children.find(c => c.name === 'Products');
+                      const brandsCollection = activeCollection.children.find(c => c.name === 'Brands');
+
+                      return (
                         <div className="absolute left-0 top-full w-full bg-white shadow-[0_35px_90px_-20px_rgba(0,0,0,0.25)] border-t border-gray-100 animate-in fade-in slide-in-from-top-1 duration-200 z-[110]">
                           <div className="max-w-[1400px] mx-auto flex p-5 gap-8">
-                            <div className="flex-1 flex flex-col gap-6 ">
-                              <div>
-                                <h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest mb-2 border-b border-gray-100 pb-2">Products</h3>
-                                <div className="grid grid-cols-4 gap-x-6 gap-y-3">
-                                  {MEGA_MENU_DATA[megaMenuKey].products.map((sub) => (
-                                    <Link key={sub} href="#" className="text-gray-600 hover:text-[#8B2323] text-[15px] font-medium flex items-center justify-center normal-case">
-                                      {sub}
-                                    </Link>
-                                  ))}
+                            <div className="flex-1 flex flex-col gap-6">
+                              {/* Products Section */}
+                              {productsCollection && productsCollection.children && productsCollection.children.length > 0 && (
+                                <div>
+                                  <h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest mb-2 border-b border-gray-100 pb-2">Products</h3>
+                                  <div className="grid grid-cols-4 gap-x-6 gap-y-3">
+                                    {productsCollection.children.map((product) => (
+                                      <Link
+                                        key={product.id}
+                                        href={`/collection/${product.slug}`}
+                                        className="text-gray-600 hover:text-[#8B2323] text-[15px] font-medium flex items-center justify-center normal-case"
+                                      >
+                                        {product.name}
+                                      </Link>
+                                    ))}
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="border-t border-gray-100 pt-2 ">
-                                <div className="relative mb-4"><h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest border-b border-gray-100 pb-2">Brands</h3></div>
-                                <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-4">
-                                  {MEGA_MENU_DATA[megaMenuKey].brands.map((brand) => (
-                                    <Link key={brand} href="#" className="text-[15px] font-semibold text-black hover:text-[#8B2323] transition-all uppercase ">{brand}</Link>
-                                  ))}
+                              )}
+
+                              {/* Brands Section */}
+                              {brandsCollection && brandsCollection.children && brandsCollection.children.length > 0 && (
+                                <div className="border-t border-gray-100 pt-2">
+                                  <div className="relative mb-4"><h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest border-b border-gray-100 pb-2">Brands</h3></div>
+                                  <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-4">
+                                    {brandsCollection.children.map((brand) => (
+                                      <Link
+                                        key={brand.id}
+                                        href={`/collection/${brand.slug}`}
+                                        className="text-[15px] font-semibold text-black hover:text-[#8B2323] transition-all uppercase"
+                                      >
+                                        {brand.name}
+                                      </Link>
+                                    ))}
+                                  </div>
                                 </div>
-                              </div>
+                              )}
                             </div>
                             <div className="w-[380px]">
                               <div className="bg-[#f9f9f9] rounded-[40px] p-12 h-full flex flex-col items-center justify-center border border-gray-100 text-center shadow-sm">
                                 <p className="text-[12px] text-[#8B2323] font-bold uppercase tracking-[0.4em] mb-4">Featured</p>
-                                <h4 className="text-gray-900 font-black text-3xl leading-tight mb-8 italic uppercase tracking-tighter">{MEGA_MENU_DATA[megaMenuKey].promoTitle}</h4>
-                                <button className="bg-[#8B2323] text-white text-[13px] font-bold uppercase tracking-[0.2em] px-12 py-4 rounded-full hover:bg-black transition-all shadow-md">View All</button>
+                                <h4 className="text-gray-900 font-black text-3xl leading-tight mb-8 italic uppercase tracking-tighter">{activeCollection.name}</h4>
+                                <Link href={item.href} className="bg-[#8B2323] text-white text-[13px] font-bold uppercase tracking-[0.2em] px-12 py-4 rounded-full hover:bg-black transition-all shadow-md">View All</Link>
                               </div>
                             </div>
                           </div>
                         </div>
-                      )}
+                      );
+                    })()}
                   </li>
                 );
               })}
