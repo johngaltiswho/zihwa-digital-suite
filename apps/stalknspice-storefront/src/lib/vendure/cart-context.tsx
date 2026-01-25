@@ -46,7 +46,34 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const refreshCart = useCallback(async () => {
     try {
       const data = await vendureClient.request(GET_ACTIVE_ORDER);
-      setActiveOrder(data.activeOrder || null);
+      console.log('Active order from Vendure:', {
+        id: data.activeOrder?.id,
+        code: data.activeOrder?.code,
+        active: data.activeOrder?.active,
+        state: data.activeOrder?.state,
+      });
+
+      // Handle abandoned checkout (Amazon-style)
+      // If order is stuck in ArrangingPayment, transition back to AddingItems
+      if (data.activeOrder?.active === true && data.activeOrder?.state === 'ArrangingPayment') {
+        console.log('Abandoned checkout detected, transitioning back to AddingItems...');
+        const { TRANSITION_ORDER_TO_STATE } = await import('./mutations/checkout');
+        const transitionResult = await vendureClient.request(TRANSITION_ORDER_TO_STATE, {
+          state: 'AddingItems',
+        });
+        if (transitionResult.transitionOrderToState.__typename === 'Order') {
+          setActiveOrder(transitionResult.transitionOrderToState);
+          return;
+        }
+      }
+
+      // Use Vendure's active flag AND state to determine if order is editable
+      // This ensures completed/paid orders don't appear in cart
+      if (data.activeOrder?.active === true && data.activeOrder?.state === 'AddingItems') {
+        setActiveOrder(data.activeOrder);
+      } else {
+        setActiveOrder(null);
+      }
     } catch (err) {
       // No active order is fine
       setActiveOrder(null);

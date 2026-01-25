@@ -15,9 +15,15 @@ export default function PaymentPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Redirect if cart is empty
+  // Redirect if cart is empty or order not ready for payment
   useEffect(() => {
     if (!activeOrder || itemCount === 0) {
+      router.push("/cart");
+    } else if (!activeOrder.shippingAddress || !activeOrder.shippingLines || activeOrder.shippingLines.length === 0) {
+      // Order doesn't have shipping set up yet, redirect back
+      router.push("/checkout");
+    } else if (activeOrder.state === "PaymentSettled" || activeOrder.state === "PaymentAuthorized") {
+      // Order already paid, redirect to cart
       router.push("/cart");
     }
   }, [activeOrder, itemCount, router]);

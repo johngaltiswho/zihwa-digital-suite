@@ -16,9 +16,12 @@ export default function CheckoutPage() {
   const { customer, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(false);
 
-  // Redirect if cart is empty
+  // Redirect if cart is empty or order already processed
   useEffect(() => {
     if (!activeOrder || itemCount === 0) {
+      router.push("/cart");
+    } else if (activeOrder.state !== "AddingItems") {
+      // Order already has shipping/payment, redirect to cart
       router.push("/cart");
     }
   }, [activeOrder, itemCount, router]);
