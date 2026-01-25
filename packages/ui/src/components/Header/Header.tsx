@@ -4,11 +4,21 @@ import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   Menu, Search, User, Heart, X,
   ChefHat, PhoneCall, MapPin, Tag, ShoppingCart, 
-  ChevronRight, ChevronDown 
+  ChevronRight, ChevronDown, Headset, Pill,ShoppingBag,ShieldCheck, Handbag,
 } from "lucide-react"; 
+interface NavItem {
+  label: string;
+  href: string;
+}
+
+interface HeaderProps {
+  navItems: NavItem[];
+  logoSrc: string;
+}
 
 // --- MEGA MENU DATA ---
 const MEGA_MENU_DATA: Record<string, { products: string[], brands: string[], promoTitle: string }> = {
@@ -65,25 +75,7 @@ const MEGA_MENU_DATA: Record<string, { products: string[], brands: string[], pro
 };
 
 interface NavItem { label: string; href: string; }
-interface Customer {
-  firstName: string;
-  lastName: string;
-  emailAddress: string;
-}
-interface Collection {
-  id: string;
-  name: string;
-  slug: string;
-  children?: Collection[];
-}
-interface HeaderProps {
-  navItems: NavItem[];
-  logoSrc: string;
-  isEcommerce?: boolean;
-  customer?: Customer | null;
-  onLogout?: () => void;
-  collections?: Collection[];
-}
+interface HeaderProps { navItems: NavItem[]; logoSrc: string; isEcommerce?: boolean; }
 
 // --- 1. SHARED HEADER (FOR OTHER APPS) ---
 export function SharedHeader({ navItems, logoSrc }: HeaderProps) {
@@ -108,151 +100,19 @@ export function SharedHeader({ navItems, logoSrc }: HeaderProps) {
         </nav>
         <button className="sh-mobile-toggle" onClick={() => setIsMenuOpen(!isMenuOpen)}>{isMenuOpen ? "✕" : "☰"}</button>
       </div>
-      {/* PREMIUM MOBILE SIDEBAR MENU */}
-      {isMenuOpen && (
-        <>
-          {/* BACKDROP */}
-          <div 
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(17, 24, 39, 0.8)', // Using AACP gray-900 with transparency
-              zIndex: 9998,
-              backdropFilter: 'blur(4px)'
-            }}
-            onClick={() => setIsMenuOpen(false)}
-          />
-          
-          {/* SIDEBAR */}
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            right: 0,
-            width: '320px',
-            height: '100vh',
-            background: '#111827', // Using AACP brand gray-900
-            zIndex: 9999,
-            boxShadow: '-8px 0 32px rgba(0, 0, 0, 0.3)',
-            overflowY: 'auto',
-            animation: 'slideIn 0.3s ease-out'
-          }}>
-            {/* SIDEBAR HEADER */}
-            <div style={{
-              padding: '32px 24px 24px 24px',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between'
-            }}>
-              <div style={{
-                color: 'white',
-                fontSize: '18px',
-                fontWeight: 'bold'
-              }}>
-                AACP Infrastructure
-              </div>
-              <button
-                onClick={() => setIsMenuOpen(false)}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  border: 'none',
-                  color: 'white',
-                  fontSize: '24px',
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '50%',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* NAVIGATION ITEMS */}
-            <div style={{ padding: '24px 0' }}>
-              {navItems.map((item, index) => {
-                const isActive = pathname === item.href;
-                return (
-                  <a
-                    key={index}
-                    href={item.href}
-                    onClick={() => setIsMenuOpen(false)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '16px 24px',
-                      color: isActive ? '#ffffff' : 'rgba(255, 255, 255, 0.8)',
-                      textDecoration: 'none',
-                      fontSize: '16px',
-                      fontWeight: isActive ? '700' : '500',
-                      backgroundColor: isActive ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
-                      borderLeft: isActive ? '4px solid #ffffff' : '4px solid transparent',
-                      transition: 'all 0.2s ease',
-                      marginBottom: '4px'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isActive) {
-                        e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
-                        e.target.style.paddingLeft = '32px';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isActive) {
-                        e.target.style.backgroundColor = 'transparent';
-                        e.target.style.paddingLeft = '24px';
-                      }
-                    }}
-                  >
-                    <span style={{ 
-                      width: '6px', 
-                      height: '6px', 
-                      borderRadius: '50%', 
-                      backgroundColor: isActive ? '#ffffff' : 'rgba(255, 255, 255, 0.4)',
-                      marginRight: '12px',
-                      transition: 'all 0.2s ease'
-                    }}></span>
-                    {item.label}
-                  </a>
-                );
-              })}
-            </div>
-
-            {/* FOOTER */}
-            <div style={{
-              position: 'absolute',
-              bottom: '24px',
-              left: '24px',
-              right: '24px',
-              textAlign: 'center',
-              color: 'rgba(255, 255, 255, 0.5)',
-              fontSize: '12px',
-              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-              paddingTop: '16px'
-            }}>
-              Building Excellence Together
-            </div>
-          </div>
-
-          <style jsx global>{`
-            @keyframes slideIn {
-              from { transform: translateX(100%); }
-              to { transform: translateX(0); }
-            }
-          `}</style>
-        </>
-      )}
+      <div className={`sh-mobile-overlay ${isMenuOpen ? "active" : ""}`}>
+        <nav className="sh-mobile-list">
+          {navItems.map((item) => (
+            <Link key={item.href} href={item.href} className={`sh-mobile-item ${pathname === item.href ? "active" : ""}`} onClick={() => setIsMenuOpen(false)}>{item.label}</Link>
+          ))}
+        </nav>
+      </div>
     </header>
   );
 }
 
 // --- 2. STALKS N SPICE HEADER ---
-export function StalksHeader({ navItems, logoSrc, isEcommerce = true, customer, onLogout, collections = [] }: HeaderProps) {
+export function StalksHeader({ navItems, logoSrc, isEcommerce = true }: HeaderProps) {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
@@ -294,25 +154,12 @@ export function StalksHeader({ navItems, logoSrc, isEcommerce = true, customer, 
         {/* ROW 1: Utility Bar */}
         <div className="bg-white border-b border-gray-50">
           <div className="max-w-[1400px] mx-auto px-16 h-14 flex justify-end items-center space-x-6 text-[13px] font-medium text-gray-900">
-            <Link href="/recipes" className="flex items-center hover:text-red-800 transition-colors"><ChefHat size={18} className="mr-1.5 text-gray-400" /> Recipe's</Link>
+            <Link href="/recipes" className="flex items-center hover:text-red-800 transition-colors"><ChefHat size={18} className="mr-1.5 text-gray-400" /> Recipe&apos;s</Link>
             <Link href="/contact" className="flex items-center hover:text-red-800 transition-colors"><PhoneCall size={16} className="mr-1.5 text-gray-400" /> Contact Us</Link>
             <Link href="/tracking" className="flex items-center hover:text-red-800 transition-colors"><MapPin size={16} className="mr-1.5 text-gray-400" /> Tracking</Link>
             <Link href="/offers" className="flex items-center hover:text-red-800 transition-colors"><Tag size={16} className="mr-1.5 text-gray-400" /> Offers</Link>
             <Link href="/wishlist" className="flex items-center hover:text-red-800 transition-colors"><Heart size={16} className="mr-1.5 text-gray-400" /> Wishlist</Link>
-
-            {/* Dynamic Auth Links */}
-            {customer ? (
-              <>
-                <span className="flex items-center text-gray-600"><User size={16} className="mr-1.5 text-gray-400" /> Hi, {customer.firstName}</span>
-                <Link href="/account" className="flex items-center hover:text-red-800 transition-colors font-bold">Account</Link>
-                <button onClick={onLogout} className="flex items-center hover:text-red-800 transition-colors">Logout</button>
-              </>
-            ) : (
-              <>
-                <Link href="/register" className="flex items-center hover:text-red-800 transition-colors"><User size={16} className="mr-1.5 text-gray-400" /> Register</Link>
-                <Link href="/login" className="flex items-center hover:text-red-800 transition-colors"><User size={16} className="mr-1.5 text-gray-400" /> Login</Link>
-              </>
-            )}
+            <Link href="/login" className="flex items-center hover:text-red-800 transition-colors"><User size={16} className="mr-1.5 text-gray-400" /> Login</Link>
           </div>
         </div>
 
@@ -364,105 +211,40 @@ export function StalksHeader({ navItems, logoSrc, isEcommerce = true, customer, 
                       <ChevronDown size={14} className={`transition-transform duration-300 ${isCurrentlyActive ? 'rotate-180' : 'rotate-0'}`} />
                     </button>
 
-                    {/* MEGA MENU DRAWER - DYNAMIC FROM VENDURE */}
-                    {isCurrentlyActive && (() => {
-                      // Find the matching collection
-                      const activeCollection = collections.find(c => c.name === item.label);
-                      if (!activeCollection || !activeCollection.children || activeCollection.children.length === 0) {
-                        // Fallback to hard-coded data if collection not found
-                        const hardcodedData = MEGA_MENU_DATA[megaMenuKey];
-                        if (!hardcodedData) return null;
-
-                        return (
-                          <div className="absolute left-0 top-full w-full bg-white shadow-[0_35px_90px_-20px_rgba(0,0,0,0.25)] border-t border-gray-100 animate-in fade-in slide-in-from-top-1 duration-200 z-[110]">
-                            <div className="max-w-[1400px] mx-auto flex p-5 gap-8">
-                              <div className="flex-1 flex flex-col gap-6">
-                                <div>
-                                  <h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest mb-2 border-b border-gray-100 pb-2">Products</h3>
-                                  <div className="grid grid-cols-4 gap-x-6 gap-y-3">
-                                    {hardcodedData.products.map((sub) => (
-                                      <Link key={sub} href="#" className="text-gray-600 hover:text-[#8B2323] text-[15px] font-medium flex items-center justify-center normal-case">
-                                        {sub}
-                                      </Link>
-                                    ))}
-                                  </div>
-                                </div>
-                                <div className="border-t border-gray-100 pt-2">
-                                  <div className="relative mb-4"><h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest border-b border-gray-100 pb-2">Brands</h3></div>
-                                  <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-4">
-                                    {hardcodedData.brands.map((brand) => (
-                                      <Link key={brand} href="#" className="text-[15px] font-semibold text-black hover:text-[#8B2323] transition-all uppercase">{brand}</Link>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="w-[380px]">
-                                <div className="bg-[#f9f9f9] rounded-[40px] p-12 h-full flex flex-col items-center justify-center border border-gray-100 text-center shadow-sm">
-                                  <p className="text-[12px] text-[#8B2323] font-bold uppercase tracking-[0.4em] mb-4">Featured</p>
-                                  <h4 className="text-gray-900 font-black text-3xl leading-tight mb-8 italic uppercase tracking-tighter">{hardcodedData.promoTitle}</h4>
-                                  <Link href={item.href} className="bg-[#8B2323] text-white text-[13px] font-bold uppercase tracking-[0.2em] px-12 py-4 rounded-full hover:bg-black transition-all shadow-md">View All</Link>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      }
-
-                      // Use dynamic collection data from Vendure
-                      const productsCollection = activeCollection.children.find(c => c.name === 'Products');
-                      const brandsCollection = activeCollection.children.find(c => c.name === 'Brands');
-
-                      return (
+                    {/* MEGA MENU DRAWER CODE REMAINS THE SAME... */}
+                    {isCurrentlyActive && MEGA_MENU_DATA[megaMenuKey] && (
                         <div className="absolute left-0 top-full w-full bg-white shadow-[0_35px_90px_-20px_rgba(0,0,0,0.25)] border-t border-gray-100 animate-in fade-in slide-in-from-top-1 duration-200 z-[110]">
                           <div className="max-w-[1400px] mx-auto flex p-5 gap-8">
-                            <div className="flex-1 flex flex-col gap-6">
-                              {/* Products Section */}
-                              {productsCollection && productsCollection.children && productsCollection.children.length > 0 && (
-                                <div>
-                                  <h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest mb-2 border-b border-gray-100 pb-2">Products</h3>
-                                  <div className="grid grid-cols-4 gap-x-6 gap-y-3">
-                                    {productsCollection.children.map((product) => (
-                                      <Link
-                                        key={product.id}
-                                        href={`/collection/${product.slug}`}
-                                        className="text-gray-600 hover:text-[#8B2323] text-[15px] font-medium flex items-center justify-center normal-case"
-                                      >
-                                        {product.name}
-                                      </Link>
-                                    ))}
-                                  </div>
+                            <div className="flex-1 flex flex-col gap-6 ">
+                              <div>
+                                <h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest mb-2 border-b border-gray-100 pb-2">Products</h3>
+                                <div className="grid grid-cols-4 gap-x-6 gap-y-3">
+                                  {MEGA_MENU_DATA[megaMenuKey].products.map((sub) => (
+                                    <Link key={sub} href="#" className="text-gray-600 hover:text-[#8B2323] text-[15px] font-medium flex items-center justify-center normal-case">
+                                      {sub}
+                                    </Link>
+                                  ))}
                                 </div>
-                              )}
-
-                              {/* Brands Section */}
-                              {brandsCollection && brandsCollection.children && brandsCollection.children.length > 0 && (
-                                <div className="border-t border-gray-100 pt-2">
-                                  <div className="relative mb-4"><h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest border-b border-gray-100 pb-2">Brands</h3></div>
-                                  <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-4">
-                                    {brandsCollection.children.map((brand) => (
-                                      <Link
-                                        key={brand.id}
-                                        href={`/collection/${brand.slug}`}
-                                        className="text-[15px] font-semibold text-black hover:text-[#8B2323] transition-all uppercase"
-                                      >
-                                        {brand.name}
-                                      </Link>
-                                    ))}
-                                  </div>
+                              </div>
+                              <div className="border-t border-gray-100 pt-2 ">
+                                <div className="relative mb-4"><h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest border-b border-gray-100 pb-2">Brands</h3></div>
+                                <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-4">
+                                  {MEGA_MENU_DATA[megaMenuKey].brands.map((brand) => (
+                                    <Link key={brand} href="#" className="text-[15px] font-semibold text-black hover:text-[#8B2323] transition-all uppercase ">{brand}</Link>
+                                  ))}
                                 </div>
-                              )}
+                              </div>
                             </div>
                             <div className="w-[380px]">
                               <div className="bg-[#f9f9f9] rounded-[40px] p-12 h-full flex flex-col items-center justify-center border border-gray-100 text-center shadow-sm">
                                 <p className="text-[12px] text-[#8B2323] font-bold uppercase tracking-[0.4em] mb-4">Featured</p>
-                                <h4 className="text-gray-900 font-black text-3xl leading-tight mb-8 italic uppercase tracking-tighter">{activeCollection.name}</h4>
-                                <Link href={item.href} className="bg-[#8B2323] text-white text-[13px] font-bold uppercase tracking-[0.2em] px-12 py-4 rounded-full hover:bg-black transition-all shadow-md">View All</Link>
+                                <h4 className="text-gray-900 font-black text-3xl leading-tight mb-8 italic uppercase tracking-tighter">{MEGA_MENU_DATA[megaMenuKey].promoTitle}</h4>
+                                <button className="bg-[#8B2323] text-white text-[13px] font-bold uppercase tracking-[0.2em] px-12 py-4 rounded-full hover:bg-black transition-all shadow-md">View All</button>
                               </div>
                             </div>
                           </div>
                         </div>
-                      );
-                    })()}
+                      )}
                   </li>
                 );
               })}
@@ -487,7 +269,7 @@ export function StalksHeader({ navItems, logoSrc, isEcommerce = true, customer, 
             </Link>
           </div>
 
-          <Link href={customer ? "/account" : "/login"} className="p-2 -mr-2">
+          <Link href="/login" className="p-2 -mr-2">
             <User size={28} strokeWidth={1.5} />
           </Link>
         </div>
@@ -524,48 +306,170 @@ export function StalksHeader({ navItems, logoSrc, isEcommerce = true, customer, 
                 </Link>
               </li>
             ))}
-            {/* Auth Links */}
-            {customer ? (
-              <>
-                <li className="border-b border-gray-50 pb-4">
-                  <div className="text-[14px] font-bold text-gray-600 uppercase flex items-center gap-2">
-                    <User size={18} />
-                    Hi, {customer.firstName}
-                  </div>
-                </li>
-                <li className="border-b border-gray-50 pb-4">
-                  <Link href="/account" onClick={() => setIsMenuOpen(false)} className="text-[16px] font-bold text-[#8B2323] uppercase flex items-center gap-2">
-                    <User size={18} />
-                    My Account
-                  </Link>
-                </li>
-                <li className="border-b border-gray-50 pb-4">
-                  <button onClick={() => { onLogout?.(); setIsMenuOpen(false); }} className="text-[16px] font-bold text-[#8B2323] uppercase flex items-center gap-2 w-full">
-                    <User size={18} />
-                    Logout
-                  </button>
-                </li>
-              </>
-            ) : (
-              <>
-                <li className="border-b border-gray-50 pb-4">
-                  <Link href="/register" onClick={() => setIsMenuOpen(false)} className="text-[16px] font-bold text-[#8B2323] uppercase flex items-center gap-2">
-                    <User size={18} />
-                    Register
-                  </Link>
-                </li>
-                <li className="border-b border-gray-50 pb-4">
-                  <Link href="/login" onClick={() => setIsMenuOpen(false)} className="text-[16px] font-bold text-[#8B2323] uppercase flex items-center gap-2">
-                    <User size={18} />
-                    Login
-                  </Link>
-                </li>
-              </>
-            )}
           </ul>
         </div>
       </aside>
 
     </header>
+  );
+}
+export function ParsOptimaHeader({ logoSrc, navItems }: { logoSrc: string; navItems: {label: string, href: string}[] }) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false); 
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
+  if (!mounted) return <div className="w-full h-[120px] bg-white border-b" />;
+
+  return (
+    <>
+      <header className="w-full bg-white font-sans sticky top-0 z-[100] shadow-sm">
+        
+        {/* ROW 1: TOP UTILITY BAR */}
+        <div className="bg-white hidden md:block border-b border-slate-50">
+          <div className="max-w-[1440px] mx-auto px-12 h-12 flex justify-end items-center space-x-6 text-[12px] text-gray-500 font-medium">
+            <Link href="/beauty" className="flex items-center gap-1.5 hover:text-[#00a651] transition-colors"><Handbag size={16}/> Cosmetics</Link>
+            <Link href="/medicines" className="flex items-center gap-1.5 hover:text-[#00a651] transition-colors"><Pill size={16}/> Medicine&apos;s</Link>
+            <Link href="/contact" className="flex items-center gap-1.5 hover:text-[#00a651] transition-colors"><Headset size={16}/> Contact Us</Link>
+            <Link href="/track" className="flex items-center gap-1.5 hover:text-[#00a651] transition-colors"><MapPin size={16}/> Tracking</Link>
+            <Link href="/offers" className="flex items-center gap-1.5 hover:text-[#00a651] transition-colors"><Tag size={16}/> Offers</Link>
+            {/* <Link href="/wishlist" className="flex items-center gap-1.5 hover:text-[#00a651] transition-colors"><Heart size={18}/> Wishlist</Link> */}
+            <Link href="/login" className="flex items-center gap-1.5 hover:text-[#00a651] transition-colors"><User size={16}/> Login</Link>
+          </div>
+        </div>
+
+        {/* ROW 2: MAIN HEADER */}
+        <div className="max-w-[1440px] mx-auto px-6 lg:px-10 py-2 h-14 flex items-center justify-between gap-2">
+          
+          {/* Left: Logo & Menu */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button 
+              onClick={() => setIsMenuOpen(true)} 
+              className="p-2 hover:bg-gray-100 rounded-xl transition-colors flex items-center justify-center"
+            >
+              <Menu size={32} className="text-gray-800" strokeWidth={1.5} />
+            </button>
+          <Link href="/" className="flex items-center h-full">
+  {/* We limit the height to 10 (40px) so it fits perfectly in the h-12 header */}
+  <div className="relative w-[150px] h-[180px] overflow-hidden">
+    <Image 
+      src={logoSrc} 
+      alt="Pars Optima" 
+      fill 
+      priority 
+      className="object-contain object-left brightness-110 contrast-125" 
+      // The filters above will help "wash out" the light gray squares into white
+    />
+  </div>
+</Link>
+          </div>
+
+          {/* Center: Centered Rounded Search (SNS Style) */}
+        <div className="flex-1 max-w-5xl hidden md:block">
+          <div className="relative">
+            <input 
+              type="text" 
+              placeholder="Search products..." 
+              className="w-full h-9 px-12  border border-gray-200 rounded-full bg-[#f8f9fa] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00a651]/10 transition-all text-sm"
+            />
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          </div>
+        </div>
+
+         {/* Right: Wishlist and Cart Icons */}
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {/* WISHLIST HEART ICON */}
+            <Link 
+              href="/wishlist" 
+              className="p-3 text-gray-800 hover:text-red-500 transition-colors"
+              title="Wishlist"
+            >
+              <Heart size={28} strokeWidth={1.3} />
+            </Link>
+
+            {/* CART TRIGGER */}
+            <button 
+              onClick={() => setIsCartOpen(true)} 
+              className="relative p-3 text-gray-800 hover:text-[#00a651] transition-colors"
+            >
+              <ShoppingCart size={28} strokeWidth={1.3} />
+              <span className="absolute top-1 right-1 bg-red-500 text-white text-[9px] w-5 h-5 flex items-center justify-center rounded-full border-2 border-white font-bold">0</span>
+            </button>
+          </div>
+        </div>
+        {/* MOBILE MENU DRAWER */}
+        <div 
+          className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] transition-opacity ${isMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`} 
+          onClick={() => setIsMenuOpen(false)} 
+        />
+        <aside className={`fixed top-0 left-0 w-[300px] h-full bg-white z-[201] transition-transform duration-300 ${isMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
+          <div className="p-5 border-b flex justify-between items-center bg-[#1a3a5a] text-white">
+            <span className="font-bold uppercase tracking-widest text-xs">Navigation</span>
+            <button onClick={() => setIsMenuOpen(false)}><X size={24} /></button>
+          </div>
+          <nav className="p-6">
+            <ul className="space-y-4">
+              {navItems.map((item) => (
+                <li key={item.href} className="border-b border-gray-50 pb-4">
+                  <Link href={item.href} className="flex justify-between items-center text-gray-800 font-bold uppercase text-[12px]" onClick={() => setIsMenuOpen(false)}>
+                    {item.label} <ChevronRight size={14} className="text-gray-300" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </aside>
+      </header>
+
+      {/* --- CART SIDEBAR (RIGHT SIDE) --- */}
+      <AnimatePresence>
+        {isCartOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsCartOpen(false)}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[300]"
+            />
+
+            {/* Panel */}
+            <motion.aside 
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed top-0 right-0 w-full md:w-[380px] h-full bg-white z-[301] shadow-xl flex flex-col"
+            >
+              <div className="p-6 border-b border-slate-600 flex justify-between items-center bg-[#1a3a5a] text-white">
+                <div className="flex items-center gap-2">
+                   <ShoppingBag size={28} className="text-green-400" />
+                   <h2 className="text-xl font-black uppercase tracking-tighter">Your Cart</h2>
+                </div>
+                <button onClick={() => setIsCartOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-all"><X size={20} /></button>
+              </div>
+
+              <div className="flex-1 flex flex-col items-center justify-center p-10 text-center space-y-6">
+                <div className="w-24 h-24 bg-slate-50 rounded-[32px] flex items-center justify-center text-slate-200">
+                  <ShoppingBag size={48} strokeWidth={1} />
+                </div>
+                <div className="space-y-2">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[9px] font-black uppercase tracking-widest"> Arriving Soon</div>
+                  <h3 className="text-2xl font-bold text-[#1a3a5a] uppercase">Cart is Arriving</h3>
+                  <p className="text-slate-400 font-sm text-sm leading-relaxed">We are building a seamless checkout experience for your health and beauty needs.</p>
+                </div>
+                <button onClick={() => setIsCartOpen(false)} className="w-full bg-[#1a3a5a] text-white h-14 rounded-2xl font-bold uppercase text-[10px] tracking-widest shadow-xl">Continue Shopping</button>
+              </div>
+
+              <div className="p-6 bg-slate-50 border-t border-slate-100 flex items-center gap-4">
+                 <ShieldCheck className="text-green-600" size={20} />
+                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">100% Secure & Certified Healthcare</p>
+              </div>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

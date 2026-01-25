@@ -4,7 +4,8 @@ const nextConfig = {
   trailingSlash: true,
   images: {
     unoptimized: true
-  }
+  },
+  transpilePackages: ["@repo/ui"], 
 };
 
 export default nextConfig;

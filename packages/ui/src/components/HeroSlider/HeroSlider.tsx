@@ -5,6 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, Autoplay } from "swiper/modules";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowRight, Sparkles } from "lucide-react";
 
 // Swiper Styles
 import "swiper/css";
@@ -36,7 +38,7 @@ export default function HeroSlider({ slides }: HeroSliderProps) {
             pagination={{ clickable: true }}
             autoplay={{ delay: 4000 }}
             loop
-            className="w-full h-[75vh] md:h-[80vh]"
+            className="w-full h-[75vh] md:h-[75vh]"
         >
             {slides.map((slide, index) => (
                 <SwiperSlide key={index}>
@@ -186,4 +188,100 @@ export function HeroSliderSNS({ slides }: HeroSliderSNSProps) {
             </div>
         </section>
     );
+}
+// PARSOPTIMA (HERO SLIDER)
+
+// ==========================================
+// 3. PARSOPTIMA HERO SLIDER (RE-WRITTEN FOR SAFETY)
+// ==========================================
+
+export type ParsOptimaSlide = {
+  title: string;
+  subtitle: string;
+  image: string;
+  color: string;
+  href: string;
+};
+
+export function HeroSliderParsOptima({ slides }: { slides: ParsOptimaSlide[] }) {
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  useEffect(() => {
+    if (!slides || slides.length === 0) return;
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [slides?.length]);
+
+  // Safety check: if no slides, return nothing
+  if (!slides || slides.length === 0) return null;
+
+  // Extract activeSlide to a constant to satisfy TypeScript's strict checks
+  const activeSlide = slides[currentSlide];
+
+  // Final check to ensure activeSlide exists before rendering
+  if (!activeSlide) return null;
+
+  return (
+    <section className="relative h-[450px] lg:h-[500px] w-full overflow-hidden bg-white">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentSlide}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.8 }}
+          className="absolute inset-0"
+        >
+          <Image
+            src={activeSlide.image}
+            alt={activeSlide.title}
+            fill
+            className="object-cover"
+            priority
+          />
+          
+          {/* Using the activeSlide constant here fixed the property errors */}
+          <div className={`absolute inset-0 bg-gradient-to-r ${activeSlide.color} via-white/80 to-white`} />
+          
+          <div className="relative max-w-[1440px] mx-auto h-full px-6 lg:px-24 flex items-center">
+            <div className="max-w-2xl space-y-6">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-slate-100 shadow-sm text-green-700 text-[10px] font-bold uppercase tracking-[0.1em]">
+                <Sparkles size={14} /> Certified Pharmaceutical Partner
+              </div>
+              
+              <h1 className="text-5xl lg:text-6xl font-semibold text-[#1a3a5a] tracking-tight leading-tight">
+                {activeSlide.title}
+              </h1>
+              
+              <p className="text-lg lg:text-m text-slate-500 font-medium leading-relaxed max-w-lg">
+                {activeSlide.subtitle}
+              </p>
+              
+              <Link href={activeSlide.href}>
+                <button className="bg-[#00a651] hover:bg-[#008c44] text-white px-10 py-4 rounded-full font-bold uppercase text-xs tracking-widest transition-all shadow-xl shadow-green-600/20 flex items-center gap-3 group mt-6">
+                  Browse Products 
+                  <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                </button>
+              </Link>
+            </div>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Slide Indicators */}
+      <div className="absolute bottom-6 right-24 flex gap-2 z-30">
+        {slides.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setCurrentSlide(i)}
+            className={`h-1.5 rounded-full transition-all duration-500 ${
+              i === currentSlide ? "w-8 bg-[#00a651]" : "w-4 bg-slate-200"
+            }`}
+          />
+        ))}
+      </div>
+    </section>
+  );
 }
