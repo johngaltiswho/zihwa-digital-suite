@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, ArrowRight, ShoppingCart, CheckCircle2 } from "lucide-react";
+import { ArrowRight, } from "lucide-react";
 import NewsLetter from "../../components/NewsLetter";
 
 // Mock data for 'daburReal' products loop

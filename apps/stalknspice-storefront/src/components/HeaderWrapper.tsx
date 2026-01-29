@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { StalksHeader } from "@repo/ui";
 import { useAuth } from "@/lib/vendure/auth-context";
 import { useRouter } from "next/navigation";
@@ -20,6 +21,8 @@ export default function HeaderWrapper({ navItems, logoSrc, isEcommerce }: Header
   const { customer, logout } = useAuth();
   const router = useRouter();
 
+const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   const handleLogout = async () => {
     await logout();
     router.push("/");
@@ -33,11 +36,14 @@ export default function HeaderWrapper({ navItems, logoSrc, isEcommerce }: Header
         isEcommerce={isEcommerce}
         customer={customer}
         onLogout={handleLogout}
+         onUserMenuToggle={setIsMenuOpen} 
       />
-      {/* Floating Cart Icon - Positioned absolutely */}
-      <div className="fixed top-4 right-4 z-[200] lg:top-[72px] lg:right-8">
-        <CartIcon />
-      </div>
+      {/* 4. Only show this div if isMenuOpen is FALSE */}
+      {!isMenuOpen && (
+        <div className="hidden lg:block fixed top-[52px] right-4 z-[100]">
+          <CartIcon />
+        </div>
+      )}
     </>
   );
 }

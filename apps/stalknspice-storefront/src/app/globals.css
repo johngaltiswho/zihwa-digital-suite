@@ -195,3 +195,12 @@ h1, h2, h3, h4, h5, h6 {
     background-position: 200% 0;
   }
 }
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* This prevents the Hero Slider from flickering when the header moves */
+section, header {
+  transform: translateZ(0);
+}

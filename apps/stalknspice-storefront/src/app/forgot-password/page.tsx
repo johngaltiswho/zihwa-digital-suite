@@ -37,7 +37,7 @@ export default function ForgotPasswordPage() {
 
   if (success) {
     return (
-      <section className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
+      <section className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-6">
         <div className="w-full max-w-[500px] bg-white rounded-[50px] shadow-xl shadow-gray-200/50 p-10 border border-gray-100 text-center">
           <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-6" />
           <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tighter mb-4">
