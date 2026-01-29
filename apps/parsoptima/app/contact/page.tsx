@@ -1,148 +1,130 @@
-import Link from 'next/link';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import ContactForm from '../components/ContactForm';
+"use client";
 
-export const metadata = {
-  title: 'Contact Us - Pars Optima Enterprises LLP',
-  description: 'Get in touch with Pars Optima Enterprises LLP for partnership opportunities, distribution inquiries, and business collaboration.',
-};
+import React from "react";
+import { 
+        MapPin, Phone,Headset,
+} from "lucide-react";
 
-export default function Contact() {
 
+export default function ContactUsPage() {
   return (
-    <>
-      <Header />
+    <main className="min-h-screen bg-[#fcfdfe] font-sans">
 
-      {/* Hero Section */}
-      <section className="hero">
-        <div className="container">
-          <div className="hero-content">
-            <h1>Contact Us</h1>
-            <p className="tagline">Let's Discuss Your Distribution Needs</p>
-            <p className="description">
-              Get in touch with our team for partnership opportunities, distribution inquiries, 
-              NBFC lending solutions, insurance facilities, or any questions about our services.
+
+      {/* 1. SHOPPER-CENTRIC HERO */}
+      <section className="relative py-6 lg:py-8 bg-white border-b border-slate-100 overflow-hidden">
+        {/* Soft background glow for Beauty & Pharma blend */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-green-500/5 blur-[120px] rounded-full -mr-64 -mt-64" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-pink-500/5 blur-[120px] rounded-full -ml-64 -mb-64" />
+
+        <div className="max-w-[1440px] mx-auto px-6 lg:px-20 relative z-10">
+          <div className="max-w-3xl space-y-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-widest">
+              <Headset size={14} /> Customer Care Hub
+            </div>
+            <h1 className="text-4xl lg:text-5xl font-black text-[#1a3a5a] tracking-tighter uppercase leading-[0.95]">
+              How can we <br /> 
+              <span className="text-[#00a651]">Help you  ?</span>
+            </h1>
+            <p className="text-slate-500 text-lg font-medium max-w-xl">
+              From tracking your medicine delivery to choosing the right skincare — our experts are here to support your journey to wellness and beauty.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Contact Form Section */}
-      <section className="section">
-        <div className="container">
-          <div className="contact-layout">
-            <div className="contact-form-section">
-              <h2 className="section-title">Send Us a Message</h2>
-              <ContactForm />
+       
+
+      {/* 3. CONTACT CHANNELS & FORM */}
+      <section className="max-w-[1440px] mx-auto px-6 lg:px-20 py-6 pb-24">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+          
+          {/* LEFT: CHANNEL INFO */}
+          <div className="lg:col-span-5 space-y-12">
+            <div>
+              <h2 className="text-3xl font-bold text-[#1a3a5a] uppercase tracking-tighter mb-4">Contact Us</h2>
+              <div className="w-12 h-1 bg-green-500 rounded-full" />
             </div>
 
-            <div className="contact-info-section">
-              <h2 className="section-title">Get In Touch</h2>
-              <div className="contact-methods">
-                <div className="contact-method">
-                  <h3>📧 Email</h3>
-                  <p><a href="mailto:info@parsoptima.com">info@parsoptima.com</a></p>
+            <div className="space-y-8">
+              <div className="flex items-start gap-6">
+                <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400"><Phone size={24}/></div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase text-slate-400 mb-1">Customer Helpline</p>
+                  <p className="text-xl font-bold text-[#1a3a5a]">info@parsoptima.com</p>
+                  <p className="text-xl font-bold text-[#1a3a5a]">+91-9972508616</p>
                 </div>
-                
-                <div className="contact-method">
-                  <h3>📞 Phone</h3>
-                  <p><a href="tel:+91-9972508616">+91-9972508616</a></p>
-                  <p>Monday - Saturday: 9:00 AM - 6:00 PM</p>
-                </div>
+              </div>
 
-                <div className="contact-method">
-                  <h3>🏢 Bangalore Office</h3>
-                  <p>164, 2nd Main Rd, Sun City Layout</p>
-                  <p>JP Nagar 7th Phase, Bengaluru</p>
-                  <p>Kothnur, Karnataka 560078</p>
+              {/* <div className="flex items-start gap-6">
+                <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400"><MessageSquare size={24}/></div>
+                <div>
+                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">WhatsApp Business</p>
+                  <p className="text-xl font-bold text-green-600">Chat with us</p>
+                </div>
+              </div> */}
+
+              <div className="flex items-start gap-6">
+                <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400"><MapPin size={24}/></div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase text-slate-400 tracking-widest mb-1">HQ & Logistics Hub</p>
+                  <p className="text-slate-700 font-semibold leading-relaxed">
+                    #403,22nd Cross Rd,2nd Sector <br />
+                    HSR Layout,Bangalore <br />
+                    Karnataka - 560102
+                  </p>
                 </div>
               </div>
             </div>
+
+            {/* <div className="p-8 bg-slate-900 rounded-[32px] text-white space-y-4 shadow-2xl">
+               <ShieldCheck className="text-green-500" size={32} />
+               <h4 className="font-bold text-lg">Your Privacy is Protected</h4>
+               <p className="text-xs text-slate-400 leading-relaxed font-medium">All medical and beauty inquiries are handled with 100% confidentiality by our certified team.</p>
+            </div> */}
           </div>
+
+          {/* RIGHT: CONTACT FORM */}
+          <div className="lg:col-span-7">
+            <div className="bg-white p-10 lg:p-14 rounded-[40px] border border-slate-100 shadow-2xl">
+              <h3 className="text-2xl font-bold text-[#1a3a5a] uppercase mb-6 ">Send a Message</h3>
+              <form className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-slate-400 ml-4 uppercase tracking-widest">Full Name</label>
+                      <input type="text" className="w-full h-14 px-6 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-green-500/20 font-bold text-sm outline-none" placeholder="John Doe" />
+                   </div>
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-slate-400 ml-4 uppercase tracking-widest">Phone Number</label>
+                      <input type="tel" className="w-full h-14 px-6 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-green-500/20 font-bold text-sm outline-none" placeholder="+91..." />
+                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400 ml-4 uppercase tracking-widest">Select Topic</label>
+                  <select className="w-full h-14 px-6 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-green-500/20 font-bold text-sm outline-none appearance-none cursor-pointer">
+                    <option>Medicine Order Status</option>
+                    <option>Skincare Product Inquiry</option>
+                    <option>Prescription Upload Help</option>
+                    <option>Business Partnership</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400 ml-4 uppercase tracking-widest">Your Message</label>
+                  <textarea rows={4} className="w-full p-6 bg-slate-50 rounded-3xl border-none focus:ring-2 focus:ring-green-500/20 font-bold text-sm outline-none resize-none" placeholder="How can we help you?" />
+                </div>
+
+                <button className="w-full bg-[#1a3a5a] hover:bg-[#00a651] text-white h-16 rounded-2xl font-bold uppercase text-xs tracking-[0.1em] transition-all shadow-xl shadow-[#1a3a5a]/10">
+                  Submit Request
+                </button>
+              </form>
+            </div>
+          </div>
+
         </div>
       </section>
 
-      {/* Office Locations */}
-      <section className="section" style={{backgroundColor: '#f8f9fa'}}>
-        <div className="container">
-          <h2 className="section-title">Our Locations</h2>
-          <div className="grid-3">
-            <div className="card">
-              <h3>🏭 Bangalore Office</h3>
-              <p><strong>Address:</strong> 164, 2nd Main Rd, Sun City Layout, JP Nagar 7th Phase, Bengaluru, Kothnur, Karnataka 560078</p>
-              <p><strong>Services:</strong> Main distribution hub, NBFC lending, Insurance</p>
-              <p><strong>Coverage:</strong> Bangalore & surrounding areas</p>
-            </div>
-            <div className="card">
-              <h3>🏭 Hosur Office</h3>
-              <p><strong>Address:</strong> 420/1, Hosur - Thally Road, Kalkondapalli, Krishnagiri, Tamil Nadu 635114</p>
-              <p><strong>Services:</strong> Regional distribution center, Financial services</p>
-              <p><strong>Coverage:</strong> Tamil Nadu border regions</p>
-            </div>
-            <div className="card">
-              <h3>🏭 Hyderabad Center</h3>
-              <p><strong>Address:</strong> Commercial District, Hyderabad</p>
-              <p><strong>Services:</strong> Telangana distribution hub</p>
-              <p><strong>Coverage:</strong> Hyderabad & Telangana</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Business Hours & FAQ */}
-      <section className="section">
-        <div className="container">
-          <div className="grid-2">
-            <div className="card">
-              <h3>⏰ Business Hours</h3>
-              <div className="business-hours">
-                <div className="hours-row">
-                  <span>Monday - Friday</span>
-                  <span>9:00 AM - 6:00 PM</span>
-                </div>
-                <div className="hours-row">
-                  <span>Saturday</span>
-                  <span>9:00 AM - 5:00 PM</span>
-                </div>
-                <div className="hours-row">
-                  <span>Sunday</span>
-                  <span>Closed</span>
-                </div>
-              </div>
-              <p style={{marginTop: '1rem', fontSize: '0.9rem', color: 'var(--gray-dark)'}}>
-                For urgent matters outside business hours, please email us and we'll respond as soon as possible.
-              </p>
-            </div>
-            
-            <div className="card">
-              <h3>❓ Quick Questions</h3>
-              <div className="faq-item">
-                <p><strong>Minimum order quantities?</strong></p>
-                <p>Varies by product and brand. Contact us for specific details.</p>
-              </div>
-              <div className="faq-item">
-                <p><strong>New brand partnerships?</strong></p>
-                <p>We're always open to discussing new opportunities.</p>
-              </div>
-              <div className="faq-item">
-                <p><strong>Delivery areas?</strong></p>
-                <p>Bangalore, Hosur, Hyderabad and surrounding regions.</p>
-              </div>
-              <div className="faq-item">
-                <p><strong>NBFC lending services?</strong></p>
-                <p>We offer flexible lending solutions through partner NBFCs for inventory and growth financing.</p>
-              </div>
-              <div className="faq-item">
-                <p><strong>Insurance coverage?</strong></p>
-                <p>Comprehensive insurance facilities available for business protection and risk management.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <Footer />
-    </>
+    </main>
   );
 }

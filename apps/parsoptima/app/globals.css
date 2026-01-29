@@ -1,3 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
 :root {
   --primary-green: #2d5016;
   --accent-orange: #ff6b35;
