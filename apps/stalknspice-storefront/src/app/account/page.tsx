@@ -42,7 +42,7 @@ export default function AccountPage() {
   }
 
   return (
-    <section className="min-h-screen bg-gray-50 py-12 px-4">
+    <section className="min-h-screen bg-gray-50 py-4 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-[30px] shadow-xl shadow-gray-200/50 p-8 mb-6 border border-gray-100">

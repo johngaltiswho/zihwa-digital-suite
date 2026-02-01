@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react"; // 1. Import Suspense
 import { useSearchParams, useRouter } from "next/navigation";
 import { vendureClient } from "@/lib/vendure/client";
 import { RESET_PASSWORD } from "@/lib/vendure/mutations/auth";
 import { Lock, ArrowRight, CheckCircle, AlertCircle } from "lucide-react";
 
-export default function PasswordResetPage() {
+// 2. Move your logic into a separate internal component
+function PasswordResetForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [token, setToken] = useState("");
@@ -148,5 +149,14 @@ export default function PasswordResetPage() {
         </form>
       </div>
     </section>
+  );
+}
+
+// 3. The default export now wraps the component in Suspense
+export default function PasswordResetPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <PasswordResetForm />
+    </Suspense>
   );
 }

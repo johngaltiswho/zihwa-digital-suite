@@ -28,11 +28,11 @@ export default function LoginSection() {
   };
 
   return (
-    <section className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-3">
-      <div className="w-full max-w-[500px] bg-white rounded-[50px] shadow-xl shadow-gray-200/50 p-10 md:p-10 border border-gray-100">
+    <section className="min-h-screen flex items-center justify-center bg-gray-50 px-4 ">
+      <div className="w-full max-w-[500px] bg-white rounded-[30px] shadow-xl shadow-gray-200/50 p-10 md:p-10 border border-gray-100">
 
         {/* Header Section */}
-        <div className="text-center mb-3">
+        <div className="text-center mb-2">
           <h1 className="text-4xl font-black text-gray-900 uppercase tracking-tighter mb-2">
             Welcome Back
           </h1>

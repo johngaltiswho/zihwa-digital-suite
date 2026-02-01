@@ -31,6 +31,7 @@ type HeroSliderProps = {
 };
 
 export default function HeroSlider({ slides }: HeroSliderProps) {
+    
     return (
         <Swiper
             modules={[Navigation, Pagination, Autoplay]}
@@ -131,10 +132,9 @@ export function HeroSliderSNS({ slides }: HeroSliderSNSProps) {
 
     if (!slides || slides.length === 0) return null;
 
-     return (
-        <section className="px-1 py-0 bg-white lg:px-2">
-           
-            <div className="relative aspect-[16/9] md:aspect-[16/9] lg:aspect-[3/1] xl:aspect-[3.8/2]  rounded-[30px] md:rounded-[30px] shadow-sm bg-white">
+    return (
+        <section className="relative -mt-20 pt-0 px-1 bg-white lg:px-2">
+            <div className="relative aspect-[16/9] md:aspect-[16/9] lg:aspect-[3/1] xl:aspect-[3.9/2] rounded-[30px] shadow-sm bg-white overflow-hidden">
                 
                 {slides.map((slide, index) => (
                     <div
@@ -171,15 +171,15 @@ export function HeroSliderSNS({ slides }: HeroSliderSNSProps) {
                 ))}
 
                 {/* --- SNS Horizontal Bar Pagination --- */}
-                <div className="absolute bottom-3 md:bottom-6 left-0 w-full flex justify-center items-center gap-2 z-20">
+                <div className="absolute bottom-3 md:bottom-24 left-0 w-full flex justify-center items-center gap-2 z-20">
                     {slides.map((_, i) => (
                         <button
                             key={i}
                             onClick={() => setCurrent(i)}
                             className={`h-1 md:h-1.5 rounded-full transition-all duration-500 ease-in-out ${
                                 i === current 
-                                    ? "w-8 md:w-20 bg-[#8B2323]" 
-                                    : "w-4 md:w-10 bg-black/20 hover:bg-black/40"
+                                    ? "w-8 md:w-10 bg-[#8B2323]" 
+                                    : "w-4 md:w-5 bg-black/20 hover:bg-black/40"
                             }`}
                             aria-label={`Go to slide ${i + 1}`}
                         />

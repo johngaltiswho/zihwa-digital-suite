@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+
 import { 
   Menu, Search, User, Heart, X,
   ChefHat, PhoneCall, MapPin, Tag, ShoppingCart, 
@@ -21,7 +21,13 @@ interface HeaderProps {
 }
 
 // --- MEGA MENU DATA ---
-const MEGA_MENU_DATA: Record<string, { products: string[], brands: string[], promoTitle: string }> = {
+const MEGA_MENU_DATA: Record<string, { 
+  products?: string[], 
+  brands?: string[], 
+  vegetables?: string[], 
+  fruits?: string[], 
+  promoTitle: string 
+}> = {
   "BAKERY, SNACKS & DRY FRUITS": {
     products: ["Baking & Custard Powder", "Chocolate & Caramel Sauces", "Dry Yeast & Bread Improver", "Tutti Fruiti & Agar Agar", "Bread Crumbs", "Cocoa Powder", "Essence", "Choco Chips", "Dry Fruits", "Marmalades & Jams"],
     brands: ["2M COCOA", "BUSH", "BARRY CALLEBAUT", "HERSHEY'S", "BAKERS", "MALA'S"],
@@ -38,8 +44,8 @@ const MEGA_MENU_DATA: Record<string, { products: string[], brands: string[], pro
     promoTitle: "AUTHENTIC CANNED SELECTION"
   },
   "FRUITS & VEGETABLES": {
-    products: ["Beans & Brinjals", "Potato, Onion & Tomato", "Kiwi, Melon & Citrus", "Coconut", "Cucumber, Capsicum & Okra", "Root Vegetables", "Apples & Pomegranate", "Gourd, Pumpkin & Drumstick", "Herbs & Seasoning", "Banana, Sapota & Papaya"],
-    brands: ["FRESH SELECTION", "ORGANIC FARMS", "IMPORTED DIRECT"],
+    vegetables: ["Beans & Brinjals", "Potato, Onion & Tomato", "Cucumber, Capsicum & Okra", "Root Vegetables", "Gourd, Pumpkin & Drumstick", "Herbs & Seasoning"],
+    fruits: ["Kiwi, Melon & Citrus Fruit", "Coconut", "Apples & Pomegranate", "Banana, Sapota & Papaya"],
     promoTitle: "FRESH FROM THE FARM"
   },
   "HEALTH STORE": {
@@ -75,9 +81,22 @@ const MEGA_MENU_DATA: Record<string, { products: string[], brands: string[], pro
 };
 
 interface NavItem { label: string; href: string; }
-interface HeaderProps { navItems: NavItem[]; logoSrc: string; isEcommerce?: boolean; }
+interface Customer {
+  firstName: string;
+  lastName: string;
+  emailAddress: string;
+}
+interface HeaderProps {
+  navItems: NavItem[];
+  logoSrc: string;
+  isEcommerce?: boolean;
+  customer?: Customer | null;
+  onLogout?: () => void;
+  onUserMenuToggle?: (isOpen: boolean) => void; 
+  
+}
 
-// --- 1. SHARED HEADER (FOR OTHER APPS) ---
+// --- 1. SHARED HEADER ---
 export function SharedHeader({ navItems, logoSrc }: HeaderProps) {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -100,37 +119,219 @@ export function SharedHeader({ navItems, logoSrc }: HeaderProps) {
         </nav>
         <button className="sh-mobile-toggle" onClick={() => setIsMenuOpen(!isMenuOpen)}>{isMenuOpen ? "✕" : "☰"}</button>
       </div>
-      <div className={`sh-mobile-overlay ${isMenuOpen ? "active" : ""}`}>
-        <nav className="sh-mobile-list">
-          {navItems.map((item) => (
-            <Link key={item.href} href={item.href} className={`sh-mobile-item ${pathname === item.href ? "active" : ""}`} onClick={() => setIsMenuOpen(false)}>{item.label}</Link>
-          ))}
-        </nav>
-      </div>
+      {/* PREMIUM MOBILE SIDEBAR MENU */}
+      {isMenuOpen && (
+        <>
+          {/* BACKDROP */}
+        <div 
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(17, 24, 39, 0.8)', 
+              zIndex: 9998,
+              backdropFilter: 'blur(4px)'
+            }}
+            onClick={() => setIsMenuOpen(false)}
+          />
+          
+          {/* SIDEBAR */}
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            right: 0,
+            width: '320px',
+            height: '100vh',
+            background: '#111827', // Using AACP
+            zIndex: 9999,
+            boxShadow: '-8px 0 32px rgba(0, 0, 0, 0.3)',
+            overflowY: 'auto',
+            animation: 'slideIn 0.3s ease-out'
+          }}>
+            {/* SIDEBAR HEADER */}
+            <div style={{
+              padding: '32px 24px 24px 24px',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <div style={{
+                color: 'white',
+                fontSize: '18px',
+                fontWeight: 'bold'
+              }}>
+                AACP Infrastructure
+              </div>
+              <button
+                onClick={() => setIsMenuOpen(false)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  border: 'none',
+                  color: 'white',
+                  fontSize: '24px',
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* NAVIGATION ITEMS */}
+            <div style={{ padding: '24px 0' }}>
+              {navItems.map((item, index) => {
+                const isActive = pathname === item.href;
+                return (
+                  <a
+                    key={index}
+                    href={item.href}
+                    onClick={() => setIsMenuOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '16px 24px',
+                      color: isActive ? '#ffffff' : 'rgba(255, 255, 255, 0.8)',
+                      textDecoration: 'none',
+                      fontSize: '16px',
+                      fontWeight: isActive ? '700' : '500',
+                      backgroundColor: isActive ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
+                      borderLeft: isActive ? '4px solid #ffffff' : '4px solid transparent',
+                      transition: 'all 0.2s ease',
+                      marginBottom: '4px'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActive) {
+                        e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                        e.target.style.paddingLeft = '32px';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) {
+                        e.target.style.backgroundColor = 'transparent';
+                        e.target.style.paddingLeft = '24px';
+                      }
+                    }}
+                  >
+                    <span style={{ 
+                      width: '6px', 
+                      height: '6px', 
+                      borderRadius: '50%', 
+                      backgroundColor: isActive ? '#ffffff' : 'rgba(255, 255, 255, 0.4)',
+                      marginRight: '12px',
+                      transition: 'all 0.2s ease'
+                    }}></span>
+                    {item.label}
+                  </a>
+                );
+              })}
+            </div>
+
+            {/* FOOTER */}
+            <div style={{
+              position: 'absolute',
+              bottom: '24px',
+              left: '24px',
+              right: '24px',
+              textAlign: 'center',
+              color: 'rgba(255, 255, 255, 0.5)',
+              fontSize: '12px',
+              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+              paddingTop: '16px'
+            }}>
+              Building Excellence Together
+            </div>
+          </div>
+
+          <style jsx global>{`
+            @keyframes slideIn {
+              from { transform: translateX(100%); }
+              to { transform: translateX(0); }
+            }
+          `}</style>
+        </>
+      )}
     </header>
   );
 }
 
 // --- 2. STALKS N SPICE HEADER ---
-export function StalksHeader({ navItems, logoSrc, isEcommerce = true }: HeaderProps) {
+export function StalksHeader({ navItems, logoSrc, customer, onUserMenuToggle, onLogout, }: HeaderProps) {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isMenuLocked, setIsMenuLocked] = useState(false);
+  // Smart Reveal Logic
+  const [showRow3, setShowRow3] = useState(true);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const lastScrollY = useRef(0);
+  const hideCategories = [
+    '/login', 
+    '/register', 
+    '/cart', 
+    '/forgot-password'
+  ].includes(pathname)
+  || pathname.startsWith('/contact')
+  || pathname.startsWith('/checkout') // Hides on all checkout steps
+  || pathname.startsWith('/account');  // Hides on profile, orders, etc.
+
+
   const navRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { 
     setMounted(true); 
-    const handleClickOutside = (event: MouseEvent) => {
-      if (navRef.current && !navRef.current.contains(event.target as Node)) {
-        setIsLocked(false);
-        setActiveMenu(null);
+    
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Determine compactness
+      setIsScrolled(currentScrollY > 60);
+
+      // Smart Reveal: Show on Scroll Up, Hide on Scroll Down
+      if (currentScrollY > lastScrollY.current && currentScrollY > 200) {
+        setShowRow3(false);
+      } else {
+        setShowRow3(true);
       }
+      lastScrollY.current = currentScrollY;
     };
+  const handleClickOutside = (event: MouseEvent) => {
+    if (navRef.current && !navRef.current.contains(event.target as Node)) {
+      setIsLocked(false);
+      setActiveMenu(null);
+    }
+    if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+      setIsUserMenuOpen(false);
+      setIsMenuLocked(false);
+    }
+  };
+
+window.addEventListener("scroll", handleScroll, { passive: true });
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
+
+
+  // Sync state with HeaderWrapper to hide CartIcon if menu is open
+  useEffect(() => {
+    if (onUserMenuToggle) {
+      onUserMenuToggle(isUserMenuOpen || isMenuLocked);
+    }
+  }, [isUserMenuOpen, isMenuLocked, onUserMenuToggle]);
 
   if (!mounted) return <div className="w-full h-[180px] bg-white border-b" />;
 
@@ -143,114 +344,242 @@ export function StalksHeader({ navItems, logoSrc, isEcommerce = true }: HeaderPr
       setIsLocked(true);
     }
   };
-
   return (
     <header className="w-full bg-white border-b border-gray-100 font-sans sticky top-0 z-[100]">
       
-      {/* ========================================== */}
-      {/* DESKTOP HEADER SECTION    */}
-      {/* ========================================== */}
+      {/* DESKTOP VIEW */}
       <div className="hidden lg:block">
-        {/* ROW 1: Utility Bar */}
+        <div className="relative z-[130] bg-white">
+        {/* ROW 1: Utility Bar (Dropdown trigger moved here) */}
         <div className="bg-white border-b border-gray-50">
-          <div className="max-w-[1400px] mx-auto px-16 h-14 flex justify-end items-center space-x-6 text-[13px] font-medium text-gray-900">
-            <Link href="/recipes" className="flex items-center hover:text-red-800 transition-colors"><ChefHat size={18} className="mr-1.5 text-gray-400" /> Recipe&apos;s</Link>
-            <Link href="/contact" className="flex items-center hover:text-red-800 transition-colors"><PhoneCall size={16} className="mr-1.5 text-gray-400" /> Contact Us</Link>
-            <Link href="/tracking" className="flex items-center hover:text-red-800 transition-colors"><MapPin size={16} className="mr-1.5 text-gray-400" /> Tracking</Link>
-            <Link href="/offers" className="flex items-center hover:text-red-800 transition-colors"><Tag size={16} className="mr-1.5 text-gray-400" /> Offers</Link>
-            <Link href="/wishlist" className="flex items-center hover:text-red-800 transition-colors"><Heart size={16} className="mr-1.5 text-gray-400" /> Wishlist</Link>
-            <Link href="/login" className="flex items-center hover:text-red-800 transition-colors"><User size={16} className="mr-1.5 text-gray-400" /> Login</Link>
+          <div className="max-w-[1400px] mx-auto px-4 h-12 flex justify-end items-center space-x-5 text-[13px] font-medium text-gray-600">
+            <Link href="/recipes" className="flex items-center hover:text-red-800 transition-colors"><ChefHat size={16} className="mr-1.5" /> Recipe&apos;s</Link>
+            <Link href="/contact" className="flex items-center hover:text-red-800 transition-colors"><PhoneCall size={14} className="mr-1.5" /> Contact Us</Link>
+            <Link href="/tracking" className="flex items-center hover:text-red-800 transition-colors"><MapPin size={14} className="mr-1.5" /> Tracking</Link>
+            <Link href="/offers" className="flex items-center hover:text-red-800 transition-colors"><Tag size={14} className="mr-1.5" /> Offers</Link>
+            <Link href="/wishlist" className="flex items-center hover:text-red-800 transition-colors"><Heart size={14} className="mr-1.5" /> Wishlist</Link>
+
+      {/* DYNAMIC AUTH TRIGGER */}
+        <div
+            className="relative"
+            ref={userMenuRef}
+            onMouseEnter={() => setIsUserMenuOpen(true)}
+            onMouseLeave={() => !isMenuLocked && setIsUserMenuOpen(false)}
+        >
+              <button 
+                onClick={() => {
+                  setIsMenuLocked(!isMenuLocked);
+                  setIsUserMenuOpen(true);
+                }}
+                className={`
+                  flex items-center gap-2 p-1 pr-3 rounded-full transition-all duration-300 border
+                  ${isUserMenuOpen || isMenuLocked 
+                    ? "bg-red-50 border-red-100 shadow-sm" 
+                    : "bg-gray-100 border-transparent hover:bg-gray-200"
+                  }
+                `}
+              >
+        {/* ROUNDED PROFILE ICON */}
+            <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center transition-colors group-hover:bg-red-50 border border-gray-200 group-hover:border-red-100">
+            <User 
+                size={18} 
+                className="text-gray-500 group-hover:text-red-800 transition-colors" 
+                strokeWidth={2}
+            />
+            </div>
+
+    {/* NAME AND ARROW */}
+    <div className="flex items-center gap-1">
+      <span className="font-bold text-gray-900 text-[14px]">
+        {customer ? `Hi, ${customer.firstName}` : "Login / Register"}
+      </span>
+      <ChevronDown 
+        size={14} 
+        className={`text-gray-400 transition-transform duration-300 ${isUserMenuOpen ? 'rotate-180' : ''}`} 
+      />
+    </div>
+  </button>
+
+              {/* DROPDOWN MENU CARD (Anchored to Row 1) */}
+              {isUserMenuOpen && (
+                <div className="absolute right-0 mt-3 w-60 bg-white border border-gray-100 shadow-2xl rounded-2xl z-[200] overflow-hidden animate-in fade-in zoom-in-95 duration-150 normal-case font-normal">
+                  {customer ? (
+                    <div className="py-2">
+                      <div className="px-5 py-4 border-b border-gray-50 bg-gray-50/50">
+                        <p className="text-[10px] font-bold text-red-800 uppercase tracking-widest mb-1">Welcome back</p>
+                        <p className="text-sm font-bold text-gray-900 truncate">{customer.firstName} {customer.lastName}</p>
+                      </div>
+                      <div className="p-2">
+                        <Link href="/account" onClick={() => setIsUserMenuOpen(false)} className="flex items-center px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-800 rounded-lg transition-colors">
+                          <User size={16} className="mr-3 opacity-50" /> My Account
+                        </Link>
+                        <Link href="/account/orders" onClick={() => setIsUserMenuOpen(false)} className="flex items-center px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-800 rounded-lg transition-colors">
+                          <ShoppingCart size={16} className="mr-3 opacity-50" /> My Orders
+                        </Link>
+                        <div className="border-t border-gray-50 mt-1 pt-1">
+                          <button 
+                            onClick={() => { onLogout?.(); setIsUserMenuOpen(false); }}
+                            className="flex items-center w-full px-4 py-2.5 text-sm font-bold text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            Logout
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-5 space-y-3">
+                      <p className="text-[13px] text-gray-500 text-center mb-1">Access your account & orders</p>
+                      <Link href="/login" onClick={() => setIsUserMenuOpen(false)} className="block w-full text-center py-2.5 bg-red-800 text-white rounded-xl font-bold text-sm hover:bg-black transition-colors">
+                        Login
+                      </Link>
+                      <Link href="/register" onClick={() => setIsUserMenuOpen(false)} className="block w-full text-center py-2.5 border border-gray-200 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors">
+                        Register
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* ROW 2: Sidebar Toggle, Logo & Search */}
-        <div className="max-w-[1400px] mx-auto px-6 h-10 flex items-center justify-between gap-8">
+        {/* ROW 2: Logo & Search */}
+        <div className="max-w-[1400px] mx-auto px-6 h-12 flex items-center justify-between gap-8 mt-1">
           <div className="flex items-center space-x-6 flex-shrink-0">
-            {/* Sidebar button restored for Desktop */}
             <button onClick={() => setIsMenuOpen(true)} className="p-1 hover:bg-gray-100 rounded transition-colors">
               <Menu size={30} />
             </button>
             <Link href="/" className="block -mt-4">
-              <Image src={logoSrc} alt="Logo" width={240} height={55} priority className="object-contain" />
+              <Image src={logoSrc} alt="Logo" width={250} height={50} priority className="object-contain" />
             </Link>
           </div>
-          <div className="flex-1 max-w-5xl">
-            <div className="relative group">
-              <input type="text" placeholder="Search products" className="w-full h-10 px-5 pr-12 border border-gray-300 rounded-full focus:outline-none focus:border-red-800 text-sm" />
-              <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 " size={20} />
-            </div>
+
+          {/* Search Box - Reduced to max-w-md and centered */}
+          <div className="flex-1 max-w-3xl mx-auto relative">
+            <input 
+              type="text" 
+              placeholder="Search products" 
+              className="w-full h-10 px-5 pr-12 border border-gray-300 rounded-full focus:outline-none focus:border-red-800 text-sm" 
+            />
+            <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           </div>
-          {/* <div className="flex items-center space-x-6">
-            <Link href="/login" className="text-gray-800 hover:text-red-800 transition-colors"><User size={28} /></Link>
-            <Link href="/cart" className="text-gray-800 hover:text-red-800 transition-colors relative">
-              <ShoppingCart size={28} />
-              <span className="absolute -top-1 -right-1 bg-red-800 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full border-2 border-white">0</span>
-            </Link>
-          </div> */}
+          </div>
         </div>
 
-        {/* ROW 3: Categories Navigation */}
-        <nav ref={navRef} className="border-t border-gray-50 relative">
-          <div className="max-w-[1400px] mx-auto px-6">
-            <ul className="flex flex-wrap justify-center items-center gap-x-5 py-2 text-[16px] font-semibold text-gray-800 uppercase tracking-tight">
-              {navItems.map((item) => {
-                const isCurrentlyActive = activeMenu === item.label;
-                const megaMenuKey = item.label.toUpperCase();
-                return (
-                  <li 
-                    key={item.href} 
-                    onMouseEnter={() => !isLocked && setActiveMenu(item.label)}
-                    onMouseLeave={() => !isLocked && setActiveMenu(null)}
-                    className="py-2 cursor-pointer"
-                  >
-                    <button
-                      onClick={() => handleToggle(item.label)}
-                      className={`flex items-center font-bold gap-1.5 transition-all py-1 pb-2 border-b-2 ${isCurrentlyActive || pathname === item.href ? "text-red-800 border-red-800" : "border-transparent hover:text-red-800"}`}
-                    >
-                      {item.label}
-                      <ChevronDown size={14} className={`transition-transform duration-300 ${isCurrentlyActive ? 'rotate-180' : 'rotate-0'}`} />
-                    </button>
+{/* ============================================================ */}
+{/* SMART CATEGORIES ROW (ROW 3)                                 */}
+{/* ============================================================ */}
+{!hideCategories && (
+<nav
+  ref={navRef}
+  className={`
+    hidden lg:block w-full bg-white border-b border-gray-100 z-[120]
+    transition-all duration-500 ease-in-out will-change-transform
+    ${isScrolled ? "fixed left-0 right-0 shadow-md" : "relative mt-[1px]"}
+    ${showRow3 ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0 pointer-events-none"}
+  `}
+  style={{ 
+    top: isScrolled ? '96px' : '0',
+    /* 112px is height of Fixed Row 1 (48px) + Row 2 (64px) */
+  }}
+>
+  <div className="max-w-[1400px] mx-auto px-6">
+    <ul className="flex flex-wrap justify-center items-center gap-x-4 py-0 text-[16px] font-semibold text-gray-800 tracking-tight uppercase">
+      {navItems?.map((item) => {
+        const isCurrentlyActive = activeMenu === item.label;
+        const megaMenuKey = item.label.toUpperCase();
+        const data = MEGA_MENU_DATA[megaMenuKey];
 
-                    {/* MEGA MENU DRAWER CODE REMAINS THE SAME... */}
-                    {isCurrentlyActive && MEGA_MENU_DATA[megaMenuKey] && (
-                        <div className="absolute left-0 top-full w-full bg-white shadow-[0_35px_90px_-20px_rgba(0,0,0,0.25)] border-t border-gray-100 animate-in fade-in slide-in-from-top-1 duration-200 z-[110]">
-                          <div className="max-w-[1400px] mx-auto flex p-5 gap-8">
-                            <div className="flex-1 flex flex-col gap-6 ">
-                              <div>
-                                <h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest mb-2 border-b border-gray-100 pb-2">Products</h3>
-                                <div className="grid grid-cols-4 gap-x-6 gap-y-3">
-                                  {MEGA_MENU_DATA[megaMenuKey].products.map((sub) => (
-                                    <Link key={sub} href="#" className="text-gray-600 hover:text-[#8B2323] text-[15px] font-medium flex items-center justify-center normal-case">
-                                      {sub}
-                                    </Link>
-                                  ))}
-                                </div>
-                              </div>
-                              <div className="border-t border-gray-100 pt-2 ">
-                                <div className="relative mb-4"><h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest border-b border-gray-100 pb-2">Brands</h3></div>
-                                <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-4">
-                                  {MEGA_MENU_DATA[megaMenuKey].brands.map((brand) => (
-                                    <Link key={brand} href="#" className="text-[15px] font-semibold text-black hover:text-[#8B2323] transition-all uppercase ">{brand}</Link>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="w-[380px]">
-                              <div className="bg-[#f9f9f9] rounded-[40px] p-12 h-full flex flex-col items-center justify-center border border-gray-100 text-center shadow-sm">
-                                <p className="text-[12px] text-[#8B2323] font-bold uppercase tracking-[0.4em] mb-4">Featured</p>
-                                <h4 className="text-gray-900 font-black text-3xl leading-tight mb-8 italic uppercase tracking-tighter">{MEGA_MENU_DATA[megaMenuKey].promoTitle}</h4>
-                                <button className="bg-[#8B2323] text-white text-[13px] font-bold uppercase tracking-[0.2em] px-12 py-4 rounded-full hover:bg-black transition-all shadow-md">View All</button>
-                              </div>
-                            </div>
+        return (
+          <li
+            key={item.href}
+            onMouseEnter={() => !isLocked && setActiveMenu(item.label)}
+            onMouseLeave={() => !isLocked && setActiveMenu(null)}
+            className="py-1 cursor-pointer"
+          >
+            <button
+              onClick={() => handleToggle(item.label)}
+              className={`flex items-center font-bold gap-1.5 transition-all py-1 pb-2 border-b-2 ${
+                isCurrentlyActive || pathname === item.href 
+                  ? "text-red-800 border-red-800" 
+                  : "border-transparent hover:text-red-800"
+              }`}
+            >
+              {item.label}
+              <ChevronDown 
+                size={14} 
+                className={`transition-transform duration-300 ${isCurrentlyActive ? 'rotate-180' : 'rotate-0'}`} 
+              />
+            </button>
+
+            {/* MEGA MENU DRAWER - High Speed Layer */}
+            {isCurrentlyActive && data && (
+              <div className="absolute left-0 w-full bg-white shadow-2xl border-t border-gray-100 z-[100] animate-in fade-in slide-in-from-top-1 duration-200">
+                <div className="max-w-[1400px] mx-auto flex p-6 gap-6 text-left normal-case">
+                  
+                  {/* LEFT CONTENT: Products Grid */}
+                  <div className="flex-1 flex flex-col gap-8">
+                    {megaMenuKey === "FRUITS & VEGETABLES" ? (
+                      <>
+                        <div>
+                          <h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest mb-4 border-b pb-2">Vegetables</h3>
+                          <div className="grid grid-cols-3 gap-x-6 gap-y-3">
+                            {data.vegetables?.map((v) => (
+                              <Link key={v} href="#" className="text-gray-600 hover:text-red-800 text-[15px] font-medium transition-colors">{v}</Link>
+                            ))}
                           </div>
                         </div>
-                      )}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        </nav>
+                        <div>
+                          <h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest mb-4 border-b pb-2">Fruits</h3>
+                          <div className="grid grid-cols-6 gap-x-8 gap-y-2">
+                            {data.fruits?.map((f) => (
+                              <Link key={f} href="#" className="text-gray-600 hover:text-red-800 text-[15px] font-medium transition-colors">{f}</Link>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div>
+                        <h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest mb-4 border-b pb-2">Products</h3>
+                        <div className="grid grid-cols-4 gap-x-6 gap-y-3">
+                          {data.products?.map((p) => (
+                            <Link key={p} href="#" className="text-gray-600 hover:text-red-800 text-[15px] font-medium transition-colors">{p}</Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* BRANDS SECTION - Included back as requested */}
+                    {megaMenuKey !== "FRUITS & VEGETABLES" && data.brands && data.brands.length > 0 && (
+                      <div className="border-t border-gray-100 pt-4">
+                        <h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest text-[16px] mb-4">  Brands </h3>
+                        <div className="flex flex-wrap justify-center items-center gap-x-10 gap-y-2">
+                          {data.brands.map((brand) => (
+                            <Link key={brand} href="#" className="text-[15px] font-semibold text-black hover:text-red-800 uppercase tracking-tighter">{brand}</Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* RIGHT PROMO SECTION */}
+                  <div className="w-[320px]">
+                    <div className="bg-[#f9f9f9] rounded-[40px] p-12 h-full flex flex-col items-center justify-center border border-gray-100 text-center shadow-sm">
+                      <p className="text-[11px] text-[#8B2323] font-bold uppercase tracking-[0.4em] mb-4">Featured</p>
+                      <h4 className="text-gray-900 font-black text-2xl leading-tight mb-8 italic uppercase tracking-tighter">{data.promoTitle}</h4>
+                      <button className="bg-[#8B2323] text-white text-[12px] font-bold uppercase tracking-[0.2em] px-10 py-4 rounded-full hover:bg-black transition-all shadow-md">View All</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  </div>
+</nav>
+)}
       </div>
 
       {/* ========================================== */}
@@ -269,7 +598,7 @@ export function StalksHeader({ navItems, logoSrc, isEcommerce = true }: HeaderPr
             </Link>
           </div>
 
-          <Link href="/login" className="p-2 -mr-2">
+          <Link href={customer ? "/account" : "/login"} className="p-2 -mr-2">
             <User size={28} strokeWidth={1.5} />
           </Link>
         </div>
@@ -306,6 +635,44 @@ export function StalksHeader({ navItems, logoSrc, isEcommerce = true }: HeaderPr
                 </Link>
               </li>
             ))}
+            {/* Auth Links */}
+            {customer ? (
+              <>
+                <li className="border-b border-gray-50 pb-4">
+                  <div className="text-[14px] font-bold text-gray-600 uppercase flex items-center gap-2">
+                    <User size={18} />
+                    Hi, {customer.firstName}
+                  </div>
+                </li>
+                <li className="border-b border-gray-50 pb-4">
+                  <Link href="/account" onClick={() => setIsMenuOpen(false)} className="text-[16px] font-bold text-[#8B2323] uppercase flex items-center gap-2">
+                    <User size={18} />
+                    My Account
+                  </Link>
+                </li>
+                <li className="border-b border-gray-50 pb-4">
+                  <button onClick={() => { onLogout?.(); setIsMenuOpen(false); }} className="text-[16px] font-bold text-[#8B2323] uppercase flex items-center gap-2 w-full">
+                    <User size={18} />
+                    Logout
+                  </button>
+                </li>
+              </>
+            ) : (
+              <>
+                <li className="border-b border-gray-50 pb-4">
+                  <Link href="/register" onClick={() => setIsMenuOpen(false)} className="text-[16px] font-bold text-[#8B2323] uppercase flex items-center gap-2">
+                    <User size={18} />
+                    Register
+                  </Link>
+                </li>
+                <li className="border-b border-gray-50 pb-4">
+                  <Link href="/login" onClick={() => setIsMenuOpen(false)} className="text-[16px] font-bold text-[#8B2323] uppercase flex items-center gap-2">
+                    <User size={18} />
+                    Login
+                  </Link>
+                </li>
+              </>
+            )}
           </ul>
         </div>
       </aside>

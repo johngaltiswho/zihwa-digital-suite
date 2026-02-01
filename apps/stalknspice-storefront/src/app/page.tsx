@@ -11,6 +11,68 @@ import { vendureClient } from "@/lib/vendure/client";
 import { GET_PRODUCTS } from "@/lib/vendure/queries/products";
 import type { Product } from "@/lib/vendure/types";
 
+function ProductCard({ product }: { product: Product }) {
+  
+  const [selectedVariantId, setSelectedVariantId] = useState(product.variants[0]?.id);
+
+  // Find the details of the selected variant
+  const currentVariant = product.variants.find((v) => v.id === selectedVariantId) || product.variants[0];
+
+  return (
+    <div className="group flex flex-col bg-white border border-gray-50 rounded-lg overflow-hidden hover:shadow-md transition-all duration-300">
+      
+      {/* 1. IMAGE & TITLE LINK  */}
+      <Link href={`/product/${product.slug}?variant=${selectedVariantId}`} className="block">
+        <div className="relative aspect-square w-full bg-[#fcfcfc] overflow-hidden">
+          <Image
+            src={product.featuredAsset?.preview || "/images/placeholder.jpg"}
+            alt={product.name}
+            fill
+            className="object-contain p-2 group-hover:scale-110 transition-transform duration-500"
+          />
+        </div>
+
+        <div className="p-2 pb-0 text-center">
+          <h3 className="text-[9px] md:text-[13px] font-black text-gray-700 line-clamp-3 h-9 md:h-8 leading-[1.2] mb-1 overflow-hidden">
+            {product.name}
+          </h3>
+        </div>
+      </Link>
+
+      {/* 2. INTERACTIVE SECTION */}
+      <div className="p-2 pt-1 flex flex-col flex-grow text-center">
+        
+        {/* VARIANT DROPDOWN: Only shows if there are multiple options */}
+        {product.variants.length > 1 ? (
+          <select
+            value={selectedVariantId}
+            onChange={(e) => setSelectedVariantId(e.target.value)}
+            className="mb-1.5 text-[12px] p-0.5 border border-gray-300 font-bold rounded bg-gray-50 outline-none cursor-pointer text-gray-500"
+          >
+            {product.variants.map((v) => (
+              <option key={v.id} value={v.id}>{v.name}</option>
+            ))}
+          </select>
+        ) : (
+          /* Invisible spacer to keep alignment consistent across rows */
+          <div className="h-3" />
+        )}
+
+        <p className="text-red-800 font-bold text-xs md:text-sm mb-2">
+          ₹{((currentVariant?.price || 0) / 100).toFixed(0)}
+        </p>
+
+        {/* REDIRECT BUTTON: Links to detail page instead of adding directly */}
+        <Link 
+          href={`/product/${product.slug}?variant=${selectedVariantId}`}
+          className="mt-auto w-full py-1.5 text-[12px] font-black rounded-md border border-gray-200 bg-gray-50 text-gray-800 group-hover:bg-red-800 group-hover:text-white group-hover:border-red-800 transition-colors uppercase tracking-tight text-center"
+        >
+          Add to Cart
+        </Link>
+      </div>
+    </div>
+  );
+}
 export default function Home() {
   // Slider State for Hero (6 slides)
   const [heroIndex, setHeroIndex] = useState(0);
@@ -44,7 +106,7 @@ export default function Home() {
       try {
         setProductsLoading(true);
         const data = await vendureClient.request(GET_PRODUCTS, {
-          options: { take: 6 } // Fetch 6 featured products for homepage
+          options: { take: 9 } // Fetch 6 featured products for homepage
         });
         setProducts(data.products.items);
         setProductsError(null);
@@ -64,8 +126,8 @@ export default function Home() {
     <main className="bg-white min-h-screen font-sans">
       
       {/* 1. HERO SLIDER SECTION (Using Common Component) */}
-      <section className="bg-white py-4 md:py-6">
-        <div className="max-w-[1250px] mx-auto px-12">
+      <section className="bg-white py-4 md:py-2">
+        <div className="max-w-[1440px] mx-auto px-12">
           {/* This one line replaces all the manual state/timer logic */}
           <HeroSliderSNS slides={slides} height="430px" />
         </div>
@@ -76,7 +138,7 @@ export default function Home() {
        {/* 2. SHOP BY CUISINES */}
 <section className="py-4 text-center">
   <h2 className="text-3xl md:text-4xl font-bold mb-10 text-gray-800">Shop By Cuisines</h2>
-  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-8">
+  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-8">
     {[
       { name: "Italian", img: "/images/italian-food.png" },
       { name: "American", img: "/images/american-food.png" },
@@ -132,22 +194,25 @@ export default function Home() {
   </div>
 </section>
         {/* 4. FEATURED PRODUCTS */}
-<section className="py-10">
-  <h2 className="text-3xl md:text-4xl font-bold mb-10 text-gray-800 text-center">Featured Products</h2>
-  {productsLoading ? (
-    <div className="text-center py-12">
-      <p className="text-gray-600 text-lg">Loading products...</p>
-    </div>
-  ) : productsError ? (
-    <div className="text-center py-12">
-      <p className="text-red-600 text-lg">{productsError}</p>
-    </div>
-  ) : (
-    <ProductGrid products={products} />
-  )}
-</section>
+        <section className="py-8">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl md:text-3xl font-bold text-gray-800">Featured Products</h2>
+            <Link href="/products" className="text-red-800 font-bold text-sm hover:underline">View All →</Link>
+          </div>
 
-       {/* 4. TOP OFFERS */}
+          {productsLoading ? (
+            <div className="text-center py-10"><p className="text-gray-400 text-sm">Loading...</p></div>
+          ) : productsError ? (
+            <div className="text-center py-10"><p className="text-red-600 text-sm">{productsError}</p></div>
+          ) : (
+            <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-8 gap-3 md:gap-4">
+              {products.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
+        </section>
+          {/* 4. TOP OFFERS */}
 <section className="py-6 text-center">
   <h2 className="text-3xl md:text-4xl font-bold mb-12 text-gray-800">Top Offers</h2>
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -246,7 +311,7 @@ export default function Home() {
           <div className="flex flex-col md:flex-row max-w-2xl mx-auto border-black border-[1.5px] rounded-sm overflow-hidden shadow-lg">
             <input 
               type="email" 
-              placeholder="ENTER YOUR EMAIL HERE" 
+              placeholder="ENTER YOUR EMAIL HERE"
               className="flex-1 p-5 outline-none text-center md:text-left text-sm font-medium placeholder-gray-400"
             />
             <button className="bg-black text-white px-16 py-5 font-bold hover:bg-gray-800 transition-colors uppercase text-sm tracking-wider">

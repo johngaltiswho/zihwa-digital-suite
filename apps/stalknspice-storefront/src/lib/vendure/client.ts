@@ -2,7 +2,7 @@ import { GraphQLClient } from 'graphql-request';
 
 // Get the Vendure Shop API URL from environment variables
 const VENDURE_SHOP_API_URL =
-  process.env.NEXT_PUBLIC_VENDURE_SHOP_API_URL || 'http://localhost:3002/shop-api';
+  process.env.NEXT_PUBLIC_VENDURE_SHOP_API_URL || 'http://localhost:3001/shop-api';
 
 /**
  * Default GraphQL client for Vendure Shop API

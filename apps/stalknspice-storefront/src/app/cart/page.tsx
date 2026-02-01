@@ -65,7 +65,7 @@ export default function CartPage() {
   }
 
   return (
-    <section className="min-h-screen bg-gray-50 py-12 px-4">
+    <section className="min-h-screen bg-gray-50 py-4 px-4">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-4xl font-black text-gray-900 uppercase tracking-tighter mb-2">
           Shopping Cart
