@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev:server": "PORT=3010 ts-node ./src/index.ts",
+    "dev:server": "PORT=3100 ts-node ./src/index.ts",
     "dev:worker": "ts-node ./src/index-worker.ts",
     "dev:dashboard": "DASHBOARD_PORT=5176 vite --clearScreen false",
     "dev": "concurrently --kill-others npm:dev:*",
