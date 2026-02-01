@@ -1,0 +1,66 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+  schemas   = ["accounting"]
+}
+
+// OAuth tokens for Zoho Books (or any future provider)
+model OAuthToken {
+  id            String   @id @default(cuid())
+  provider      String   @default("zoho_books")
+  orgId         String   // Zoho organization ID
+  accessToken   String   // Encrypted
+  refreshToken  String   // Encrypted
+  expiresAt     DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([provider, orgId])
+  @@map("oauth_tokens")
+  @@schema("accounting")
+}
+
+// Track uploaded documents and processing state
+model ProcessedDocument {
+  id              String           @id @default(cuid())
+  fileName        String
+  fileUrl         String           // Supabase Storage public URL
+  fileType        String           // "pdf", "image/jpeg", etc.
+  documentType    DocumentType
+  status          ProcessingStatus
+  extractedData   Json?            // Stores ExpenseData or PurchaseData
+  postingResult   Json?            // Stores VoucherResult
+  zohoVoucherId   String?          // External voucher ID from Zoho
+  zohoOrgId       String?          // Which org it was posted to
+  error           String?          // Error message if failed
+  processedAt     DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@map("processed_documents")
+  @@schema("accounting")
+}
+
+enum DocumentType {
+  EXPENSE
+  PURCHASE
+  INVOICE
+
+  @@schema("accounting")
+}
+
+enum ProcessingStatus {
+  UPLOADED
+  PROCESSING
+  EXTRACTED
+  POSTED
+  FAILED
+
+  @@schema("accounting")
+}
