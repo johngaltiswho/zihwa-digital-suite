@@ -6,6 +6,7 @@ import {
   VendureConfig,
   BcryptPasswordHashingStrategy,
 } from '@vendure/core';
+import { RazorpayPlugin, razorpayPaymentHandler } from './plugins/razorpay.plugin';
 import {
   defaultEmailHandlers,
   EmailPlugin,
@@ -65,12 +66,20 @@ export const config: VendureConfig = {
   },
 
   paymentOptions: {
-    paymentMethodHandlers: [dummyPaymentHandler],
+    paymentMethodHandlers: [
+      dummyPaymentHandler,
+      razorpayPaymentHandler,
+    ],
   },
 
   customFields: {},
 
   plugins: [
+    RazorpayPlugin.init({
+      keyId: process.env.RAZORPAY_KEY_ID!,
+      keySecret: process.env.RAZORPAY_KEY_SECRET!,
+    }),
+
     GraphiqlPlugin.init(),
 
     AssetServerPlugin.init({

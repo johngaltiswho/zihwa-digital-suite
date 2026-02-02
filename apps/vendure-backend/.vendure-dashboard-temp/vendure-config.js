@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.config = void 0;
 const core_1 = require("@vendure/core");
+const razorpay_plugin_1 = require("./plugins/razorpay.plugin");
 const email_plugin_1 = require("@vendure/email-plugin");
 const asset_server_plugin_1 = require("@vendure/asset-server-plugin");
 const plugin_1 = require("@vendure/dashboard/plugin");
@@ -55,10 +56,17 @@ exports.config = {
         ssl: { rejectUnauthorized: false },
     },
     paymentOptions: {
-        paymentMethodHandlers: [core_1.dummyPaymentHandler],
+        paymentMethodHandlers: [
+            core_1.dummyPaymentHandler,
+            razorpay_plugin_1.razorpayPaymentHandler,
+        ],
     },
     customFields: {},
     plugins: [
+        razorpay_plugin_1.RazorpayPlugin.init({
+            keyId: process.env.RAZORPAY_KEY_ID,
+            keySecret: process.env.RAZORPAY_KEY_SECRET,
+        }),
         graphiql_plugin_1.GraphiqlPlugin.init(),
         asset_server_plugin_1.AssetServerPlugin.init({
             route: 'assets',

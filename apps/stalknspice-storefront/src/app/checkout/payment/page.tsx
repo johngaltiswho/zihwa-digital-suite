@@ -5,15 +5,31 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/vendure/cart-context";
 import { vendureClient } from "@/lib/vendure/client";
 import { ADD_PAYMENT_TO_ORDER, TRANSITION_ORDER_TO_STATE } from "@/lib/vendure/mutations/checkout";
+import { CREATE_RAZORPAY_ORDER } from "@/lib/vendure/mutations/razorpay";
+import { loadRazorpayScript, openRazorpayCheckout, RazorpayResponse } from "@/lib/vendure/razorpay";
 import Link from "next/link";
 import { ArrowLeft, CreditCard, Lock } from "lucide-react";
 import Image from "next/image";
+
+type PaymentMethod = 'razorpay' | 'dummy';
 
 export default function PaymentPage() {
   const router = useRouter();
   const { activeOrder, itemCount, refreshCart } = useCart();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('razorpay');
+  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+
+  // Load Razorpay script
+  useEffect(() => {
+    loadRazorpayScript().then((loaded) => {
+      setRazorpayLoaded(loaded);
+      if (!loaded) {
+        console.error('Failed to load Razorpay script');
+      }
+    });
+  }, []);
 
   // Redirect if cart is empty or order not ready for payment
   useEffect(() => {
@@ -35,7 +51,94 @@ export default function PaymentPage() {
     }).format(price / 100);
   };
 
-  const handlePlaceOrder = async () => {
+  const handleRazorpayPayment = async () => {
+    if (!activeOrder || !razorpayLoaded) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Transition order to ArrangingPayment state
+      const transitionResponse = await vendureClient.request(TRANSITION_ORDER_TO_STATE, {
+        state: "ArrangingPayment",
+      });
+
+      if (transitionResponse.transitionOrderToState.errorCode) {
+        throw new Error(transitionResponse.transitionOrderToState.message);
+      }
+
+      // Create Razorpay order
+      const razorpayOrderResponse = await vendureClient.request(CREATE_RAZORPAY_ORDER, {
+        amount: activeOrder.totalWithTax, // Amount in smallest unit (paise)
+      });
+
+      const { id, amount, currency, keyId } = razorpayOrderResponse.createRazorpayOrder;
+
+      // Open Razorpay checkout
+      const options = {
+        key: keyId,
+        amount: amount,
+        currency: currency,
+        name: "Stalks N Spice",
+        description: `Order ${activeOrder.code}`,
+        order_id: id,
+        handler: async (response: RazorpayResponse) => {
+          try {
+            // Add payment to order with Razorpay details
+            const paymentResponse = await vendureClient.request(ADD_PAYMENT_TO_ORDER, {
+              input: {
+                method: "razorpay-payment-handler",
+                metadata: {
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_signature: response.razorpay_signature,
+                },
+              },
+            });
+
+            if (paymentResponse.addPaymentToOrder.errorCode) {
+              throw new Error(paymentResponse.addPaymentToOrder.message);
+            }
+
+            // Order placed successfully
+            const order = paymentResponse.addPaymentToOrder;
+
+            // Refresh cart (should now be empty)
+            await refreshCart();
+
+            // Navigate to confirmation
+            router.push(`/checkout/confirmation?orderCode=${order.code}`);
+          } catch (err: any) {
+            console.error("Failed to complete payment:", err);
+            setError(err.message || "Payment processing failed");
+            setLoading(false);
+          }
+        },
+        prefill: {
+          name: activeOrder.shippingAddress?.fullName || "",
+          email: activeOrder.customer?.emailAddress || "",
+          contact: activeOrder.shippingAddress?.phoneNumber || "",
+        },
+        theme: {
+          color: "#8B2323",
+        },
+        modal: {
+          ondismiss: () => {
+            setLoading(false);
+            setError("Payment cancelled");
+          },
+        },
+      };
+
+      openRazorpayCheckout(options);
+    } catch (err: any) {
+      console.error("Failed to initiate Razorpay payment:", err);
+      setError(err.message || "Failed to initiate payment. Please try again.");
+      setLoading(false);
+    }
+  };
+
+  const handleDummyPayment = async () => {
     if (!activeOrder) return;
 
     setLoading(true);
@@ -79,6 +182,14 @@ export default function PaymentPage() {
       setError(err.message || "Failed to place order. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePlaceOrder = async () => {
+    if (paymentMethod === 'razorpay') {
+      await handleRazorpayPayment();
+    } else {
+      await handleDummyPayment();
     }
   };
 
@@ -154,31 +265,71 @@ export default function PaymentPage() {
                 Payment Method
               </h2>
 
-              <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-6 mb-6 border-2 border-yellow-200">
-                <div className="flex items-start gap-3">
-                  <Lock className="text-yellow-600 mt-1" size={20} />
-                  <div>
-                    <h3 className="font-bold text-gray-900 mb-2">Test Mode - Dummy Payment</h3>
-                    <p className="text-sm text-gray-700">
-                      This is a test payment handler. In production, this will be replaced with a real
-                      payment gateway (Stripe, Razorpay, etc.). Click "Place Order" below to complete
-                      your test order.
-                    </p>
+              {/* Payment Method Selection */}
+              <div className="space-y-4 mb-6">
+                {/* Razorpay Option */}
+                <label
+                  className={`block p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                    paymentMethod === 'razorpay'
+                      ? 'border-[#8B2323] bg-red-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="radio"
+                      name="payment"
+                      value="razorpay"
+                      checked={paymentMethod === 'razorpay'}
+                      onChange={() => setPaymentMethod('razorpay')}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <CreditCard size={20} className="text-[#8B2323]" />
+                        <h3 className="font-bold text-gray-900">Razorpay</h3>
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Pay securely with Credit/Debit Card, UPI, Net Banking, or Wallet
+                      </p>
+                      {!razorpayLoaded && (
+                        <p className="text-xs text-yellow-600 mt-2">⚠️ Loading Razorpay...</p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </div>
+                </label>
 
-              {/* Dummy Payment Info Display */}
-              <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                <div className="flex items-center gap-3 mb-4">
-                  <CreditCard className="text-gray-600" size={24} />
-                  <h3 className="font-bold text-gray-900">Dummy Payment Method</h3>
-                </div>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <p>Card: **** **** **** 1234</p>
-                  <p>Card Holder: Test Customer</p>
-                  <p className="text-green-600 font-bold mt-3">✓ Payment will be automatically approved</p>
-                </div>
+                {/* Dummy Payment Option (Test Mode) */}
+                <label
+                  className={`block p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                    paymentMethod === 'dummy'
+                      ? 'border-yellow-400 bg-yellow-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="radio"
+                      name="payment"
+                      value="dummy"
+                      checked={paymentMethod === 'dummy'}
+                      onChange={() => setPaymentMethod('dummy')}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <Lock size={20} className="text-yellow-600" />
+                        <h3 className="font-bold text-gray-900">Test Payment (Dummy)</h3>
+                        <span className="text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full font-bold">
+                          TEST MODE
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1">
+                        For testing only - Payment will be automatically approved
+                      </p>
+                    </div>
+                  </div>
+                </label>
               </div>
 
               {error && (
@@ -189,7 +340,7 @@ export default function PaymentPage() {
 
               <button
                 onClick={handlePlaceOrder}
-                disabled={loading}
+                disabled={loading || (paymentMethod === 'razorpay' && !razorpayLoaded)}
                 className="w-full mt-8 bg-[#8B2323] text-white font-bold uppercase tracking-widest py-4 rounded-full hover:bg-black transition-all shadow-xl shadow-[#8B2323]/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading ? (
@@ -197,7 +348,7 @@ export default function PaymentPage() {
                 ) : (
                   <>
                     <Lock size={20} />
-                    Place Order - {formatPrice(activeOrder.totalWithTax, activeOrder.currencyCode)}
+                    {paymentMethod === 'razorpay' ? 'Pay with Razorpay' : 'Place Test Order'} - {formatPrice(activeOrder.totalWithTax, activeOrder.currencyCode)}
                   </>
                 )}
               </button>
