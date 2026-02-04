@@ -10,16 +10,148 @@ datasource db {
   schemas   = ["accounting"]
 }
 
+model Organization {
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  description     String?
+  defaultCurrency String?  @db.VarChar(3)
+  timezone        String?  @default("Asia/Kolkata")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  companies       Company[]
+  memberships     OrgMembership[]
+  policies        OrgPolicy[]
+  documents       ProcessedDocument[]
+  learningSignals LearningSignal[]
+
+  @@map("organizations")
+  @@schema("accounting")
+}
+
+model OrgMembership {
+  id             String       @id @default(cuid())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  userId         String
+  role           OrgRole      @default(ACCOUNTANT)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, userId])
+  @@map("org_memberships")
+  @@schema("accounting")
+}
+
+model OrgPolicy {
+  id             String       @id @default(cuid())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  policyType     String       @default("defaults")
+  data           Json
+  version        Int          @default(1)
+  isActive       Boolean      @default(true)
+  createdBy      String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId, isActive])
+  @@map("org_policies")
+  @@schema("accounting")
+}
+
+model Company {
+  id             String       @id @default(cuid())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  name           String
+  slug           String
+  baseCurrency   String?      @db.VarChar(3)
+  timezone       String?      @default("Asia/Kolkata")
+  industry       String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  archivedAt     DateTime?
+
+  accountingContexts AccountingContext[]
+  integrations       IntegrationConnection[]
+  documents          ProcessedDocument[]
+  learningSignals    LearningSignal[]
+  oauthTokens        OAuthToken[]
+
+  @@unique([organizationId, slug])
+  @@map("companies")
+  @@schema("accounting")
+}
+
+model AccountingContext {
+  id           String        @id @default(cuid())
+  company      Company       @relation(fields: [companyId], references: [id])
+  companyId    String
+  version      Int           @default(1)
+  status       ContextStatus @default(DRAFT)
+  context      Json
+  notes        String?
+  createdBy    String?
+  createdAt    DateTime      @default(now())
+  activatedAt  DateTime?
+  supersededAt DateTime?
+
+  @@index([companyId, status])
+  @@map("accounting_contexts")
+  @@schema("accounting")
+}
+
+model IntegrationConnection {
+  id            String              @id @default(cuid())
+  company       Company             @relation(fields: [companyId], references: [id])
+  companyId     String
+  provider      IntegrationProvider
+  status        IntegrationStatus   @default(PENDING)
+  externalOrgId String?
+  metadata      Json?
+  lastSyncedAt  DateTime?
+  error         String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@unique([companyId, provider])
+  @@map("integration_connections")
+  @@schema("accounting")
+}
+
+model LearningSignal {
+  id             String             @id @default(cuid())
+  organization   Organization       @relation(fields: [organizationId], references: [id])
+  organizationId String
+  company        Company?           @relation(fields: [companyId], references: [id])
+  companyId      String?
+  document       ProcessedDocument? @relation(fields: [documentId], references: [id])
+  documentId     String?
+  eventType      String
+  payload        Json
+  createdBy      String?
+  createdAt      DateTime           @default(now())
+
+  @@index([organizationId])
+  @@index([companyId])
+  @@map("learning_signals")
+  @@schema("accounting")
+}
+
 // OAuth tokens for Zoho Books (or any future provider)
 model OAuthToken {
-  id            String   @id @default(cuid())
-  provider      String   @default("zoho_books")
-  orgId         String   // Zoho organization ID
-  accessToken   String   // Encrypted
-  refreshToken  String   // Encrypted
-  expiresAt     DateTime
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(cuid())
+  provider     String   @default("zoho_books")
+  orgId        String // External organization ID (Zoho)
+  accessToken  String // Encrypted
+  refreshToken String // Encrypted
+  expiresAt    DateTime
+  company      Company? @relation(fields: [companyId], references: [id])
+  companyId    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@unique([provider, orgId])
   @@map("oauth_tokens")
@@ -30,19 +162,26 @@ model OAuthToken {
 model ProcessedDocument {
   id              String           @id @default(cuid())
   fileName        String
-  fileUrl         String           // Supabase Storage public URL
-  fileType        String           // "pdf", "image/jpeg", etc.
+  fileUrl         String // Supabase Storage public URL
+  fileType        String // "pdf", "image/jpeg", etc.
   documentType    DocumentType
   status          ProcessingStatus
-  extractedData   Json?            // Stores ExpenseData or PurchaseData
-  postingResult   Json?            // Stores VoucherResult
-  zohoVoucherId   String?          // External voucher ID from Zoho
-  zohoOrgId       String?          // Which org it was posted to
-  error           String?          // Error message if failed
+  extractedData   Json? // Stores structured AI output
+  postingResult   Json? // Stores VoucherResult
+  zohoVoucherId   String? // External voucher ID from Zoho
+  zohoOrgId       String? // Which org it was posted to
+  error           String? // Error message if failed
   processedAt     DateTime?
+  organization    Organization?    @relation(fields: [organizationId], references: [id])
+  organizationId  String?
+  company         Company?         @relation(fields: [companyId], references: [id])
+  companyId       String?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
+  learningSignals LearningSignal[]
 
+  @@index([organizationId])
+  @@index([companyId])
   @@map("processed_documents")
   @@schema("accounting")
 }
@@ -61,6 +200,39 @@ enum ProcessingStatus {
   EXTRACTED
   POSTED
   FAILED
+
+  @@schema("accounting")
+}
+
+enum OrgRole {
+  OWNER
+  ADMIN
+  ACCOUNTANT
+  VIEWER
+
+  @@schema("accounting")
+}
+
+enum IntegrationProvider {
+  ZOHO_BOOKS
+  TALLY
+
+  @@schema("accounting")
+}
+
+enum IntegrationStatus {
+  PENDING
+  CONNECTED
+  DISCONNECTED
+  ERROR
+
+  @@schema("accounting")
+}
+
+enum ContextStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
 
   @@schema("accounting")
 }

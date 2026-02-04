@@ -4,10 +4,17 @@ import { refreshAndStoreTokens } from '@repo/db'
 import { postExpense, postPurchase } from '@repo/connector-zoho-books'
 import type { ExpenseData, PurchaseData } from '@repo/ledger-core'
 
+type DocumentRouteContext = {
+  params: {
+    id: string
+  }
+}
+
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: unknown
 ) {
+  const { params } = context as DocumentRouteContext
   try {
     const { orgId, accountId, vendorId } = await request.json()
 
@@ -138,7 +145,8 @@ export async function POST(
         status: result.success ? 'POSTED' : 'FAILED',
         zohoVoucherId: result.externalRef,
         zohoOrgId: orgId,
-        postingResult: result,
+        // Prisma JSON field expects a plain object; cast VoucherResult via unknown to satisfy TS
+        postingResult: result as unknown as Record<string, unknown>,
         processedAt: new Date(),
         error: result.error,
       })

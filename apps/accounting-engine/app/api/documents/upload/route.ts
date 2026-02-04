@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
       await updateDocument(documentId, {
         status: 'EXTRACTED',
         documentType: extractedData.type.toUpperCase() as 'EXPENSE' | 'PURCHASE',
-        extractedData: extractedData.data,
+        extractedData,
       })
 
       // 9. Return success response

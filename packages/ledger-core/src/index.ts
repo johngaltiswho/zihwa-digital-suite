@@ -10,6 +10,16 @@ export type {
   ExtractedData,
 } from './types'
 
+export type {
+  AccountingContext,
+  VendorRule,
+  LedgerRule,
+  AllocationRule,
+  RiskSettings,
+  GstSettings,
+  PostingPreferences,
+} from './accounting-context'
+
 export { DocumentType, VoucherType, PostingStatus } from './types'
 
 // Export schemas
@@ -21,6 +31,18 @@ export {
   VoucherResultSchema,
   ExtractedDataSchema,
 } from './schemas'
+
+export {
+  AccountingContextSchema,
+  VendorRuleSchema,
+  LedgerRuleSchema,
+  AllocationRuleSchema,
+  AllocationMatchSchema,
+  GstSettingsSchema,
+  RiskSettingsSchema,
+  PostingPreferencesSchema,
+  AllocationSettingsSchema,
+} from './accounting-context'
 
 // Export utilities
 export {
