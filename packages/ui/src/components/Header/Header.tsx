@@ -4,11 +4,13 @@ import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+
 
 import { 
   Menu, Search, User, Heart, X,
   ChefHat, PhoneCall, MapPin, Tag, ShoppingCart, 
-  ChevronRight, ChevronDown, Headset, Pill,ShoppingBag,ShieldCheck, Handbag,
+  ChevronRight, ChevronDown, Headset, Pill,ShoppingBag,ShieldCheck, Handbag,Store
 } from "lucide-react"; 
 interface NavItem {
   label: string;
@@ -276,14 +278,17 @@ export function StalksHeader({ navItems, logoSrc, customer, onUserMenuToggle, on
   const [isScrolled, setIsScrolled] = useState(false);
   const lastScrollY = useRef(0);
   const hideCategories = [
-    '/login', 
-    '/register', 
-    '/cart', 
+    '/login',
+    '/register',
+    '/cart',
     '/forgot-password'
   ].includes(pathname)
   || pathname.startsWith('/contact')
-  || pathname.startsWith('/checkout') // Hides on all checkout steps
-  || pathname.startsWith('/account');  // Hides on profile, orders, etc.
+  || pathname.startsWith('/checkout')
+  || pathname.startsWith('/account')
+  || pathname.startsWith('/cuisine')
+  || pathname.startsWith('/shop')
+  || pathname.startsWith('/category');
 
 
   const navRef = useRef<HTMLDivElement>(null);
@@ -353,10 +358,11 @@ window.addEventListener("scroll", handleScroll, { passive: true });
         {/* ROW 1: Utility Bar (Dropdown trigger moved here) */}
         <div className="bg-white border-b border-gray-50">
           <div className="max-w-[1400px] mx-auto px-4 h-12 flex justify-end items-center space-x-5 text-[13px] font-medium text-gray-600">
+            <Link href="/shop" className="flex items-center hover:text-red-800 transition-colors"><Store size={18} className="mr-1.5" /> Shop</Link>
             <Link href="/recipes" className="flex items-center hover:text-red-800 transition-colors"><ChefHat size={16} className="mr-1.5" /> Recipe&apos;s</Link>
-            <Link href="/contact" className="flex items-center hover:text-red-800 transition-colors"><PhoneCall size={14} className="mr-1.5" /> Contact Us</Link>
-            <Link href="/tracking" className="flex items-center hover:text-red-800 transition-colors"><MapPin size={14} className="mr-1.5" /> Tracking</Link>
             <Link href="/offers" className="flex items-center hover:text-red-800 transition-colors"><Tag size={14} className="mr-1.5" /> Offers</Link>
+            <Link href="/tracking" className="flex items-center hover:text-red-800 transition-colors"><MapPin size={14} className="mr-1.5" /> Tracking</Link>
+            <Link href="/contact" className="flex items-center hover:text-red-800 transition-colors"><PhoneCall size={14} className="mr-1.5" /> Contact Us</Link>
             <Link href="/wishlist" className="flex items-center hover:text-red-800 transition-colors"><Heart size={14} className="mr-1.5" /> Wishlist</Link>
 
       {/* DYNAMIC AUTH TRIGGER */}
@@ -444,12 +450,12 @@ window.addEventListener("scroll", handleScroll, { passive: true });
         </div>
 
         {/* ROW 2: Logo & Search */}
-        <div className="max-w-[1400px] mx-auto px-6 h-12 flex items-center justify-between gap-8 mt-1">
+        <div className="max-w-[1400px] mx-auto px-6 h-12 flex items-center justify-between gap-8 mt-0 mb-1">
           <div className="flex items-center space-x-6 flex-shrink-0">
-            <button onClick={() => setIsMenuOpen(true)} className="p-1 hover:bg-gray-100 rounded transition-colors">
-              <Menu size={30} />
-            </button>
-            <Link href="/" className="block -mt-4">
+          <div className="p-1 text-gray-800">
+          <Menu size={30} />
+          </div>
+            <Link href="/" className="block -mt-5">
               <Image src={logoSrc} alt="Logo" width={250} height={50} priority className="object-contain" />
             </Link>
           </div>
@@ -480,7 +486,7 @@ window.addEventListener("scroll", handleScroll, { passive: true });
   `}
   style={{ 
     top: isScrolled ? '96px' : '0',
-    /* 112px is height of Fixed Row 1 (48px) + Row 2 (64px) */
+
   }}
 >
   <div className="max-w-[1400px] mx-auto px-6">

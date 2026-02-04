@@ -5,31 +5,41 @@ import Link from "next/link";
 import Newsletter from "../components/NewsLetter";
 import RecipeGrid from "../components/RecipeGrid";
 import { HeroSliderSNS } from "@repo/ui";
-import VerticalCategoryMenu from "../components/VerticalCategoryMenu";
+import { X, AlertCircle,Sparkles,ShoppingBag } from "lucide-react";
 import ProductGrid from "../components/ProductGrid";
 import { vendureClient } from "@/lib/vendure/client";
 import { GET_PRODUCTS } from "@/lib/vendure/queries/products";
+import { motion } from "framer-motion";
 import type { Product } from "@/lib/vendure/types";
 
 function ProductCard({ product }: { product: Product }) {
   
   const [selectedVariantId, setSelectedVariantId] = useState(product.variants[0]?.id);
-
-  // Find the details of the selected variant
   const currentVariant = product.variants.find((v) => v.id === selectedVariantId) || product.variants[0];
-
+   // --- SMART STOCK LOGIC ---
+  const rawStock = currentVariant?.stockLevel;
+  const isOutOfStock = rawStock === 'OUT_OF_STOCK' || rawStock === 0 || rawStock === '0';
+  const isLowStock = rawStock === 'LOW_STOCK' || (typeof rawStock === 'number' && rawStock > 0 && rawStock <= 10);
   return (
-    <div className="group flex flex-col bg-white border border-gray-50 rounded-lg overflow-hidden hover:shadow-md transition-all duration-300">
+    <div className="group flex flex-col bg-red-50 border border-gray-100 rounded-lg overflow-hidden hover:shadow-md transition-all duration-300">
       
       {/* 1. IMAGE & TITLE LINK  */}
       <Link href={`/product/${product.slug}?variant=${selectedVariantId}`} className="block">
         <div className="relative aspect-square w-full bg-[#fcfcfc] overflow-hidden">
           <Image
-            src={product.featuredAsset?.preview || "/images/placeholder.jpg"}
-            alt={product.name}
+            src={currentVariant?.featuredAsset?.preview || product.featuredAsset?.preview || "/images/placeholder.jpg"}
+            alt={currentVariant?.name || product.name}
             fill
             className="object-contain p-2 group-hover:scale-110 transition-transform duration-500"
           />
+           {/* SOLD OUT OVERLAY ON IMAGE */}
+          {isOutOfStock && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="bg-white/90 text-red-600 text-[10px] font-black px-3 py-1 rounded shadow-lg border border-red-100 uppercase tracking-tighter">
+                Sold Out
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="p-2 pb-0 text-center">
@@ -47,10 +57,14 @@ function ProductCard({ product }: { product: Product }) {
           <select
             value={selectedVariantId}
             onChange={(e) => setSelectedVariantId(e.target.value)}
-            className="mb-1.5 text-[12px] p-0.5 border border-gray-300 font-bold rounded bg-gray-50 outline-none cursor-pointer text-gray-500"
+            className="mb-1 text-[11px] p-0.5 border border-gray-400 font-bold rounded bg-gray-50 outline-none cursor-pointer text-gray-500"
           >
             {product.variants.map((v) => (
-              <option key={v.id} value={v.id}>{v.name}</option>
+              <option key={v.id} value={v.id}>
+              {v.name.split(' - ').length >= 2 
+              ? `${v.name.split(' - ').pop()} - ${v.name.split(' - ').slice(0, -1).join(' - ')}` 
+              : v.name}
+            </option>
             ))}
           </select>
         ) : (
@@ -62,21 +76,37 @@ function ProductCard({ product }: { product: Product }) {
           ₹{((currentVariant?.price || 0) / 100).toFixed(0)}
         </p>
 
-        {/* REDIRECT BUTTON: Links to detail page instead of adding directly */}
+        {/* DYNAMIC STOCK TEXT BELOW PRICE */}
+          {isOutOfStock ? (
+            <span className="text-[8px] md:text-[9px] font-black text-red-500 uppercase flex items-center justify-center gap-0.5">
+              <X size={10} strokeWidth={3} /> Sold Out
+            </span>
+          ) : isLowStock ? (
+            <span className="text-[8px] md:text-[9px] font-black text-orange-500 uppercase flex items-center justify-center gap-0.5">
+              <AlertCircle size={10} strokeWidth={3} /> Limited Stock
+            </span>
+          ) : (
+             <div className="h-3" /> // Spacer for alignment
+          )}
+        </div>
+
+        {/* UPDATED BUTTON */}
         <Link 
           href={`/product/${product.slug}?variant=${selectedVariantId}`}
-          className="mt-auto w-full py-1.5 text-[12px] font-black rounded-md border border-gray-200 bg-gray-50 text-gray-800 group-hover:bg-red-800 group-hover:text-white group-hover:border-red-800 transition-colors uppercase tracking-tight text-center"
+          className={`mt-auto w-full py-1.5 text-[12px] font-black rounded-md border transition-colors uppercase tracking-tight text-center
+            ${isOutOfStock 
+              ? "bg-gray-100 border-gray-200 text-gray-400" 
+              : "bg-gray-50 border-gray-200 text-gray-800 group-hover:bg-red-800 group-hover:text-white group-hover:border-red-800"
+            }`}
         >
-          Add to Cart
+          {isOutOfStock ? "Out of Stock" : "Add to Cart"}
         </Link>
       </div>
-    </div>
   );
 }
 export default function Home() {
-  // Slider State for Hero (6 slides)
+
   const [heroIndex, setHeroIndex] = useState(0);
-  // const heroSlides = [1, 2, 3, 4, 5, 6];
   const slides = [
     { id: 1, img: "/images/hero-1.jpg" },
     { id: 2, img: "/images/hero-2.jpg" },
@@ -106,7 +136,7 @@ export default function Home() {
       try {
         setProductsLoading(true);
         const data = await vendureClient.request(GET_PRODUCTS, {
-          options: { take: 9 } // Fetch 6 featured products for homepage
+          options: { take: 7 } 
         });
         setProducts(data.products.items);
         setProductsError(null);
@@ -135,77 +165,78 @@ export default function Home() {
 
       <div className="max-w-[1250px] mx-auto px-5">
         
-       {/* 2. SHOP BY CUISINES */}
+      {/* SHOP BY CUISINES - with links */}
 <section className="py-4 text-center">
   <h2 className="text-3xl md:text-4xl font-bold mb-10 text-gray-800">Shop By Cuisines</h2>
   <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-8">
     {[
-      { name: "Italian", img: "/images/italian-food.png" },
-      { name: "American", img: "/images/american-food.png" },
-      { name: "Indian", img: "/images/indian-food.png" },
-      { name: "Chinese", img: "/images/chinese-food.png" },
-      { name: "Thai", img: "/images/thai-food.png" },
-      { name: "European", img: "/images/european-food.png" },
-      { name: "Japanese", img: "/images/japanese-food.png" },
-      { name: "Korean", img: "/images/korean-food.jpg" },
+       { name: "Italian", img: "/images/italian-food.png", slug: "italian" },
+              { name: "American", img: "/images/american-food.png", slug: "american" },
+              { name: "Indian", img: "/images/indian-food.png", slug: "indian" },
+              { name: "Chinese", img: "/images/chinese-food.png", slug: "chinese" },
+              { name: "Thai", img: "/images/thai-food.png", slug: "thai" },
+              { name: "European", img: "/images/european-food.png", slug: "european" },
+              { name: "Japanese", img: "/images/japanese-food.png", slug: "japanese" },
+              { name: "Korean", img: "/images/korean-food.jpg", slug: "korean" },
     ].map((item) => (
-      <div key={item.name} className="flex flex-col items-center group cursor-pointer max-w-[160px] mx-auto w-full">
-        {/* Removed backgroundColor style and rounded box. Reduced padding to 0 to let image be bigger. */}
-         <div className="w-full aspect-square rounded-[40px] overflow-hidden flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-           <Image 
-             src={item.img} 
-             width={160}  // Increased from 100
-             height={160} // Increased from 100
-             alt={item.name} 
-             className="object-contain" 
-           />
+      <Link href={`/cuisine/${item.slug}`} key={item.name} className="flex flex-col items-center group cursor-pointer max-w-[160px] mx-auto w-full">
+        <div className="w-full aspect-square rounded-[40px] overflow-hidden flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+          <Image 
+            src={item.img} 
+            width={160}  
+            height={160} 
+            alt={item.name} 
+            className="object-contain" 
+          />
         </div>
         <span className="mt-3 font-bold text-sm md:text-lg">{item.name}</span>
-      </div>
+      </Link>
     ))}
   </div>
 </section>
-       {/* 3. SHOP BY CATEGORY */}
+      {/* 3. SHOP BY CATEGORY */}
 <section className="py-4 text-center">
   <h2 className="text-3xl md:text-4xl font-bold mb-10 text-gray-800">Shop By Category</h2>
   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
     {[
-      { name: "Crushes", img: "/images/crushes.png" },
-      { name: "Syrups", img: "/images/syrup.png" },
-      { name: "Fruits & Vegetables", img: "/images/fruits-vegetable.png" },
-      { name: "Pastas & Noodles", img: "/images/noodles-pasta.png" },
-      { name: "Milk & Cream", img: "/images/milk.png" },
-      { name: "Sauces", img: "/images/sauce.png" },
+      { name: "Crushes", img: "/images/crushes.png", slug: "crushes" },
+      { name: "Syrups", img: "/images/syrup.png", slug: "syrups" },
+      { name: "Fruits & Veg", img: "/images/fruits-vegetable.png", slug: "fruits-vegetables" },
+      { name: "Pasta & Noodles", img: "/images/noodles-pasta.png", slug: "pastas-noodles" },
+      { name: "Milk & Cream", img: "/images/milk.png", slug: "milk-cream" },
+      { name: "Sauces", img: "/images/sauce.png", slug: "sauces" },
     ].map((cat) => (
-      <div key={cat.name} className="flex flex-col items-center cursor-pointer group max-w-[130px] mx-auto w-full">
+      <Link 
+        href={`/category/${cat.slug}`} 
+        key={cat.name} 
+        className="flex flex-col items-center group cursor-pointer"
+      >
         {/* Removed bg-[#FDF5E6] and rounded corners */}
-         <div className="w-full aspect-square rounded-[40px] overflow-hidden flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+          <div className="w-full aspect-square rounded-[40px] overflow-hidden flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
           <Image 
             src={cat.img} 
-            width={180}   // Increased from 140
-            height={180}  // Increased from 140
+            width={180}   
+            height={180}  
             alt={cat.name} 
             className="object-contain" 
           />
         </div>
         <span className="mt-4 font-bold text-base">{cat.name}</span>
-      </div>
+      </Link>
     ))}
   </div>
 </section>
-        {/* 4. FEATURED PRODUCTS */}
+         {/* FEATURED PRODUCTS */}
         <section className="py-8">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl md:text-3xl font-bold text-gray-800">Featured Products</h2>
-            <Link href="/products" className="text-red-800 font-bold text-sm hover:underline">View All →</Link>
+            <Link href="/shop" className="text-red-800 font-bold text-sm hover:underline">View All →</Link>
           </div>
 
           {productsLoading ? (
             <div className="text-center py-10"><p className="text-gray-400 text-sm">Loading...</p></div>
-          ) : productsError ? (
-            <div className="text-center py-10"><p className="text-red-600 text-sm">{productsError}</p></div>
           ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-8 gap-3 md:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 md:gap-4">
               {products.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
@@ -304,6 +335,33 @@ export default function Home() {
             </div>
           </div>
         </section>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="fixed bottom-4 right-4 z-[100] hidden md:block"
+          >
+        <Link 
+        href="/shop"
+        className="bg-[#8B2323] text-white p-3 rounded-full shadow-[0_40px_40px_rgba(139,15,15,0.3)] flex flex-col items-center justify-center group transition-all duration-500"
+        >
+        <ShoppingBag size={24} className="mb-1 group-hover:rotate-18 transition-transform" />
+        {/* <span className="text-[6px] font-black uppercase tracking-[0.2em]"> Shop</span> */}
+        {/* <span className="text-[9px] font-black uppercase tracking-[0.2em]"></span> */}
+        </Link>
+        </motion.div>
+
+{/* Mobile Version: Fixed Bottom Bar Entry */}
+<div className="fixed bottom-0 left-0 w-full p-4 z-[100] md:hidden">
+  <Link 
+    href="/shop"
+    className="bg-black text-white w-full py-5 rounded-2xl flex items-center justify-center gap-3 shadow-2xl"
+  >
+    <Sparkles size={16} className="text-amber-400" />
+    <span className="text-xs font-black uppercase tracking-[0.2em]">Explore All Provisions</span>
+  </Link>
+</div>
 
         {/* 9. NEWSLETTER
         <section className="py-24 text-center">
