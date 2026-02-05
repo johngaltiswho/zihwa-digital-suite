@@ -5,12 +5,13 @@ import Link from "next/link";
 import Newsletter from "../components/NewsLetter";
 import RecipeGrid from "../components/RecipeGrid";
 import { HeroSliderSNS } from "@repo/ui";
-import { X, AlertCircle,Sparkles,ShoppingBag } from "lucide-react";
+import { X, AlertCircle,Sparkles,ShoppingBag,Star } from "lucide-react";
 import ProductGrid from "../components/ProductGrid";
 import { vendureClient } from "@/lib/vendure/client";
 import { GET_PRODUCTS } from "@/lib/vendure/queries/products";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence} from "framer-motion";
 import type { Product } from "@/lib/vendure/types";
+
 
 function ProductCard({ product }: { product: Product }) {
   
@@ -150,14 +151,20 @@ export default function Home() {
 
     fetchProducts();
   }, []);
-
+  
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setReviewIndex((prev) => (prev + 1) % reviews.length);
+    }, 5000); 
+    return () => clearInterval(timer);
+  }, [reviews.length]);
   
   return (
     <main className="bg-white min-h-screen font-sans">
       
       {/* 1. HERO SLIDER SECTION (Using Common Component) */}
-      <section className="bg-white py-4 md:py-2">
-        <div className="max-w-[1440px] mx-auto px-12">
+      <section className="bg-white pt-0 pb-1 md:py-1">
+        <div className="max-w-[1440px] mx-auto md:px-12">
           {/* This one line replaces all the manual state/timer logic */}
           <HeroSliderSNS slides={slides} height="430px" />
         </div>
@@ -166,11 +173,11 @@ export default function Home() {
       <div className="max-w-[1250px] mx-auto px-5">
         
       {/* SHOP BY CUISINES - with links */}
-<section className="py-4 text-center">
-  <h2 className="text-3xl md:text-4xl font-bold mb-10 text-gray-800">Shop By Cuisines</h2>
-  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-8">
+<section className="py-2 text-center">
+  <h2 className="text-2xl md:text-4xl font-bold mb-10 text-gray-800">Shop By Cuisines</h2>
+  <div className="grid grid-cols-4 sm:grid-cols-4 lg:grid-cols-8 gap-3 md:gap-8">
     {[
-       { name: "Italian", img: "/images/italian-food.png", slug: "italian" },
+      { name: "Italian", img: "/images/italian-food.png", slug: "italian" },
               { name: "American", img: "/images/american-food.png", slug: "american" },
               { name: "Indian", img: "/images/indian-food.png", slug: "indian" },
               { name: "Chinese", img: "/images/chinese-food.png", slug: "chinese" },
@@ -196,8 +203,8 @@ export default function Home() {
 </section>
       {/* 3. SHOP BY CATEGORY */}
 <section className="py-4 text-center">
-  <h2 className="text-3xl md:text-4xl font-bold mb-10 text-gray-800">Shop By Category</h2>
-  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+  <h2 className="text-2xl md:text-4xl font-bold mb-10 text-gray-800">Shop By Category</h2>
+  <div className="grid grid-cols-4 md:grid-cols-3 lg:grid-cols-6 gap-6">
     {[
       { name: "Crushes", img: "/images/crushes.png", slug: "crushes" },
       { name: "Syrups", img: "/images/syrup.png", slug: "syrups" },
@@ -245,8 +252,8 @@ export default function Home() {
         </section>
           {/* 4. TOP OFFERS */}
 <section className="py-6 text-center">
-  <h2 className="text-3xl md:text-4xl font-bold mb-12 text-gray-800">Top Offers</h2>
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+  <h2 className="text-2xl md:text-4xl font-bold mb-12 text-gray-800">Top Offers</h2>
+  <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
     {[
       { img: "/images/monin.jpg" },
       { img: "/images/lkk-soy.jpg" },
@@ -269,7 +276,7 @@ export default function Home() {
 
        {/* 6. BRAND STORE */}
 <section className="py-10 text-center">
-  <h2 className="text-3xl md:text-4xl font-bold mb-8 text-gray-800">Brand Store</h2>
+  <h2 className="text-2xl md:text-4xl font-bold mb-8 text-gray-800">Brand Store</h2>
   <div className="flex flex-wrap justify-center items-center gap-8 md:gap-20 hover:opacity-100 transition-opacity px-5">
     {[
       { name: "Tops", img: "/images/topps-logo.jpg" },
@@ -279,7 +286,7 @@ export default function Home() {
       { name: "Hersheys", img: "/images/hersheys-logo.jpg" },
       { name: "Pasta Reggia", img: "/images/reggia-logo.jpg" },
     ].map((brand) => (
-      <div key={brand.name} className="w-12 md:w-32 h-32 relative">
+      <div key={brand.name} className="w-16 md:w-32 h-16 md:h-32 relative opacity-100">
         <Image 
           src={brand.img} 
           fill 
@@ -293,64 +300,112 @@ export default function Home() {
 
         {/* 7. WHY STALKS N SPICE? */}
         <section className="py-6 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-10">Why Stalks N Spice?</h2>
-          <div className="grid md:grid-cols-3 gap-12">
+          <h2 className="text-2xl md:text-4xl font-bold mb-10">Why Stalks N Spice?</h2>
+          <div className="grid  md:grid-cols-3 gap-12">
             {[
               { n: 1, t: "Delivery Within 45min*", d: "Get your orders delivered within 45min by choosing priority delivery on checkout! Pincodes restriction apply." },
               { n: 2, t: "Your Order Delivered in 1 Basket", d: "Rather than having your order delivered from multiple vendors at multiple times via e-commerce aggregators, get your entire order delivered from a single source at once." },
               { n: 3, t: "Wholesale Prices", d: "Having been associated with the HORECA Industry since 1997, we have access to the best ingredients at the best prices which we are now directly passing on to you." }
             ].map(item => (
               <div key={item.n} className="px-6 flex flex-col items-center">
-                <div className="text-7xl md:text-7xl font-black text-red-900 mb-4 opacity-90">{item.n}</div>
+                <div className="text-3xl md:text-7xl font-black text-red-900 mb-4 opacity-90">{item.n}</div>
                 <h3 className="text-xl font-bold mb-4">{item.t}</h3>
-                <p className="text-gray-900 text-sm font-semibold leading-relaxed max-w-xs">{item.d}</p>
+                <p className="text-gray-900 text-s md:text-sm font-semibold leading-relaxed max-w-xs">{item.d}</p>
               </div>
             ))}
           </div>
         </section>
 
-        {/* 8. REVIEWS */}
-        <section className="py-6">
-          {/* Container: Thin gold border, high rounded corners, wide layout */}
-  
-    
-          <h2 className="text-3xl font-bold text-center mb-6 uppercase tracking-[0.2em] text-gray-800">Reviews</h2>
-          <div className="max-w-1100px] mx-auto border-[1px] border-[#D4B679] rounded-[25px] p-12 md:p-10 text-center bg-white shadow-sm">
-          {/* <div className="max-w-4xl mx-auto border-[1.5px] border-[#D4B679] rounded-[35px] p-4 md:p-10 text-center relative bg-white shadow-sm"> */}
-            <h3 className="text-2xl md:text-3xl font-bold mb-6 text-gray-900">Kind Words From Kinder People</h3>
-            <div className="min-h-[30px] flex items-center justify-center px-4">
-              <p className="text-[#8B2323] leading-relaxed italic text-lg md:text-xl transition-all duration-500">
-                "{reviews[reviewIndex].text}"
+       {/* REVIEWS */}
+        <section className="py-6 md:py-10">
+          <div className="text-center mb-4">
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-3xl md:text-6xl font-black text-gray-900 mb-4">
+                Customer <span className="bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">Reviews</span>
+              </h2>
+              <p className="text-gray-600 text-base md:text-lg font-medium">
+                Real stories from our satisfied customers
               </p>
+            </motion.div>
+          </div>
+          
+          <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-3xl border-2 border-red-100 p-10 md:p-8 shadow-xl">
+            <h2 className="text-lg md:text-4xl font-black text-center text-gray-900 mb-4">
+                Kind Words From Kinder People
+              </h2>
+            
+            <div className="relative min-h-[240px] md:min-h-[180px] flex items-center justify-center overflow-hidden">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={reviewIndex}
+                  initial={{ opacity: 0, x: 50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -50 }}
+                  transition={{ duration: 0.6, ease: "easeInOut" }}
+                  className="absolute w-full px-4 text-center max-w-5xl"
+                >
+                  <p className="text-gray-800 leading-relaxed text-xs md:text-lg mb-6 italic">
+                    "{reviews[reviewIndex].text}"
+                  </p>
+                  <p className="font-black text-xs md:text-xl text-gray-900">
+                    — {reviews[reviewIndex].author}
+                  </p>
+                </motion.div>
+              </AnimatePresence>
             </div>
-            <p className="font-bold text-xl mt-8 text-gray-900">-{reviews[reviewIndex].author}</p>
-            <div className="flex justify-center gap-3 mt-8">
+
+            <div className="flex justify-center gap-3 mt-12">
               {reviews.map((_, i) => (
                 <button 
                   key={i} 
                   onClick={() => setReviewIndex(i)} 
-                  className={`h-1.5 transition-all duration-300 rounded-full ${i === reviewIndex ? "w-12 bg-red-800" : "w-8 bg-gray-300"}`} 
+                  className={`h-2 transition-all duration-500 rounded-full ${
+                    i === reviewIndex ? "w-12 bg-red-700" : "w-8 bg-gray-300 hover:bg-gray-400"
+                  }`} 
                 />
               ))}
             </div>
           </div>
         </section>
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="fixed bottom-4 right-4 z-[100] hidden md:block"
-          >
-        <Link 
-        href="/shop"
-        className="bg-[#8B2323] text-white p-3 rounded-full shadow-[0_40px_40px_rgba(139,15,15,0.3)] flex flex-col items-center justify-center group transition-all duration-500"
-        >
-        <ShoppingBag size={24} className="mb-1 group-hover:rotate-18 transition-transform" />
-        {/* <span className="text-[6px] font-black uppercase tracking-[0.2em]"> Shop</span> */}
-        {/* <span className="text-[9px] font-black uppercase tracking-[0.2em]"></span> */}
-        </Link>
-        </motion.div>
+        {/* ATTRACTIVE DESKTOP SHOP BUTTON */}
+<motion.div 
+  initial={{ opacity: 0, x: 50 }}
+  animate={{ opacity: 1, x: 0 }}
+  className="fixed bottom-8 right-8 z-[100] hidden md:block"
+>
+  <Link href="/shop" className="relative group flex items-center">
+    
+    {/* 1. Pulsing Background Glow */}
+    <div className="absolute inset-0 bg-red-600 rounded-full blur-xl group-hover:blur-2xl opacity-40 animate-pulse transition-all"></div>
+
+    {/* 2. The Main Button */}
+    <motion.div 
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      className="relative flex items-center bg-gradient-to-br from-[#8B2323] to-[#b92b2b] text-white p-4 rounded-full shadow-2xl border border-white/20 overflow-hidden"
+    >
+      {/* Icon */}
+      <ShoppingBag size={24} className="relative z-10 group-hover:rotate-1 transition-transform duration-300" />
+
+      {/* 3. Slide-out Text Label */}
+      <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-3 transition-all duration-500 ease-in-out font-black uppercase tracking-widest text-sm">
+        Shop Now
+      </span>
+
+      {/* 4. Shine Effect Overlay */}
+      <div className="absolute top-0 -inset-full h-full w-1/2 z-5 block transform -skew-x-12 bg-gradient-to-r from-transparent opacity-20 via-white to-transparent group-hover:animate-shine" />
+    </motion.div>
+
+    {/* 5. Tooltip/Badge (Optional) */}
+    <div className="absolute -top-2 -right-1 bg-amber-400 text-black text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
+      NEW
+    </div>
+  </Link>
+</motion.div>
 
 {/* Mobile Version: Fixed Bottom Bar Entry */}
 <div className="fixed bottom-0 left-0 w-full p-4 z-[100] md:hidden">
@@ -358,25 +413,10 @@ export default function Home() {
     href="/shop"
     className="bg-black text-white w-full py-5 rounded-2xl flex items-center justify-center gap-3 shadow-2xl"
   >
-    <Sparkles size={16} className="text-amber-400" />
-    <span className="text-xs font-black uppercase tracking-[0.2em]">Explore All Provisions</span>
+    {/* <Sparkles size={16} className="text-amber-400" />
+    <span className="text-xs font-black uppercase tracking-[0.2em]">Explore All Provisions</span> */}
   </Link>
 </div>
-
-        {/* 9. NEWSLETTER
-        <section className="py-24 text-center">
-          <h2 className="text-4xl md:text-5xl font-black mb-12 tracking-tight text-gray-900">NEWSLETTER</h2>
-          <div className="flex flex-col md:flex-row max-w-2xl mx-auto border-black border-[1.5px] rounded-sm overflow-hidden shadow-lg">
-            <input 
-              type="email" 
-              placeholder="ENTER YOUR EMAIL HERE"
-              className="flex-1 p-5 outline-none text-center md:text-left text-sm font-medium placeholder-gray-400"
-            />
-            <button className="bg-black text-white px-16 py-5 font-bold hover:bg-gray-800 transition-colors uppercase text-sm tracking-wider">
-              Submit
-            </button>
-          </div>
-        </section> */}
         <Newsletter />
       </div>
     </main>

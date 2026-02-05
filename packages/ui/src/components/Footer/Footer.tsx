@@ -2,7 +2,7 @@
 
 import React from "react";
 // Add these imports at the top of Footer.tsx
-import { Tag, Heart, ShoppingCart, ChefHat, ArrowLeft } from "lucide-react";
+import { Tag, Heart, ShoppingCart, ChefHat, ArrowLeft, Store } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -176,7 +176,7 @@ export function StalknSpiceFooter() {
       {/* ========================================== */}
       {/* MOBILE BOTTOM NAVIGATION */}
       {/* ========================================== */}
-      <div className="lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-100 z-[9999] h-[65px] flex justify-around items-center text-gray-400 shadow-[0_-5px_25px_rgba(0,0,0,0.07)]">
+      <div className="lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-100 z-[9999] h-[65px] flex justify-around items-center text-gray-900 shadow-[0_-5px_25px_rgba(0,0,0,0.07)]">
         
         <button onClick={() => router.back()} className="flex flex-col items-center gap-1 w-16">
           <ArrowLeft size={22} />
@@ -189,13 +189,13 @@ export function StalknSpiceFooter() {
         </Link>
         
         {/* Centered "Home" button with Raised Design */}
-        <Link href="/" className="relative -top-6 flex flex-col items-center">
-          <div className="p-1.5 bg-white rounded-full shadow-md">
+        <Link href="/Shop" className="relative -top-3 flex flex-col items-center">
+          <div className="p-1.5 bg-white rounded-full shadow-lg">
              <div className="w-14 h-14 bg-[#8B2323] text-white rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform">
-                <ChefHat size={30} />
+                <Store size={30} />
              </div>
           </div>
-          <span className="text-[10px] font-bold uppercase tracking-widest text-[#8B2323] mt-1">Home</span>
+          <span className="text-[10px] font-black uppercase tracking-widest text-[#8B2323] mt-1">Shop</span>
         </Link>
         
         <Link href="/wishlist" className="flex flex-col items-center gap-1 w-16">

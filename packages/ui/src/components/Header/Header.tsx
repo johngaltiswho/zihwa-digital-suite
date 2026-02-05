@@ -3,15 +3,27 @@
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 
 
 import { 
-  Menu, Search, User, Heart, X,
+  Menu, Search, CircleUser,User, Heart, X,
   ChefHat, PhoneCall, MapPin, Tag, ShoppingCart, 
-  ChevronRight, ChevronDown, Headset, Pill,ShoppingBag,ShieldCheck, Handbag,Store
-} from "lucide-react"; 
+  ChevronRight, ChevronDown, Headset, Pill, ShoppingBag, 
+  ShieldCheck, Handbag, Store, LogOut, CheckCircle, Trash2 
+} from "lucide-react";
+
+const SEARCH_SUGGESTIONS = [
+  "Pasta & Noodles",
+  "Banana",
+  "Organic Spices",
+  "Frozen Food",
+  "oils & ghee",
+  "Dry fruits",
+  "Tea",
+  "gourmet cheese"
+];
 interface NavItem {
   label: string;
   href: string;
@@ -23,6 +35,7 @@ interface HeaderProps {
 }
 
 // --- MEGA MENU DATA ---
+
 const MEGA_MENU_DATA: Record<string, { 
   products?: string[], 
   brands?: string[], 
@@ -97,10 +110,59 @@ interface HeaderProps {
   onUserMenuToggle?: (isOpen: boolean) => void; 
   
 }
+// --- SUB-COMPONENT: AUTH STATUS POPUP (UPDATED DESIGN & LOGIC) ---
+function AuthStatusToast({ type, onClose }: { type: string | null, onClose: () => void }) {
+  const content: Record<string, any> = {
+    login: { title: "Welcome Back!", desc: "You have successfully logged in.", icon: <CircleUser />, color: "bg-[#00a651]" },
+    logout: { title: "Logged Out", desc: "You have been securely signed out.", icon: <LogOut />, color: "bg-gray-800" },
+    created: { title: "Account Created!", desc: "Welcome to Stalks 'n' Spice!", icon: <CheckCircle />, color: "bg-[#8B2323]" },
+    deleted: { title: "Account Deleted", desc: "Your account has been removed.", icon: <Trash2 />, color: "bg-red-600" },
+  };
+
+  const DURATION = 3000; // 3 Seconds
+
+  useEffect(() => {
+    if (!type) return;
+    const timer = setTimeout(onClose, DURATION);
+    return () => clearTimeout(timer);
+  }, [type, onClose]);
+
+  if (!type || !content[type]) return null;
+  const current = content[type];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -20, x: "-50%" }}
+      animate={{ opacity: 1, y: 110, x: "-50%" }} // Adjusted to float over header nicely
+      exit={{ opacity: 0, y: -20, x: "-50%" }}
+      className="fixed top-0 left-1/2 z-[1000] w-[90%] max-w-md bg-white rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.1)] border border-gray-100 flex items-center p-5 gap-5 overflow-hidden"
+    >
+      <div className={`${current.color} text-white w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0`}>
+        {React.cloneElement(current.icon as React.ReactElement, { size: 24, strokeWidth: 1.5 })}
+      </div>
+      <div className="flex-1">
+        <h4 className="font-bold text-gray-900 text-lg leading-tight">{current.title}</h4>
+        <p className="text-sm text-gray-400 mt-0.5">{current.desc}</p>
+      </div>
+      <button onClick={onClose} className="text-gray-300 hover:text-gray-500 transition-colors p-1">
+        <X size={20} />
+      </button>
+      
+      {/* Progress Bar Loader */}
+      <motion.div 
+        initial={{ width: "100%" }} 
+        animate={{ width: "0%" }} 
+        transition={{ duration: DURATION / 1000, ease: "linear" }}
+        className={`absolute bottom-0 left-0 h-1 ${current.color} opacity-40`}
+      />
+    </motion.div>
+  );
+}
 
 // --- 1. SHARED HEADER ---
 export function SharedHeader({ navItems, logoSrc }: HeaderProps) {
   const pathname = usePathname();
+  
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
@@ -267,15 +329,25 @@ export function SharedHeader({ navItems, logoSrc }: HeaderProps) {
 // --- 2. STALKS N SPICE HEADER ---
 export function StalksHeader({ navItems, logoSrc, customer, onUserMenuToggle, onLogout, }: HeaderProps) {
   const pathname = usePathname();
+  const router = useRouter(); 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMenuLocked, setIsMenuLocked] = useState(false);
+  // POPUP MANAGEMENT
+  const [authPopup, setAuthPopup] = useState<"login" | "logout" | "created" | "deleted" | null>(null);
+  const prevCustomerRef = useRef<Customer | null | undefined>(customer);
+
+  // Search Interaction States
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const [searchValue, setSearchValue] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   // Smart Reveal Logic
   const [showRow3, setShowRow3] = useState(true);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isSticky, setIsSticky] = useState(false); 
   const lastScrollY = useRef(0);
   const hideCategories = [
     '/login',
@@ -288,7 +360,9 @@ export function StalksHeader({ navItems, logoSrc, customer, onUserMenuToggle, on
   || pathname.startsWith('/account')
   || pathname.startsWith('/cuisine')
   || pathname.startsWith('/shop')
-  || pathname.startsWith('/category');
+  || pathname.startsWith('/category')
+  || pathname.startsWith('/product');
+
 
 
   const navRef = useRef<HTMLDivElement>(null);
@@ -297,60 +371,88 @@ export function StalksHeader({ navItems, logoSrc, customer, onUserMenuToggle, on
   useEffect(() => { 
     setMounted(true); 
     
-    const handleScroll = () => {
+    // Cycle search placeholders every 3 seconds
+    const interval = setInterval(() => {
+      setPlaceholderIndex((prev) => (prev + 1) % SEARCH_SUGGESTIONS.length);
+    }, 3000);
+
+     const handleScroll = () => {
       const currentScrollY = window.scrollY;
+      const scrollDiff = currentScrollY - lastScrollY.current;
       
-      // Determine compactness
+      // Set sticky mode when scrolled past header
+      setIsSticky(currentScrollY > 100);
       setIsScrolled(currentScrollY > 60);
-
-      // Smart Reveal: Show on Scroll Up, Hide on Scroll Down
-      if (currentScrollY > lastScrollY.current && currentScrollY > 200) {
-        setShowRow3(false);
-      } else {
-        setShowRow3(true);
+      
+      // Debounce state changes - only update if significant scroll
+      if (Math.abs(scrollDiff) > 15) {
+        if (scrollDiff > 0 && currentScrollY > 250) {
+          // Scrolling down - hide categories
+          setShowRow3(false);
+        } else if (scrollDiff < 0 || currentScrollY < 100) {
+          // Scrolling up - show categories
+          setShowRow3(true);
+        }
+        lastScrollY.current = currentScrollY;
       }
-      lastScrollY.current = currentScrollY;
     };
-  const handleClickOutside = (event: MouseEvent) => {
-    if (navRef.current && !navRef.current.contains(event.target as Node)) {
-      setIsLocked(false);
-      setActiveMenu(null);
-    }
-    if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
-      setIsUserMenuOpen(false);
-      setIsMenuLocked(false);
-    }
-  };
 
-window.addEventListener("scroll", handleScroll, { passive: true });
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (navRef.current && !navRef.current.contains(event.target as Node)) {
+        setIsLocked(false);
+        setActiveMenu(null);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+        setIsMenuLocked(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       window.removeEventListener("scroll", handleScroll);
       document.removeEventListener("mousedown", handleClickOutside);
+      clearInterval(interval);
     };
   }, []);
 
-
-  // Sync state with HeaderWrapper to hide CartIcon if menu is open
+   // SMART REDIRECT & LOGIN DETECTION
   useEffect(() => {
-    if (onUserMenuToggle) {
-      onUserMenuToggle(isUserMenuOpen || isMenuLocked);
+    
+    if (!prevCustomerRef.current && customer) {
+      setAuthPopup("login");
+      // REDIRECT TO HOME ON LOGIN
+      if (pathname === '/login' || pathname === '/register') {
+        router.push('/');
+      }
     }
-  }, [isUserMenuOpen, isMenuLocked, onUserMenuToggle]);
+    prevCustomerRef.current = customer;
+  }, [customer, router, pathname]);
+
+  const handleLogoutAction = () => {
+    setAuthPopup("logout");
+    onLogout?.();
+    setIsUserMenuOpen(false);
+    setIsMenuLocked(false);
+    router.push('/'); // Also redirect home on logout
+  };
+// ADD THIS BLOCK around line 410 in the file you just sent
+useEffect(() => {
+  // This notifies the HeaderWrapper whenever the login menu opens or closes
+  if (onUserMenuToggle) {
+    onUserMenuToggle(isUserMenuOpen);
+  }
+}, [isUserMenuOpen, onUserMenuToggle]);
 
   if (!mounted) return <div className="w-full h-[180px] bg-white border-b" />;
-
-  const handleToggle = (label: string) => {
-    if (activeMenu === label && isLocked) {
-      setIsLocked(false);
-      setActiveMenu(null);
-    } else {
-      setActiveMenu(label);
-      setIsLocked(true);
-    }
-  };
   return (
     <header className="w-full bg-white border-b border-gray-100 font-sans sticky top-0 z-[100]">
+       {/* AUTH POPUP RENDERER */}
+      <AnimatePresence>
+        {authPopup && <AuthStatusToast type={authPopup} onClose={() => setAuthPopup(null)} />}
+      </AnimatePresence>
       
       {/* DESKTOP VIEW */}
       <div className="hidden lg:block">
@@ -460,15 +562,43 @@ window.addEventListener("scroll", handleScroll, { passive: true });
             </Link>
           </div>
 
-          {/* Search Box - Reduced to max-w-md and centered */}
-          <div className="flex-1 max-w-3xl mx-auto relative">
-            <input 
-              type="text" 
-              placeholder="Search products" 
-              className="w-full h-10 px-5 pr-12 border border-gray-300 rounded-full focus:outline-none focus:border-red-800 text-sm" 
-            />
-            <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-          </div>
+          {/* --- UPDATED ANIMATED SEARCH BOX --- */}
+            <div className="flex-1 max-w-3xl mx-auto relative group">
+              <div className="relative flex items-center">
+                <input 
+                  type="text" 
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onBlur={() => setIsSearchFocused(false)}
+                  className="w-full h-11 px-6 pr-14 border border-gray-300 rounded-full focus:outline-none focus:border-red-800 focus:ring-4 focus:ring-red-50/50 text-sm transition-all bg-white shadow-sm" 
+                />
+                
+                {/* ANIMATED PLACEHOLDER */}
+                {!searchValue && !isSearchFocused && (
+                  <div className="absolute left-6 pointer-events-none text-gray-400 text-sm flex items-center gap-1.5">
+                    <span>Search for</span>
+                    <AnimatePresence mode="wait">
+                      <motion.span
+                        key={SEARCH_SUGGESTIONS[placeholderIndex]}
+                        initial={{ y: 8, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: -8, opacity: 0 }}
+                        transition={{ duration: 0.35, ease: "easeOut" }}
+                        className="font-medium text-gray-500"
+                      >
+                        &quot;{SEARCH_SUGGESTIONS[placeholderIndex]}&quot;
+                      </motion.span>
+                    </AnimatePresence>
+                  </div>
+                )}
+
+                {/* THEMED ROUNDED SEARCH BUTTON */}
+                <button className="absolute right-1 p-2.5 bg-[#8B2323] hover:bg-black text-white rounded-full transition-all duration-300 shadow-md active:scale-95 group-hover:shadow-lg">
+                  <Search size={18} strokeWidth={2.5} />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -476,115 +606,130 @@ window.addEventListener("scroll", handleScroll, { passive: true });
 {/* SMART CATEGORIES ROW (ROW 3)                                 */}
 {/* ============================================================ */}
 {!hideCategories && (
-<nav
-  ref={navRef}
-  className={`
-    hidden lg:block w-full bg-white border-b border-gray-100 z-[120]
-    transition-all duration-500 ease-in-out will-change-transform
-    ${isScrolled ? "fixed left-0 right-0 shadow-md" : "relative mt-[1px]"}
-    ${showRow3 ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0 pointer-events-none"}
-  `}
-  style={{ 
-    top: isScrolled ? '96px' : '0',
+  <>
+    {/* STICKY WRAPPER - Prevents layout shift */}
+    <div 
+      className={`
+        w-full bg-white z-[120]
+        ${isSticky ? 'h-0' : 'h-auto'}
+      `}
+    >
+      <nav
+        ref={navRef}
+        className={`
+          hidden lg:block w-full bg-white border-b border-gray-100
+          transition-all duration-300 ease-out
+          ${isSticky ? 'fixed left-0 right-0 top-[96px] shadow-md' : 'relative'}
+          ${showRow3 ? 'translate-y-0 opacity-100 visible' : '-translate-y-full opacity-0 invisible'}
+        `}
+        style={{
+          transform: showRow3 ? 'translate3d(0, 0, 0)' : 'translate3d(0, -100%, 0)',
+          willChange: 'transform, opacity'
+        }}
+      >
+        <div className="max-w-[1400px] mx-auto px-6">
+          <ul className="flex flex-wrap justify-center items-center gap-x-4 py-0 text-[16px] font-semibold text-gray-800 tracking-tight uppercase">
+            {navItems?.map((item) => {
+              const isCurrentlyActive = activeMenu === item.label;
+              const megaMenuKey = item.label.toUpperCase();
+              const data = MEGA_MENU_DATA[megaMenuKey];
 
-  }}
->
-  <div className="max-w-[1400px] mx-auto px-6">
-    <ul className="flex flex-wrap justify-center items-center gap-x-4 py-0 text-[16px] font-semibold text-gray-800 tracking-tight uppercase">
-      {navItems?.map((item) => {
-        const isCurrentlyActive = activeMenu === item.label;
-        const megaMenuKey = item.label.toUpperCase();
-        const data = MEGA_MENU_DATA[megaMenuKey];
+              return (
+                <li
+                  key={item.href}
+                  onMouseEnter={() => !isLocked && setActiveMenu(item.label)}
+                  onMouseLeave={() => !isLocked && setActiveMenu(null)}
+                  className="py-1 cursor-pointer"
+                >
+                  <button
+                    onClick={() => {
+                      setIsLocked(!isLocked);
+                      setActiveMenu(isLocked ? null : item.label);
+                    }}
+                    className={`flex items-center font-bold gap-1.5 transition-all py-1 pb-2 border-b-2 ${
+                      isCurrentlyActive || pathname === item.href 
+                        ? "text-red-800 border-red-800" 
+                        : "border-transparent hover:text-red-800"
+                    }`}
+                  >
+                    {item.label}
+                    <ChevronDown 
+                      size={14} 
+                      className={`transition-transform duration-300 ${isCurrentlyActive ? 'rotate-180' : 'rotate-0'}`}
+                    />
+                  </button>
 
-        return (
-          <li
-            key={item.href}
-            onMouseEnter={() => !isLocked && setActiveMenu(item.label)}
-            onMouseLeave={() => !isLocked && setActiveMenu(null)}
-            className="py-1 cursor-pointer"
-          >
-            <button
-              onClick={() => handleToggle(item.label)}
-              className={`flex items-center font-bold gap-1.5 transition-all py-1 pb-2 border-b-2 ${
-                isCurrentlyActive || pathname === item.href 
-                  ? "text-red-800 border-red-800" 
-                  : "border-transparent hover:text-red-800"
-              }`}
-            >
-              {item.label}
-              <ChevronDown 
-                size={14} 
-                className={`transition-transform duration-300 ${isCurrentlyActive ? 'rotate-180' : 'rotate-0'}`} 
-              />
-            </button>
+                  {/* MEGA MENU DRAWER */}
+                  {isCurrentlyActive && data && (
+                    <div className="absolute left-0 w-full bg-white shadow-2xl border-t border-gray-100 z-[100] animate-in fade-in slide-in-from-top-1 duration-200">
+                      <div className="max-w-[1400px] mx-auto flex p-6 gap-6 text-left normal-case">
+                        
+                        {/* LEFT CONTENT: Products Grid */}
+                        <div className="flex-1 flex flex-col gap-8">
+                          {megaMenuKey === "FRUITS & VEGETABLES" ? (
+                            <>
+                              <div>
+                                <h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest mb-4 border-b pb-2">Vegetables</h3>
+                                <div className="grid grid-cols-3 gap-x-6 gap-y-3">
+                                  {data.vegetables?.map((v) => (
+                                    <Link key={v} href="#" className="text-gray-600 hover:text-red-800 text-[15px] font-medium transition-colors">{v}</Link>
+                                  ))}
+                                </div>
+                              </div>
+                              <div>
+                                <h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest mb-4 border-b pb-2">Fruits</h3>
+                                <div className="grid grid-cols-6 gap-x-8 gap-y-2">
+                                  {data.fruits?.map((f) => (
+                                    <Link key={f} href="#" className="text-gray-600 hover:text-red-800 text-[15px] font-medium transition-colors">{f}</Link>
+                                  ))}
+                                </div>
+                              </div>
+                            </>
+                          ) : (
+                            <div>
+                              <h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest mb-4 border-b pb-2">Products</h3>
+                              <div className="grid grid-cols-4 gap-x-6 gap-y-3">
+                                {data.products?.map((p) => (
+                                  <Link key={p} href="#" className="text-gray-600 hover:text-red-800 text-[15px] font-medium transition-colors">{p}</Link>
+                                ))}
+                              </div>
+                            </div>
+                          )}
 
-            {/* MEGA MENU DRAWER - High Speed Layer */}
-            {isCurrentlyActive && data && (
-              <div className="absolute left-0 w-full bg-white shadow-2xl border-t border-gray-100 z-[100] animate-in fade-in slide-in-from-top-1 duration-200">
-                <div className="max-w-[1400px] mx-auto flex p-6 gap-6 text-left normal-case">
-                  
-                  {/* LEFT CONTENT: Products Grid */}
-                  <div className="flex-1 flex flex-col gap-8">
-                    {megaMenuKey === "FRUITS & VEGETABLES" ? (
-                      <>
-                        <div>
-                          <h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest mb-4 border-b pb-2">Vegetables</h3>
-                          <div className="grid grid-cols-3 gap-x-6 gap-y-3">
-                            {data.vegetables?.map((v) => (
-                              <Link key={v} href="#" className="text-gray-600 hover:text-red-800 text-[15px] font-medium transition-colors">{v}</Link>
-                            ))}
+                          {/* BRANDS SECTION */}
+                          {megaMenuKey !== "FRUITS & VEGETABLES" && data.brands && data.brands.length > 0 && (
+                            <div className="border-t border-gray-100 pt-4">
+                              <h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest text-[16px] mb-4">Brands</h3>
+                              <div className="flex flex-wrap justify-center items-center gap-x-10 gap-y-2">
+                                {data.brands.map((brand) => (
+                                  <Link key={brand} href="#" className="text-[15px] font-semibold text-black hover:text-red-800 uppercase tracking-tighter">{brand}</Link>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* RIGHT PROMO SECTION */}
+                        <div className="w-[320px]">
+                          <div className="bg-[#f9f9f9] rounded-[40px] p-12 h-full flex flex-col items-center justify-center border border-gray-100 text-center shadow-sm">
+                            <p className="text-[11px] text-[#8B2323] font-bold uppercase tracking-[0.4em] mb-4">Featured</p>
+                            <h4 className="text-gray-900 font-black text-2xl leading-tight mb-8 italic uppercase tracking-tighter">{data.promoTitle}</h4>
+                            <button className="bg-[#8B2323] text-white text-[12px] font-bold uppercase tracking-[0.2em] px-10 py-4 rounded-full hover:bg-black transition-all shadow-md">View All</button>
                           </div>
                         </div>
-                        <div>
-                          <h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest mb-4 border-b pb-2">Fruits</h3>
-                          <div className="grid grid-cols-6 gap-x-8 gap-y-2">
-                            {data.fruits?.map((f) => (
-                              <Link key={f} href="#" className="text-gray-600 hover:text-red-800 text-[15px] font-medium transition-colors">{f}</Link>
-                            ))}
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <div>
-                        <h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest mb-4 border-b pb-2">Products</h3>
-                        <div className="grid grid-cols-4 gap-x-6 gap-y-3">
-                          {data.products?.map((p) => (
-                            <Link key={p} href="#" className="text-gray-600 hover:text-red-800 text-[15px] font-medium transition-colors">{p}</Link>
-                          ))}
-                        </div>
                       </div>
-                    )}
-
-                    {/* BRANDS SECTION - Included back as requested */}
-                    {megaMenuKey !== "FRUITS & VEGETABLES" && data.brands && data.brands.length > 0 && (
-                      <div className="border-t border-gray-100 pt-4">
-                        <h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest text-[16px] mb-4">  Brands </h3>
-                        <div className="flex flex-wrap justify-center items-center gap-x-10 gap-y-2">
-                          {data.brands.map((brand) => (
-                            <Link key={brand} href="#" className="text-[15px] font-semibold text-black hover:text-red-800 uppercase tracking-tighter">{brand}</Link>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* RIGHT PROMO SECTION */}
-                  <div className="w-[320px]">
-                    <div className="bg-[#f9f9f9] rounded-[40px] p-12 h-full flex flex-col items-center justify-center border border-gray-100 text-center shadow-sm">
-                      <p className="text-[11px] text-[#8B2323] font-bold uppercase tracking-[0.4em] mb-4">Featured</p>
-                      <h4 className="text-gray-900 font-black text-2xl leading-tight mb-8 italic uppercase tracking-tighter">{data.promoTitle}</h4>
-                      <button className="bg-[#8B2323] text-white text-[12px] font-bold uppercase tracking-[0.2em] px-10 py-4 rounded-full hover:bg-black transition-all shadow-md">View All</button>
                     </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </li>
-        );
-      })}
-    </ul>
-  </div>
-</nav>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </nav>
+    </div>
+    
+    
+  </>
 )}
       </div>
 
@@ -600,12 +745,12 @@ window.addEventListener("scroll", handleScroll, { passive: true });
           
           <div className="absolute left-1/2 -translate-x-1/2">
             <Link href="/">
-              <Image src={logoSrc} alt="Logo" width={160} height={40} priority className="object-contain" />
+              <Image src={logoSrc} alt="Logo" width={200} height={50} priority className="object-contain" />
             </Link>
           </div>
 
-          <Link href={customer ? "/account" : "/login"} className="p-2 -mr-2">
-            <User size={28} strokeWidth={1.5} />
+          <Link href={customer ? "/account" : "/login"} className="p-3 mt-2 -mr-2">
+            <CircleUser size={34} strokeWidth={1.5} />
           </Link>
         </div>
 

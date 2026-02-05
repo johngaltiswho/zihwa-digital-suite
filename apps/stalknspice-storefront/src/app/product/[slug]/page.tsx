@@ -192,10 +192,10 @@ export default function CreativeProductPage() {
             {/* CART ACTION */}
             <div className="flex gap-4 mb-12">
               <div className="flex items-center bg-gray-50 rounded-2xl px-5 py-2 border border-gray-100">
-                 <button disabled={isOutOfStock || quantity <= 1} onClick={() => setQuantity(q => q - 1)} className="text-gray-300 hover:text-black transition-colors disabled:opacity-20"><Minus size={16}/></button>
-                 <span className="px-6 font-black text-lg">{quantity}</span>
+                <button disabled={isOutOfStock || quantity <= 1} onClick={() => setQuantity(q => q - 1)} className="text-gray-300 hover:text-black transition-colors disabled:opacity-20"><Minus size={16}/></button>
+                <span className="px-6 font-black text-lg">{quantity}</span>
                  {/* Capped if rawStock is a number */}
-                 <button disabled={isOutOfStock || (typeof rawStock === 'number' && quantity >= rawStock)} onClick={() => setQuantity(q => q + 1)} className="text-gray-300 hover:text-black transition-colors disabled:opacity-20"><Plus size={16}/></button>
+                <button disabled={isOutOfStock || (typeof rawStock === 'number' && quantity >= rawStock)} onClick={() => setQuantity(q => q + 1)} className="text-gray-300 hover:text-black transition-colors disabled:opacity-20"><Plus size={16}/></button>
               </div>
               
               <button 
@@ -211,8 +211,8 @@ export default function CreativeProductPage() {
 
           <div className="border-t border-gray-50 pt-10">
             <div className="flex gap-8 mb-6">
-               <button onClick={() => setActiveTab("description")} className={`text-[10px] font-black uppercase tracking-widest pb-3 transition-all ${activeTab === 'description' ? "text-black border-b-2 border-black" : "text-gray-300"}`}>Details</button>
-               <button onClick={() => setActiveTab("shipping")} className={`text-[10px] font-black uppercase tracking-widest pb-3 transition-all ${activeTab === 'shipping' ? "text-black border-b-2 border-black" : "text-gray-300"}`}>Delivery</button>
+              <button onClick={() => setActiveTab("description")} className={`text-[10px] font-black uppercase tracking-widest pb-3 transition-all ${activeTab === 'description' ? "text-black border-b-2 border-black" : "text-gray-300"}`}>Details</button>
+              <button onClick={() => setActiveTab("shipping")} className={`text-[10px] font-black uppercase tracking-widest pb-3 transition-all ${activeTab === 'shipping' ? "text-black border-b-2 border-black" : "text-gray-300"}`}>Delivery</button>
             </div>
             <div className="min-h-[120px] text-sm text-gray-500 leading-relaxed italic font-medium">
                 {activeTab === 'description' ? <div dangerouslySetInnerHTML={{ __html: product.description }} /> : <p>Priority 45-90 min delivery in Bangalore. Zero plastic packaging.</p>}
