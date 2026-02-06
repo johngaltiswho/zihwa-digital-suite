@@ -2,23 +2,46 @@
 import React, { useState } from "react";
 import { ChevronRight, Grid } from "lucide-react";
 import Link from "next/link";
-
-
-const CATEGORIES = [
-  { name: "Bakery, Biscuits & Confectionery", slug: "bakery", sub: ["Biscuits, Cookies & Cakes", "Cherries", "Cocoa Powder", "Bean to Bar Chocolate", "Jams"] },
-  { name: "Beverages and Tea", slug: "beverages", sub: ["Coffee", "Tea Bags", "Green Tea", "Fruit Juices", "Syrups"] },
-  { name: "Cereals, Grains & Pasta", slug: "cereals", sub: ["Pasta Penne", "Arborio Rice", "Quinoa", "Oats", "Muesli"] },
-  { name: "Dried Fruits & Nuts", slug: "dried-fruits", sub: ["Almonds", "Walnuts", "Cashews", "Pistachios"] },
-  { name: "Herbs, Spices and Condiments", slug: "herbs", sub: ["Saffron", "Vanilla Beans", "Truffle Oil", "Sea Salt"] },
-  { name: "Mushrooms and Canned Food", slug: "canned", sub: ["Olives", "Jalapenos", "Mushrooms", "Gherkins"] },
-  { name: "Fish & Dairy", slug: "dairy", sub: ["Cheese", "Butter", "Frozen Fish", "Cooking Cream"] },
-  { name: "Noodles and Rice Paper Sheet", slug: "noodles", sub: ["Soba", "Udon", "Rice Paper", "Glass Noodles"] },
-  { name: "Oils & Vinegars", slug: "oils", sub: ["Olive Oil", "Balsamic Vinegar", "Apple Cider"] },
-  { name: "Sauces and Pastes", slug: "sauces", sub: ["Pesto", "Pasta Sauce", "Curry Paste", "Mayo"] },
-];
+import { useCollections } from "@/lib/vendure/collections-context";
 
 export default function VerticalCategoryMenu() {
-  const [activeTab, setActiveTab] = useState<string | null>(CATEGORIES[0].name);
+  const { topLevelCollections, isLoading } = useCollections();
+
+  // Filter collections with valid slugs
+  const validCollections = topLevelCollections.filter(
+    c => c.slug && c.slug.trim() !== ''
+  );
+
+  const [activeTab, setActiveTab] = useState<string | null>(
+    validCollections[0]?.id || null
+  );
+
+  // If loading, show a skeleton or loading state
+  if (isLoading) {
+    return (
+      <section className="max-w-[1250px] mx-auto px-5 py-10">
+        <div className="flex relative bg-white border border-gray-200 shadow-sm min-h-[500px] items-center justify-center">
+          <p className="text-gray-500">Loading categories...</p>
+        </div>
+      </section>
+    );
+  }
+
+  // If no collections, show empty state
+  if (validCollections.length === 0) {
+    return (
+      <section className="max-w-[1250px] mx-auto px-5 py-10">
+        <div className="flex relative bg-white border border-gray-200 shadow-sm min-h-[500px] items-center justify-center">
+          <p className="text-gray-500">No categories available</p>
+        </div>
+      </section>
+    );
+  }
+
+  // Set initial active tab if not set
+  if (!activeTab && validCollections.length > 0) {
+    setActiveTab(validCollections[0].id);
+  }
 
   return (
     <section className="max-w-[1250px] mx-auto px-5 py-10">
@@ -34,16 +57,16 @@ export default function VerticalCategoryMenu() {
 
           {/* List Items */}
           <nav className="flex flex-col">
-            {CATEGORIES.map((cat) => (
+            {validCollections.map((collection) => (
               <div
-                key={cat.name}
-                onMouseEnter={() => setActiveTab(cat.name)}
+                key={collection.id}
+                onMouseEnter={() => setActiveTab(collection.id)}
                 className={`flex items-center justify-between px-5 py-4 cursor-pointer border-b border-gray-100 transition-colors ${
-                  activeTab === cat.name ? "bg-gray-50 text-[#00A86B] font-semibold" : "text-gray-700 hover:bg-gray-50"
+                  activeTab === collection.id ? "bg-gray-50 text-[#00A86B] font-semibold" : "text-gray-700 hover:bg-gray-50"
                 }`}
               >
-                <span className="text-[15px]">{cat.name}</span>
-                <ChevronRight size={16} className={activeTab === cat.name ? "opacity-100" : "opacity-30"} />
+                <span className="text-[15px]">{collection.name}</span>
+                <ChevronRight size={16} className={activeTab === collection.id ? "opacity-100" : "opacity-30"} />
               </div>
             ))}
           </nav>
@@ -51,22 +74,41 @@ export default function VerticalCategoryMenu() {
 
         {/* RIGHT SUB-MENU (Dynamic based on Hover) */}
         <div className="flex-1 p-10 bg-white">
-          {activeTab && (
-            <div className="animate-in fade-in slide-in-from-left-2 duration-200">
-              <ul className="space-y-6">
-                {CATEGORIES.find(c => c.name === activeTab)?.sub.map((item) => (
-                  <li key={item}>
-                    <Link 
-                      href="#" 
-                      className="text-lg text-gray-800 hover:text-[#00A86B] transition-colors block"
-                    >
-                      {item}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          {activeTab && (() => {
+            const activeCollection = validCollections.find(c => c.id === activeTab);
+            const children = activeCollection?.children || [];
+
+            if (children.length === 0) {
+              return (
+                <div className="text-center py-10">
+                  <p className="text-gray-600 mb-4">Explore all products in</p>
+                  <Link
+                    href={`/collection/${activeCollection?.slug}`}
+                    className="inline-block bg-[#00A86B] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#008F5B] transition-colors"
+                  >
+                    View {activeCollection?.name}
+                  </Link>
+                </div>
+              );
+            }
+
+            return (
+              <div className="animate-in fade-in slide-in-from-left-2 duration-200">
+                <ul className="space-y-6">
+                  {children.map((child) => (
+                    <li key={child.id}>
+                      <Link
+                        href={`/collection/${child.slug}`}
+                        className="text-lg text-gray-800 hover:text-[#00A86B] transition-colors block"
+                      >
+                        {child.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })()}
         </div>
 
       </div>

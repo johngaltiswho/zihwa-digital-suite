@@ -60,6 +60,15 @@ export const GET_ACTIVE_CUSTOMER_ORDERS = `
               id
               name
               sku
+              product {
+                id
+                name
+                slug
+                featuredAsset {
+                  id
+                  preview
+                }
+              }
             }
             featuredAsset {
               id
@@ -96,6 +105,15 @@ export const GET_ORDER_BY_CODE = `
           id
           name
           sku
+          product {
+            id
+            name
+            slug
+            featuredAsset {
+              id
+              preview
+            }
+          }
         }
         featuredAsset {
           id

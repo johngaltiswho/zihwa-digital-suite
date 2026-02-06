@@ -6,6 +6,7 @@ import {
   VendureConfig,
   BcryptPasswordHashingStrategy,
 } from '@vendure/core';
+import { RazorpayPlugin, razorpayPaymentHandler } from './plugins/razorpay.plugin';
 import {
   defaultEmailHandlers,
   EmailPlugin,
@@ -18,7 +19,7 @@ import 'dotenv/config';
 import path from 'node:path';
 
 const IS_DEV = process.env.APP_ENV === 'dev';
-const serverPort = Number(process.env.PORT) || 3001;
+const serverPort = Number(process.env.PORT) || 3002;
 
 export const config: VendureConfig = {
   apiOptions: {
@@ -65,12 +66,20 @@ export const config: VendureConfig = {
   },
 
   paymentOptions: {
-    paymentMethodHandlers: [dummyPaymentHandler],
+    paymentMethodHandlers: [
+      dummyPaymentHandler,
+      razorpayPaymentHandler,
+    ],
   },
 
   customFields: {},
 
   plugins: [
+    RazorpayPlugin.init({
+      keyId: process.env.RAZORPAY_KEY_ID!,
+      keySecret: process.env.RAZORPAY_KEY_SECRET!,
+    }),
+
     GraphiqlPlugin.init(),
 
     AssetServerPlugin.init({

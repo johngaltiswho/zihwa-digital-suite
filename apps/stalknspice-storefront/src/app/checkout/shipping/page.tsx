@@ -43,9 +43,12 @@ export default function ShippingMethodPage() {
     fetchShippingMethods();
   }, []);
 
-  // Redirect if cart is empty
+  // Redirect if cart is empty or order is not in correct state
   useEffect(() => {
     if (!activeOrder || itemCount === 0) {
+      router.push("/cart");
+    } else if (activeOrder.state !== "AddingItems" && activeOrder.state !== "ArrangingShipping") {
+      // Order already processed, redirect to cart
       router.push("/cart");
     }
   }, [activeOrder, itemCount, router]);

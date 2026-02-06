@@ -1,53 +1,64 @@
-import type { Metadata } from "next";
+'use client';
+
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { StalknSpiceFooter } from "@repo/ui";
 import { AuthProvider } from "@/lib/vendure/auth-context";
 import { CartProvider } from "@/lib/vendure/cart-context";
-import HeaderWrapper from "@/components/HeaderWrapper"; 
+import { CollectionsProvider, useCollections } from "@/lib/vendure/collections-context";
+import HeaderWrapper from "@/components/HeaderWrapper";
+import { useMemo } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
 
-export const metadata: Metadata = {
-  title: "Stalks N Spice | Premium Food Store",
-  description: "Bringing Gourmet Food & Products to your doorstep",
-};
+function LayoutContent({ children }: { children: React.ReactNode }) {
+  const { topLevelCollections, isLoading } = useCollections();
+
+  // Transform collections to navigation items
+  const navItems = useMemo(() => {
+    if (isLoading || topLevelCollections.length === 0) {
+      return [];
+    }
+    // Filter out collections without valid slugs and map to nav items
+    return topLevelCollections
+      .filter(collection => collection.slug && collection.slug.trim() !== '')
+      .map(collection => ({
+        label: collection.name,
+        href: `/collection/${collection.slug}`,
+      }));
+  }, [topLevelCollections, isLoading]);
+
+  return (
+    <>
+      <HeaderWrapper
+        navItems={navItems}
+        logoSrc="/images/sns-logo.png"
+        isEcommerce={true}
+        collections={topLevelCollections}
+      />
+
+      <main className="min-h-screen">
+        {children}
+      </main>
+      <StalknSpiceFooter />
+    </>
+  );
+}
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  
-  const stalkNavItems = [
-    { label: "Bakery, Snacks & Dry Fruits", href: "/category/bakery" },
-    { label: "Breakfast, Dairy & Frozen Food", href: "/category/dairy" },
-    { label: "Canned Foods", href: "/category/canned" },
-    { label: "Fruits & Vegetables", href: "/category/produce" },
-    { label: "Health Store", href: "/category/health" },
-    { label: "Herbs, Spices & Provisions", href: "/category/spices" },
-    { label: "Beverages", href: "/category/beverages" },
-    { label: "Rice, Pasta & Noodles", href: "/category/rices" },
-    { label: "Sauces & Pastes", href: "/category/sauces" },
-    { label: "Oils & Ghee", href: "/category/oils" },
-  ];
-
   return (
     <html lang="en">
       <body className={inter.className}>
         <AuthProvider>
-          <CartProvider>
-            <HeaderWrapper
-              navItems={stalkNavItems}
-              logoSrc="/images/sns-logo.png"
-              isEcommerce={true}
-            />
-
-            <main className="min-h-screen">
-              {children}
-            </main>
-            <StalknSpiceFooter />
-          </CartProvider>
+          <CollectionsProvider>
+            <CartProvider>
+              <LayoutContent>{children}</LayoutContent>
+            </CartProvider>
+          </CollectionsProvider>
         </AuthProvider>
       </body>
     </html>

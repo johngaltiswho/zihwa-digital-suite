@@ -10,6 +10,8 @@ declare global {
             COOKIE_SECRET: string;
             SUPERADMIN_USERNAME: string;
             SUPERADMIN_PASSWORD: string;
+            RAZORPAY_KEY_ID: string;
+            RAZORPAY_KEY_SECRET: string;
         }
     }
 }

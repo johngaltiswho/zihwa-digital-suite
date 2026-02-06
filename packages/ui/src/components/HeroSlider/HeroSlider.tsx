@@ -39,7 +39,7 @@ export default function HeroSlider({ slides }: HeroSliderProps) {
             pagination={{ clickable: true }}
             autoplay={{ delay: 4000 }}
             loop
-            className="w-full h-[75vh] md:h-[80vh]"
+            className="w-full h-[75vh] md:h-[75vh]"
         >
             {slides.map((slide, index) => (
                 <SwiperSlide key={index}>
