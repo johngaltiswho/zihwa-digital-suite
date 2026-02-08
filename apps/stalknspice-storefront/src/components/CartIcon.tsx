@@ -4,8 +4,16 @@ import { ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { useCart } from "@/lib/vendure/cart-context";
 
-export default function CartIcon() {
+// 1. Add this interface to define the prop
+interface CartIconProps {
+  isHidden?: boolean;
+}
+
+export default function CartIcon({ isHidden }: CartIconProps) {
   const { itemCount } = useCart();
+
+  // 2. Add this condition: if isHidden is true, don't show anything
+  if (isHidden) return null;
 
   return (
     <Link href="/cart" className="relative p-2 hover:bg-gray-100 rounded-full transition-colors flex">

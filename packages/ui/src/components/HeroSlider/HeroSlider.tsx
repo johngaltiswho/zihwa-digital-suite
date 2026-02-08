@@ -133,8 +133,8 @@ export function HeroSliderSNS({ slides }: HeroSliderSNSProps) {
     if (!slides || slides.length === 0) return null;
 
     return (
-        <section className="relative -mt-20 pt-0 px-1 bg-white lg:px-2">
-            <div className="relative aspect-[16/9] md:aspect-[16/9] lg:aspect-[3/1] xl:aspect-[3.9/2] rounded-[30px] shadow-sm bg-white overflow-hidden">
+        <section className="relative -mt-4 md:-mt-20 -pt-6 px-0 bg-white lg:px-2">
+            <div className="relative aspect-[16/9] md:aspect-[16/9] lg:aspect-[3/1] xl:aspect-[3.9/2] rounded-none md:rounded-[30px] shadow-sm bg-white overflow-hidden">
                 
                 {slides.map((slide, index) => (
                     <div
@@ -148,7 +148,7 @@ export function HeroSliderSNS({ slides }: HeroSliderSNSProps) {
                             alt={slide.title || "Promotional Banner"}
                             fill
                             priority={index === 0}
-                            className="object-contain"
+                            className="object-contain md:object-contain"
                             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1400px"
                         />
 
