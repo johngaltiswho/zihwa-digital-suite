@@ -58,16 +58,23 @@ export default function VerticalCategoryMenu() {
           {/* List Items */}
           <nav className="flex flex-col">
             {validCollections.map((collection) => (
-              <div
-                key={collection.id}
-                onMouseEnter={() => setActiveTab(collection.id)}
-                className={`flex items-center justify-between px-5 py-4 cursor-pointer border-b border-gray-100 transition-colors ${
-                  activeTab === collection.id ? "bg-gray-50 text-[#00A86B] font-semibold" : "text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                <span className="text-[15px]">{collection.name}</span>
-                <ChevronRight size={16} className={activeTab === collection.id ? "opacity-100" : "opacity-30"} />
-              </div>
+              <Link
+  key={collection.id}
+  href={`/collection/${collection.slug}`}
+  onMouseEnter={() => setActiveTab(collection.id)}
+  className={`flex items-center justify-between px-5 py-4 cursor-pointer border-b border-gray-100 transition-colors ${
+    activeTab === collection.id
+      ? "bg-gray-50 text-[#00A86B] font-semibold"
+      : "text-gray-700 hover:bg-gray-50"
+  }`}
+>
+  <span className="text-[15px]">{collection.name}</span>
+  <ChevronRight
+    size={16}
+    className={activeTab === collection.id ? "opacity-100" : "opacity-30"}
+  />
+</Link>
+
             ))}
           </nav>
         </div>

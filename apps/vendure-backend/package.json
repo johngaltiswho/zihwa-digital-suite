@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev:server": "PORT=3100 ts-node ./src/index.ts",
+    "dev:server": "cross-env PORT=3100 ts-node ./src/index.ts",
     "dev:worker": "ts-node ./src/index-worker.ts",
-    "dev:dashboard": "DASHBOARD_PORT=5176 vite --clearScreen false",
+    "dev:dashboard": "cross-env DASHBOARD_PORT=5176 vite --clearScreen false",
     "dev": "concurrently --kill-others npm:dev:*",
     "build": "tsc",
     "build:dashboard": "vite build",
@@ -14,11 +14,11 @@
     "start": "concurrently npm:start:*"
   },
   "dependencies": {
+    "@nestjs/graphql": "13.1.0",
     "@vendure/asset-server-plugin": "3.5.2",
     "@vendure/core": "3.5.2",
     "@vendure/email-plugin": "3.5.2",
     "@vendure/graphiql-plugin": "3.5.2",
-    "@nestjs/graphql": "13.1.0",
     "bcryptjs": "^3.0.3",
     "csv-parse": "^6.1.0",
     "dotenv": "17.2.3",
@@ -37,6 +37,7 @@
     "@vendure/dashboard": "3.5.2",
     "@vitejs/plugin-react": "^5.1.2",
     "concurrently": "9.2.1",
+    "cross-env": "^10.1.0",
     "ts-node": "^10.9.2",
     "typescript": "5.8.2",
     "vite": "^6.4.1"

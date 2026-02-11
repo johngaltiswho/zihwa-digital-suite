@@ -33,6 +33,8 @@ interface HeaderProps {
   navItems: NavItem[];
   logoSrc: string;
 }
+const toSlug = (value: string) =>
+  value.toLowerCase().replace(/&/g, "and").replace(/\s+/g, "-");
 
 // --- MEGA MENU DATA ---
 
@@ -69,7 +71,7 @@ const MEGA_MENU_DATA: Record<string, {
     promoTitle: "ESSENTIAL ORGANIC BLENDS"
   },
   "HERBS, SPICES & PROVISIONS": {
-    products: ["Aromatic Powders", "Cooking Paste", "Food Colour", "Herbs & Seasonings", "Sprinklers", "Wasabi", "Blended Masalas", "Dals & Pulses", "Grains & Flour", "Whole Spices", "Marinades", "Salt & Pepper", "Sugar"],
+    products: ["Aromatic, Demi Glace & Chicken Powder", "Cooking Paste", "Food Colour", "Herbs & Seasonings", "Sprinklers", "Wasabi", "Blended Masalas", "Dals & Pulses", "Grains & Flour", "Whole Spices", "Marinades", "Salt & Pepper", "Sugar"],
     brands: ["AACHI", "MAGGI", "NAMJAI", "BUSH", "KEYA", "MDH", "KNORR", "TRUST SUGARS"],
     promoTitle: "ORGANIC SPICES & SEASONING"
   },
@@ -361,7 +363,8 @@ export function StalksHeader({ navItems, logoSrc, customer, onUserMenuToggle, on
   || pathname.startsWith('/cuisine')
   || pathname.startsWith('/shop')
   || pathname.startsWith('/category')
-  || pathname.startsWith('/product');
+  || pathname.startsWith('/product')
+  || pathname.startsWith('/collection'); 
 
 
 
@@ -690,7 +693,18 @@ useEffect(() => {
                               <h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest mb-4 border-b pb-2">Products</h3>
                               <div className="grid grid-cols-4 gap-x-6 gap-y-3">
                                 {data.products?.map((p) => (
-                                  <Link key={p} href="#" className="text-gray-600 hover:text-red-800 text-[15px] font-medium transition-colors">{p}</Link>
+                                  <Link
+  key={p}
+  href={`/collection/${toSlug(p)}`}
+  onClick={() => {
+    setActiveMenu(null);
+    setIsLocked(false);
+  }}
+  className="text-gray-600 hover:text-red-800 text-[15px] font-medium transition-colors"
+>
+  {p}
+</Link>
+
                                 ))}
                               </div>
                             </div>
@@ -702,7 +716,18 @@ useEffect(() => {
                               <h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest text-[16px] mb-4">Brands</h3>
                               <div className="flex flex-wrap justify-center items-center gap-x-10 gap-y-2">
                                 {data.brands.map((brand) => (
-                                  <Link key={brand} href="#" className="text-[15px] font-semibold text-black hover:text-red-800 uppercase tracking-tighter">{brand}</Link>
+                                  <Link
+  key={brand}
+  href={`/collection/${toSlug(brand)}`}
+  onClick={() => {
+    setActiveMenu(null);
+    setIsLocked(false);
+  }}
+  className="text-[15px] font-semibold text-black hover:text-red-800 uppercase tracking-tighter"
+>
+  {brand}
+</Link>
+
                                 ))}
                               </div>
                             </div>
