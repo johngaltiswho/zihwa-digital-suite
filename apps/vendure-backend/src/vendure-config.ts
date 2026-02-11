@@ -74,6 +74,7 @@ export const config: VendureConfig = {
 
   customFields: {},
 
+  
   plugins: [
     RazorpayPlugin.init({
       keyId: process.env.RAZORPAY_KEY_ID!,
@@ -116,6 +117,7 @@ export const config: VendureConfig = {
     DashboardPlugin.init({
       route: 'dashboard',
       appDir: path.join(__dirname, '../vendure-dashboard-temp'),
+      
     }),
   ],
 };

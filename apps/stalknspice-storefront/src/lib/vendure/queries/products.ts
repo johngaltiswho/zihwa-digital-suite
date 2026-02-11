@@ -148,15 +148,6 @@ export const GET_COLLECTIONS = `
             id
             preview
           }
-          children {
-            id
-            name
-            slug
-            featuredAsset {
-              id
-              preview
-            }
-          }
         }
       }
       totalItems
@@ -165,6 +156,7 @@ export const GET_COLLECTIONS = `
 `;
 
 export const GET_COLLECTION = `
+  ${PRODUCT_FRAGMENT}
   query GetCollection($slug: String, $id: ID) {
     collection(slug: $slug, id: $id) {
       id
@@ -181,6 +173,18 @@ export const GET_COLLECTION = `
         name
         slug
       }
+      productVariants {
+        totalItems
+        items {
+          id
+          name
+          priceWithTax
+          currencyCode
+          product {
+            ...ProductFields
+          }
+        }
+      }
       children {
         id
         name
@@ -189,14 +193,24 @@ export const GET_COLLECTION = `
           id
           preview
         }
+      }
+    }
+  }
+`;
+export const GET_SIDEBAR_COLLECTIONS = `
+  query GetSidebarCollections {
+    collections(options: { topLevelOnly: true }) {
+      items {
+        id
+        name
+        slug
+        featuredAsset {
+          preview
+        }
         children {
           id
           name
           slug
-          featuredAsset {
-            id
-            preview
-          }
         }
       }
     }

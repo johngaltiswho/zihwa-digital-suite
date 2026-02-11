@@ -5,23 +5,21 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '@/lib/vendure/cart-context';
 import type { Product } from '@/lib/vendure/types';
+import { Plus, ShoppingBasket } from 'lucide-react';
 
 interface ProductGridProps {
   products: Product[];
 }
 
-export default function ProductGrid({ products }: ProductGridProps) {
+export default function ProductGrid({ products = [] }: ProductGridProps) {
   const { addToCart, isLoading } = useCart();
   const [addingProductId, setAddingProductId] = useState<string | null>(null);
-  // Track selected variant for each product
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
 
   const handleAddToCart = async (productVariantId: string) => {
     setAddingProductId(productVariantId);
     try {
       await addToCart(productVariantId, 1);
-      // Show success feedback (you can add a toast notification here)
-      console.log('Added to cart successfully!');
     } catch (error) {
       console.error('Failed to add to cart:', error);
     } finally {
@@ -34,147 +32,114 @@ export default function ProductGrid({ products }: ProductGridProps) {
   };
 
   const formatPrice = (price: number, currencyCode: string) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: currencyCode,
+      maximumFractionDigits: 0,
     }).format(price / 100);
   };
 
-  if (!products || products.length === 0) {
+  const validProducts = products?.filter(p => p && p.variants && p.variants.length > 0) || [];
+
+  if (validProducts.length === 0) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-600 text-lg">No products available at the moment.</p>
+      <div className="text-center py-20 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
+        <ShoppingBasket className="mx-auto w-12 h-12 text-gray-300 mb-4" />
+        <p className="text-gray-500 font-medium">No products found in this category.</p>
       </div>
     );
   }
 
   return (
-    <div>
-      {/* Product Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-        {products.map((product) => {
-          // Get selected variant or default to first variant
-          const selectedVariantId = selectedVariants[product.id] || product.variants[0]?.id;
-          const variant = product.variants.find(v => v.id === selectedVariantId) || product.variants[0];
-          if (!variant) return null;
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+      {validProducts.map((product) => {
+        const defaultVariant = product.variants?.[0];
+        const selectedVariantId = selectedVariants[product.id] || defaultVariant?.id;
+        const variant = product.variants?.find(v => v.id === selectedVariantId) || defaultVariant;
+        
+        if (!variant) return null;
 
-          const isInStock = variant.stockLevel !== 'OUT_OF_STOCK';
-          const imageUrl = product.featuredAsset?.preview || '/images/placeholder-product.png';
-          const isAdding = addingProductId === variant.id;
-          const hasMultipleVariants = product.variants.length > 1;
+        const isInStock = variant.stockLevel !== 'OUT_OF_STOCK';
+        const imageUrl = product.featuredAsset?.preview || '/images/placeholder-product.png';
+        const isAdding = addingProductId === variant.id;
+        const hasMultipleVariants = product.variants?.length > 1;
 
-          return (
-            <div key={product.id} className="sns-card-gradient group relative overflow-hidden">
-              {/* Product Badge */}
+        return (
+          <div key={product.id} className="bg-white border border-gray-100 rounded-2xl p-3 flex flex-col hover:shadow-lg transition-all duration-300 group">
+            {/* Product Image Area */}
+            <Link href={`/product/${product.slug}`} className="relative aspect-square mb-3 bg-gray-50 rounded-xl overflow-hidden flex items-center justify-center p-2">
+              <Image
+                src={imageUrl}
+                alt={product.name || 'Product'}
+                fill
+                className="object-contain group-hover:scale-110 transition-transform duration-500"
+                sizes="(max-width: 768px) 50vw, 25vw"
+              />
+              
               {!isInStock && (
-                <div className="absolute top-4 left-4 z-10">
-                  <span className="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+                <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center">
+                  <span className="bg-gray-800 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-tighter">
                     Out of Stock
                   </span>
                 </div>
               )}
+            </Link>
 
-              {/* Product Image */}
-              <div className="aspect-square bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center group-hover:scale-110 transition-all duration-500 relative overflow-hidden">
-                <Image
-                  src={imageUrl}
-                  alt={product.name}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                />
-                <div className="absolute inset-0 bg-gradient-to-br from-orange-200/20 to-red-200/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              </div>
-
-              {/* Product Info */}
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold sns-text-primary group-hover:text-orange-600 transition-colors duration-300 mb-1">
-                      {product.name}
-                    </h3>
-                    <p className="text-sm sns-text-secondary font-medium">{variant.name}</p>
-                  </div>
-                </div>
-
-                {/* Variant Selector - Only show if multiple variants */}
-                {hasMultipleVariants && (
-                  <div className="mb-4">
-                    <label className="block text-xs font-bold text-gray-700 mb-2">
-                      Select Size/Variant:
-                    </label>
-                    <select
-                      value={variant.id}
-                      onChange={(e) => handleVariantChange(product.id, e.target.value)}
-                      className="w-full px-3 py-2 border-2 border-orange-200 rounded-lg text-sm font-medium focus:outline-none focus:border-orange-500 transition-colors"
-                    >
-                      {product.variants.map((v) => (
-                        <option key={v.id} value={v.id}>
-                          {v.name} - {formatPrice(v.priceWithTax, v.currencyCode)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {/* SKU */}
-                <p className="text-xs text-gray-500 mb-4">SKU: {variant.sku}</p>
-
-                {/* Price */}
-                <div className="mb-6">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="text-2xl font-bold text-gray-900">
-                      {formatPrice(variant.priceWithTax, variant.currencyCode)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="space-y-3">
-                  <button
-                    onClick={() => handleAddToCart(variant.id)}
-                    disabled={!isInStock || isAdding || isLoading}
-                    className={`w-full py-3 px-6 rounded-xl font-bold text-lg transition-all duration-300 ${
-                      isInStock && !isAdding
-                        ? 'sns-button-primary hover:scale-105 hover:shadow-xl'
-                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    }`}
-                  >
-                    {isAdding ? '⏳ Adding...' : isInStock ? '🛒 Add to Cart' : '❌ Out of Stock'}
-                  </button>
-                  <Link
-                    href={`/product/${product.slug}`}
-                    className="block w-full py-3 px-6 border-2 border-orange-200 text-orange-600 font-bold text-center rounded-xl hover:bg-orange-50 hover:border-orange-300 transition-all duration-300"
-                  >
-                    👁️ View Details
-                  </Link>
-                </div>
-
-                {/* Stock Status */}
-                <div className="flex justify-between items-center mt-4 pt-4 border-t border-orange-100">
-                  <span className={`text-xs font-medium uppercase tracking-wide ${
-                    isInStock ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {isInStock ? '✓ In Stock' : '✗ Out of Stock'}
-                  </span>
-                </div>
-              </div>
+            {/* Title & Weight Info */}
+            <div className="flex-1 px-1">
+              <h3 className="text-xs md:text-sm font-bold text-gray-800 leading-snug line-clamp-2 min-h-[2.5rem] mb-1">
+                {product.name}
+              </h3>
+              
+              {/* Variant / Size Selector */}
+              {hasMultipleVariants ? (
+                <select
+                  value={variant.id}
+                  onChange={(e) => handleVariantChange(product.id, e.target.value)}
+                  className="w-full text-[10px] font-medium text-gray-500 bg-gray-50 border-none rounded p-1 mb-3 focus:ring-0 cursor-pointer"
+                >
+                  {product.variants.map((v) => (
+                    <option key={v.id} value={v.id}>{v.name}</option>
+                  ))}
+                </select>
+              ) : (
+                <p className="text-[10px] font-semibold text-gray-400 mb-3">
+                  {variant.name || 'Standard Pack'}
+                </p>
+              )}
             </div>
-          );
-        })}
-      </div>
 
-      {/* View All Products */}
-      <div className="text-center mt-16">
-        <Link
-          href="/shop"
-          className="inline-flex items-center gap-3 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl"
-        >
-          <span className="text-xl">🌶️</span>
-          Discover All Products
-          <span className="text-xl">→</span>
-        </Link>
-      </div>
+            {/* Price & Add Action Row */}
+            <div className="flex items-center justify-between mt-auto pt-3 border-t border-gray-50">
+              <div className="flex flex-col">
+                <span className="text-sm md:text-base font-black text-gray-900">
+                  {formatPrice(variant.priceWithTax, variant.currencyCode)}
+                </span>
+                {/* Optional discount text */}
+                <span className="text-[9px] text-gray-400 line-through">
+                   {formatPrice(variant.priceWithTax * 1.15, variant.currencyCode)}
+                </span>
+              </div>
+
+              <button
+                onClick={() => handleAddToCart(variant.id)}
+                disabled={!isInStock || isAdding || isLoading}
+                className={`flex items-center justify-center min-w-[65px] h-8 rounded-lg font-bold text-[11px] uppercase tracking-wider transition-all duration-300 border ${
+                  isInStock && !isAdding
+                    ? 'border-[#8B2323] text-[#8B2323] hover:bg-[#8B2323] hover:text-white shadow-sm'
+                    : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                {isAdding ? (
+                  <div className="w-3 h-3 border-2 border-current border-t-transparent animate-spin rounded-full" />
+                ) : (
+                  <>ADD</>
+                )}
+              </button>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

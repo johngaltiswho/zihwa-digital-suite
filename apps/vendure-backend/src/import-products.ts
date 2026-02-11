@@ -1,178 +1,171 @@
-import { 
-    bootstrap, 
-    RequestContextService,
-    SearchService,
-    ProductVariantService,
-    FacetService,
-    CollectionService,
-    ProductService,
-    ID,
-    LanguageCode
-} from '@vendure/core';
+import { bootstrap, TransactionalConnection } from '@vendure/core';
 import { config } from './vendure-config';
 import * as fs from 'fs';
 import * as path from 'path';
 import { parse } from 'csv-parse/sync';
 
-const normalize = (s: any) => String(s || '').toLowerCase().trim().replace(/\s+/g, ' ');
-
-/**
- * Parallel processing helper to maximize speed
- */
-async function asyncPool(poolLimit: number, array: any[], iteratorFn: Function) {
-    const ret = [];
-    const executing: any[] = [];
-    for (const item of array) {
-        const p = Promise.resolve().then(() => iteratorFn(item));
-        ret.push(p);
-        if (poolLimit <= array.length) {
-            const e: any = p.then(() => executing.splice(executing.indexOf(e), 1));
-            executing.push(e);
-            if (executing.length >= poolLimit) await Promise.race(executing);
-        }
-    }
-    return Promise.all(ret);
+// 1. Define an interface for your CSV structure
+interface CsvRow {
+    name: string;
+    assets?: string;
+    slug?: string;
+    description?: string;
+    variantSku: string;
+    variantPrice: string;
+    optionValue?: string;
+    variantTaxCategory?: string;
+    variantStockOnHand: string;
 }
 
 async function run() {
+    console.log('⚡ Starting Ultra-Fast Smart Import Engine (V8.1 Table Fix)...');
     const app = await bootstrap(config);
-    const requestContextService = app.get(RequestContextService);
-    const productService = app.get(ProductService);
-    const variantService = app.get(ProductVariantService);
-    const facetService = app.get(FacetService);
-    const collectionService = app.get(CollectionService);
-    const searchService = app.get(SearchService);
+    const connection = app.get(TransactionalConnection);
     
-    const adminCtx = await requestContextService.create({ apiType: 'admin' });
+    const schema = process.env.DB_SCHEMA || 'vendure';
+    console.log(`🛠️ Targeting Schema: "${schema}"`);
 
     try {
-        console.log(' STARTING FINAL TURBO SYNC...');
+        await connection.rawConnection.query(`SET statement_timeout = 0; SET search_path TO "${schema}", public;`);
+        
         const csvPath = path.join(__dirname, '../import-data/products.csv');
-        const fileContent = fs.readFileSync(csvPath, 'utf-8');
-        const records = parse(fileContent, { columns: true, skip_empty_lines: true, trim: true, bom: true }) as any[];
-
-        // 1. CACHE FACET DATA
-        console.log(' Caching Facets...');
-        const facets = (await facetService.findAll(adminCtx)).items;
+        if (!fs.existsSync(csvPath)) throw new Error(`CSV file not found at ${csvPath}`);
         
-        // Convert IDs to strings here to fix the build error
-        const managedFacetGroupIds = facets
-            .filter(f => ['category', 'subcategory', 'brand'].includes(f.code))
-            .map(f => f.id.toString());
-        
-        const fvMap = new Map<string, string>();
-        for (const f of facets) {
-            const fullFacet = await facetService.findOne(adminCtx, f.id);
-            if (fullFacet && fullFacet.values) {
-                for (const v of fullFacet.values) {
-                    fvMap.set(`${f.code}:${normalize(v.name)}`, v.id.toString());
-                }
-            }
-        }
-
-        // 2. MAP SKUs TO PRODUCT IDs
-        console.log('📦 Mapping Products...');
-        const productUpdateMap = new Map<string, Set<string>>();
-
-        for (const row of records) {
-            const sku = row.variantSku?.trim();
-            if (!sku) continue;
-
-            const res = await variantService.findAll(adminCtx, { filter: { sku: { eq: sku } }, take: 1 });
-            if (res.items.length > 0) {
-                const pId = (res.items[0] as any).productId.toString();
-                if (!productUpdateMap.has(pId)) productUpdateMap.set(pId, new Set());
-                
-                const catId = fvMap.get(`category:${normalize(row.category)}`);
-                const subId = fvMap.get(`subcategory:${normalize(row.subheadings)}`);
-                const brandId = fvMap.get(`brand:${normalize(row.brands)}`);
-
-                if (catId) productUpdateMap.get(pId)!.add(catId);
-                if (subId) productUpdateMap.get(pId)!.add(subId);
-                if (brandId) productUpdateMap.get(pId)!.add(brandId);
-            }
-        }
-
-        // 3. PARALLEL PRODUCT UPDATE
-        console.log(`🔄 Updating ${productUpdateMap.size} Products...`);
-        let pCount = 0;
-        await asyncPool(30, Array.from(productUpdateMap.entries()), async ([productId, newFvIds]: [string, Set<string>]) => {
-            try {
-                const product = await productService.findOne(adminCtx, productId as any, ['facetValues']);
-                if (product) {
-                    // FIX: Convert fv.facetId to string before checking .includes()
-                    const preservedIds = (product.facetValues || [])
-                        .filter(fv => !managedFacetGroupIds.includes(fv.facetId.toString()))
-                        .map(fv => fv.id);
-
-                    const finalIds = Array.from(new Set([...preservedIds, ...Array.from(newFvIds)]));
-                    
-                    if (product.facetValues.length !== finalIds.length) {
-                        await productService.update(adminCtx, {
-                            id: productId as any,
-                            facetValueIds: finalIds as any[]
-                        });
-                    }
-                }
-            } catch (e) {}
-            pCount++;
-            if (pCount % 100 === 0) console.log(`  Progress: ${pCount}/${productUpdateMap.size}...`);
+        // 2. Explicitly type the records variable
+        const records: CsvRow[] = parse(fs.readFileSync(csvPath, 'utf-8'), { 
+            columns: true, skip_empty_lines: true, trim: true, bom: true 
         });
 
-        // 4. LINK COLLECTIONS
-        console.log('📂 Linking Collections...');
-        const allCols = (await collectionService.findAll(adminCtx)).items;
-        const colLookup = new Map(allCols.map(c => [`${(c as any).parentId}_${normalize(c.name)}`, c.id]));
-        const rootCols = new Map(allCols.filter(c => !(c as any).parentId || (c as any).parentId.toString() === '1').map(c => [normalize(c.name), c.id]));
+        // --- 1. PRE-FETCH METADATA ---
+        const [stockRes, channelRes, assetRes, taxRes] = await Promise.all([
+            connection.rawConnection.query(`SELECT id FROM "${schema}"."stock_location" LIMIT 1`),
+            connection.rawConnection.query(`SELECT id, code, "defaultCurrencyCode" FROM "${schema}"."channel" WHERE code IN ('__default_channel__', 'stalks-n-spice')`),
+            connection.rawConnection.query(`SELECT id, name FROM "${schema}"."asset"`),
+            connection.rawConnection.query(`SELECT id, name FROM "${schema}"."tax_category"`)
+        ]);
 
-        const tasks: any[] = [];
-        const seen = new Set<string>();
+        if (channelRes.length === 0) throw new Error("CRITICAL: Target channels not found.");
+        
+        const stockLocId = stockRes[0].id;
+        const targetChannels = channelRes;
 
+        // 3. Cast IDs to strings to avoid 'unknown' or '{}' assignment errors
+        const assetMap = new Map<string, string>(
+            assetRes.map((a: any) => [a.name.trim().toLowerCase(), String(a.id)])
+        );
+        const taxMap = new Map<string, string>(
+            taxRes.map((t: any) => [t.name.toUpperCase(), String(t.id)])
+        );
+        const defaultTaxId = taxRes[0]?.id ? String(taxRes[0].id) : undefined;
+
+        console.log(`📸 Asset Library: ${assetMap.size} images ready.`);
+
+        // --- 2. DEDUPLICATION & IMAGE PARSING ---
+        const productMap = new Map<string, any>();
         for (const row of records) {
-            const parentId = rootCols.get(normalize(row.category));
-            if (!parentId) continue;
-
-            const addJob = (folder: string, name: string, facetCode: string) => {
-                const folderId = colLookup.get(`${parentId.toString()}_${normalize(folder)}`);
-                if (folderId) {
-                    const targetId = colLookup.get(`${folderId.toString()}_${normalize(name)}`);
-                    const fvId = fvMap.get(`${facetCode}:${normalize(name)}`);
-                    if (targetId && fvId && !seen.has(targetId.toString())) {
-                        tasks.push({ id: targetId, fvId });
-                        seen.add(targetId.toString());
-                    }
+            const name = row.name?.trim();
+            if (!name) continue;
+            
+            if (!productMap.has(name)) {
+                const assetNames = (row.assets || '').split(',').map((a: string) => a.trim().toLowerCase());
+                const validAssetIds: string[] = [];
+                for (const aName of assetNames) {
+                    const id = assetMap.get(aName);
+                    if (id) validAssetIds.push(id);
                 }
-            };
 
-            if (row.subheadings) addJob('Products', row.subheadings, 'subcategory');
-            if (row.brands) addJob('Brands', row.brands, 'brand');
-        }
-
-        await asyncPool(10, tasks, async (task: any) => {
-            try {
-                await collectionService.update(adminCtx, {
-                    id: task.id,
-                    filters: [{
-                        code: 'facet-value-filter',
-                        arguments: [
-                            { name: 'facetValueIds', value: JSON.stringify([task.fvId]) },
-                            { name: 'containsAny', value: 'true' }
-                        ]
-                    }]
+                productMap.set(name, {
+                    name,
+                    slug: `${row.slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Math.floor(Math.random() * 10000)}`,
+                    description: row.description || '',
+                    assetIds: validAssetIds,
+                    variants: []
                 });
-            } catch (e) {}
-        });
+            }
+            productMap.get(name).variants.push(row);
+        }
 
-        console.log('⚡ Running Global Reindex...');
-        await searchService.reindex(adminCtx);
-        console.log('✅ SYNC COMPLETE.');
+        console.log(`🚀 Starting Bulk Import of ${productMap.size} products...`);
 
+        // --- 3. MAIN LOOP ---
+        let processedCount = 0;
+        for (const [pName, pData] of productMap) {
+            try {
+                // A. Create Product
+                const pRes = await connection.rawConnection.query(
+                    `INSERT INTO "${schema}"."product" ("createdAt", "updatedAt", "enabled") VALUES (NOW(), NOW(), true) RETURNING id`
+                );
+                const productId = pRes[0].id;
+
+                // B. Parallel Product Setup
+                const productTasks = [
+                    connection.rawConnection.query(
+                        `INSERT INTO "${schema}"."product_translation" ("createdAt", "updatedAt", "languageCode", "name", "slug", "description", "baseId") 
+                         VALUES (NOW(), NOW(), 'en', $1, $2, $3, $4)`, [pData.name, pData.slug, pData.description, productId]
+                    )
+                ];
+
+                // Link Product Assets
+                if (pData.assetIds.length > 0) {
+                    productTasks.push(connection.rawConnection.query(`UPDATE "${schema}"."product" SET "featuredAssetId" = $1 WHERE id = $2`, [pData.assetIds[0], productId]));
+                    for (let i = 0; i < pData.assetIds.length; i++) {
+                        productTasks.push(connection.rawConnection.query(`INSERT INTO "${schema}"."product_asset" ("productId", "assetId", "position") VALUES ($1, $2, $3)`, [productId, pData.assetIds[i], i]));
+                    }
+                }
+                
+                for (const chan of targetChannels) {
+                    productTasks.push(connection.rawConnection.query(`INSERT INTO "${schema}"."product_channels_channel" ("productId", "channelId") VALUES ($1, $2) ON CONFLICT DO NOTHING`, [productId, chan.id]));
+                }
+                await Promise.all(productTasks);
+
+                // C. Process Variants
+                for (const vRow of pData.variants as CsvRow[]) {
+                    const sku = vRow.variantSku.trim();
+                    const price = Math.round(parseFloat(String(vRow.variantPrice || '0').replace(/[^0-9.]/g, '')) * 100);
+                    const combinedName = vRow.optionValue ? `${pData.name} - ${vRow.optionValue.trim()}` : pData.name;
+                    const taxCategoryId = (vRow.variantTaxCategory ? taxMap.get(vRow.variantTaxCategory.toUpperCase()) : null) || defaultTaxId;
+
+                    const vRes = await connection.rawConnection.query(
+                        `INSERT INTO "${schema}"."product_variant" 
+                        ("createdAt", "updatedAt", "enabled", "sku", "trackInventory", "productId", "taxCategoryId", "featuredAssetId") 
+                        VALUES (NOW(), NOW(), true, $1, 'TRUE', $2, $3, $4) RETURNING id`, 
+                        [sku, productId, taxCategoryId, pData.assetIds[0] || null]
+                    );
+                    const variantId = vRes[0].id;
+
+                    const variantTasks = [
+                        connection.rawConnection.query(`INSERT INTO "${schema}"."product_variant_translation" ("createdAt", "updatedAt", "languageCode", "name", "baseId") VALUES (NOW(), NOW(), 'en', $1, $2)`, [combinedName, variantId]),
+                        connection.rawConnection.query(`INSERT INTO "${schema}"."stock_level" ("createdAt", "updatedAt", "stockOnHand", "stockAllocated", "productVariantId", "stockLocationId") VALUES (NOW(), NOW(), $1, 0, $2, $3)`, [parseInt(vRow.variantStockOnHand) || 0, variantId, stockLocId])
+                    ];
+
+                    for (const chan of targetChannels) {
+                        variantTasks.push(connection.rawConnection.query(`INSERT INTO "${schema}"."product_variant_channels_channel" ("productVariantId", "channelId") VALUES ($1, $2)`, [variantId, chan.id]));
+                        variantTasks.push(connection.rawConnection.query(`INSERT INTO "${schema}"."product_variant_price" ("createdAt", "updatedAt", "price", "channelId", "variantId", "currencyCode") VALUES (NOW(), NOW(), $1, $2, $3, $4)`, [price, chan.id, variantId, chan.defaultCurrencyCode]));
+                    }
+
+                    if (pData.assetIds.length > 0) {
+                        for (let i = 0; i < pData.assetIds.length; i++) {
+                            variantTasks.push(connection.rawConnection.query(`INSERT INTO "${schema}"."product_variant_asset" ("productVariantId", "assetId", "position") VALUES ($1, $2, $3)`, [variantId, pData.assetIds[i], i]));
+                        }
+                    }
+
+                    await Promise.all(variantTasks);
+                }
+                
+                processedCount++;
+                if (processedCount % 50 === 0) console.log(`⏳ Progress: ${processedCount} / ${productMap.size} products`);
+            } catch (innerErr) {
+                console.error(`❌ Error on product "${pName}":`, (innerErr as any).message);
+            }
+        }
+
+        console.log('\n✨ IMPORT FINISHED.');
     } catch (err) {
-        console.error('\n❌ FATAL ERROR:', err);
+        console.error(`\n❌ FATAL ERROR:`, err);
+    } finally {
+        await app.close();
+        process.exit(0);
     }
-
-    await app.close();
-    process.exit(0);
 }
 
 run();
