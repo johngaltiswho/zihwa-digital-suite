@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo,useRef, useState } from 'react'
 import type { AttendanceStatus, EmployeeStatus, PayrollStatus } from '@prisma/client'
 import {
   AlertCircle,
@@ -14,6 +14,7 @@ import {
   Upload,
   UserPlus,
   Users,
+  HardHat,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -105,7 +106,7 @@ type BulkFailedRow = {
   errors: string[]
 }
 
-type Tab = 'employees' | 'attendance' | 'payroll'
+type Tab = 'employees' | 'attendance' | 'payroll' |'labours'
 
 const ATTENDANCE_OPTIONS: AttendanceStatus[] = ['PRESENT', 'ABSENT', 'REMOTE', 'LEAVE']
 const ATTENDANCE_CODES: { value: AttendanceStatus; code: string; label: string }[] = [
@@ -201,6 +202,12 @@ export default function EmployeesPage() {
   const [companies, setCompanies] = useState<CompanyOption[]>([])
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecordWithEmployee[]>([])
   const [payrollRecords, setPayrollRecords] = useState<PayrollRecordWithEmployee[]>([])
+   const [attendanceUploading, setAttendanceUploading] = useState(false);
+  const attendanceFileInputRef = useRef<HTMLInputElement>(null);																
+																
+
+  const [labours, setLabours] = useState<EmployeeRow[]>([])
+const [labourLoading, setLabourLoading] = useState(false)
 
   const [attendanceMonth, setAttendanceMonth] = useState(defaultMonth)
   const [attendanceCompanyFilter, setAttendanceCompanyFilter] = useState('all')
@@ -269,7 +276,21 @@ export default function EmployeesPage() {
       setEmployeeLoading(false)
     }
   }
-
+   // NEW FETCH FUNCTION FOR LABOURS
+  const fetchLabours = async () => {
+    setLabourLoading(true)
+    try {
+      const res = await fetch('/api/employees/labours')
+      const data = await res.json()
+      if (data.success) {
+        setLabours(data.data)
+      }
+    } catch (error) {
+      console.error(error)
+    } finally {
+      setLabourLoading(false)
+    }
+  }
   const fetchCompanies = async () => {
     try {
       const res = await fetch('/api/companies')
@@ -333,6 +354,7 @@ export default function EmployeesPage() {
         fetchCompanies(),
         fetchAttendance(defaultMonth),
         fetchPayroll(defaultMonth),
+        fetchLabours(),
       ])
       setLoading(false)
     }
@@ -341,10 +363,15 @@ export default function EmployeesPage() {
   }, [])
 
   const refreshAll = async () => {
-    setLoading(true)
-    await Promise.all([fetchEmployees(), fetchAttendance(attendanceMonth), fetchPayroll(payrollMonth)])
-    setLoading(false)
-  }
+  setLoading(true)
+  await Promise.all([
+    fetchEmployees(), 
+    fetchAttendance(attendanceMonth), 
+    fetchPayroll(payrollMonth),
+    fetchLabours() // <--- ADD THIS LINE
+  ])
+  setLoading(false)
+}
 
   const handleBulkUpload = async () => {
     if (!bulkCompanyId) {
@@ -382,6 +409,36 @@ export default function EmployeesPage() {
     }
   }
 
+	const handleAttendanceExcelUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  setAttendanceUploading(true);
+  const formData = new FormData();
+  formData.append('file', file);
+  // We send the month selected in the dropdown
+  formData.append('month', attendanceMonth); 
+
+  try {
+    const response = await fetch('/api/employees/attendance/import', {
+      method: 'POST',
+      body: formData,
+    });
+    
+    const data = await response.json();
+    if (data.success) {
+      alert(`Import successful! Updated ${data.count} records for all employees.`);
+      await fetchAttendance(attendanceMonth); 
+    } else {
+      throw new Error(data.error || 'Failed to import');
+    }
+  } catch (error) {
+    alert(error instanceof Error ? error.message : 'Upload failed');
+  } finally {
+    setAttendanceUploading(false);
+    if (event.target) event.target.value = '';
+  }
+};																					 
   const downloadTemplate = () => {
     const headers = [
       'Sno',
@@ -573,6 +630,18 @@ export default function EmployeesPage() {
       })
       .sort((a, b) => a.fullName.localeCompare(b.fullName))
   }, [employees, searchTerm, statusFilter, companyFilter])
+
+  // NEW: Filter for Labours
+  const filteredLabours = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase()
+    return labours
+      .filter((l) => {
+        if (companyFilter !== 'all' && l.company?.id !== companyFilter) return false
+        if (!term) return true
+        return l.fullName.toLowerCase().includes(term) || l.employeeId.toLowerCase().includes(term)
+      })
+      .sort((a, b) => a.fullName.localeCompare(b.fullName))
+  }, [labours, searchTerm, companyFilter])
 
   const attendanceSummary = useMemo(() => {
     return ATTENDANCE_OPTIONS.reduce<Record<AttendanceStatus, number>>((acc, status) => {
@@ -805,12 +874,12 @@ export default function EmployeesPage() {
           <Button variant="ghost" className="text-gray-600" onClick={refreshAll} disabled={loading}>
             {loading ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 Refreshing
               </>
             ) : (
               <>
-                <Clock3 className="h-4 w-4" />
+                <Clock3 className="h-4 w-4 mr-2" />
                 Refresh
               </>
             )}
@@ -884,6 +953,7 @@ export default function EmployeesPage() {
           { id: 'employees', label: 'Employees', icon: Users },
           { id: 'attendance', label: 'Attendance', icon: Calendar },
           { id: 'payroll', label: 'Payroll', icon: CreditCard },
+          { id: 'labours', label: 'Labours', icon: HardHat }, 
         ].map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -936,6 +1006,7 @@ export default function EmployeesPage() {
                     </option>
                   ))}
                 </select>
+			   
               </div>
               <span className="text-sm text-gray-500">
                 Showing <strong>{filteredEmployees.length}</strong> of {employees.length}
@@ -1192,6 +1263,7 @@ export default function EmployeesPage() {
                     </option>
                   ))}
                 </select>
+				
               </div>
               <div className="space-y-1">
                 <label className="text-sm font-medium text-gray-700">CSV file</label>
@@ -1292,6 +1364,30 @@ export default function EmployeesPage() {
                       </option>
                     ))}
                   </select>
+	{/* MOVE THE BUTTON HERE */}
+    <div className="flex items-center">
+    <input
+      type="file"
+      ref={attendanceFileInputRef}
+      onChange={handleAttendanceExcelUpload}
+      accept=".xlsx, .xls, .csv"
+      className="hidden"
+    />
+    <Button
+     variant="ghost"
+     className="border border-gray-200 text-gray-600 h-10 ml-2" // Added some margin
+     onClick={() => attendanceFileInputRef.current?.click()}
+     disabled={attendanceUploading} // Removed company check
+     title="Import Excel sheet"
+    >
+  {attendanceUploading ? (
+    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+  ) : (
+    <Upload className="h-4 w-4 mr-2 text-green-600" />
+  )}
+  {attendanceUploading ? 'Importing...' : 'Import Attendance'}
+</Button>
+  </div>										  
                 </div>
               </div>
 
@@ -1546,6 +1642,60 @@ export default function EmployeesPage() {
                 )}
               </div>
           </div>
+        </section>
+      )}
+       {/* NEW: LABOURS TAB */}
+      {tab === 'labours' && (
+        <section className="space-y-6">
+           <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="relative w-full max-w-sm">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input placeholder="Search labours..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9" />
+              </div>
+            </div>
+
+            <div className="overflow-auto rounded-xl border border-gray-100 bg-white shadow-sm">
+              {labourLoading ? (
+                <div className="flex items-center justify-center py-12 text-gray-500">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading labours...
+                </div>
+              ) : filteredLabours.length === 0 ? (
+                <div className="py-12 text-center text-gray-500">
+                  <HardHat className="mx-auto mb-2 h-6 w-6 text-gray-300" />
+                  No labours found matching your criteria.
+                </div>
+              ) : (
+                <table className="min-w-full text-sm">
+                  <thead className="bg-gray-50 text-xs font-semibold uppercase text-gray-500">
+                    <tr>
+                      <th className="px-4 py-2 text-left">Labour Name</th>
+                      <th className="px-4 py-2 text-left">Company</th>
+                      <th className="px-4 py-2 text-left">Designation/Trade</th>
+                      <th className="px-4 py-2 text-left">Net Salary</th>
+                      <th className="px-4 py-2 text-left">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredLabours.map((labour) => (
+                      <tr key={labour.id} className="border-t border-gray-50 hover:bg-gray-50/50">
+                        <td className="px-4 py-3">
+                          <div className="font-medium text-gray-900">{labour.fullName}</div>
+                          <div className="text-xs text-gray-500">#{labour.employeeId}</div>
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">{labour.company?.name || 'Site Force'}</td>
+                        <td className="px-4 py-3 text-gray-600">{labour.designation || 'Labour'}</td>
+                        <td className="px-4 py-3 font-medium">{formatCurrency(labour.netSalary)}</td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusBadge(labour.status)}`}>
+                            {labour.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
         </section>
       )}
 

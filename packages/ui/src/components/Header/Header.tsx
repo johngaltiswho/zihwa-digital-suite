@@ -51,12 +51,12 @@ const MEGA_MENU_DATA: Record<string, {
     promoTitle: "DESERT SYRUPS & TOPPINGS"
   },
   "BREAKFAST, DAIRY & FROZEN FOOD": {
-    products: ["Almond, Coconut & Soy Milk", "Caffeine", "Desert Syrups & Sauces", "Frozen Fast Food", "Beans, Corn & Peas", "Cereals", "Ghee & Condensed Milk", "Spreads", "Butter, Cheese & Paneer", "Cooking Cream"],
+    products: ["Almond, Coconut & Soy Milk", "Caffeine", "Desert Syrups & Sauces", "Frozen Fast Food", "Beans, Corn & Peas", "Cereals", "Ghee & Condensed Milk", "Spreads", "Butter, Cheese & Paneer", "Cooking Cream", "Spring Roll Pastry & Gyoza Skin"],
     brands: ["ABBIE'S", "CHAYAM", "MCCAIN", "SOFIT", "AMERICAN GARDEN", "DAIRY CRAFT", "NUTELLA", "AMUL", "HERSHEY'S", "RICH"],
     promoTitle: "DIPS & FRUITY MARMALADES"
   },
   "CANNED FOODS": {
-    products: ["Artichokes & Asparagus", "Cherry, Litchi & Pears", "Gherkins & Jalapeno", "Olives & Capers", "Paste", "Thai Cooking Paste", "Bamboo Shoots", "Coconut Products", "Mango & Pineapple", "Soups & Stews", "Water Chestnuts"],
+    products: ["Artichokes & Asparagus", "Cherry, Litchi & Pears", "Gherkins & Jalapeno","Pastes", "Pickles","Olives & Capers", "Paste", "Thai Cooking Paste", "Bamboo Shoots", "Coconut Products", "Mango & Pineapple", "Soups & Stews", "Water Chestnuts"],
     brands: ["FRESHO'S", "LEE KUM KEE", "NAMJAI", "WOH HUP", "GOLDEN CROWN", "NANI KI BARNI", "REAL THAI", "HABIT", "TOPPS"],
     promoTitle: "AUTHENTIC CANNED SELECTION"
   },

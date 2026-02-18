@@ -54,6 +54,8 @@ model Company {
   complianceDeadlines ComplianceDeadline[]
   documents           Document[]
   employees           Employee[]
+  candidates          Candidate[]
+  labours             Labour[] // This exists, add the line below:
   documentRequirements CompanyDocumentRequirement[]
   documentStatuses     CompanyDocumentStatus[]
 
@@ -273,7 +275,45 @@ model Vendor {
 
   @@map("vendors")
 }
+model Candidate {
+  id              String          @id @default(cuid())
+  name            String
+  email           String?         @unique
+  phone           String?
+  designation     String?
+  experience      String?         // Years of Experience
+  qualification   String?         // Added
+  currentCTC      String?         // Added (String allows for "5 LPA" or "4.5 Lakhs")
+  status          String          @default("SCREENING")
+  resumeUrl       String?
+  appliedDate     DateTime        @default(now())
+  companyId       String
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
+  company         Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("candidates")
+}
+model Labour {
+  id          String   @id @default(cuid())
+  labourId    String   // The custom ID (e.g., "LAB-001")
+  firstName   String
+  lastName    String
+  designation String?
+  status      String   @default("ACTIVE")
+  netSalary   Int?
+  grossSalary Int?
+  category    String?
+  phone       String?
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([companyId, labourId]) 
+  @@map("labours")
+}
 // Enums
 enum UserRole {
   ADMIN
@@ -357,4 +397,12 @@ enum PayrollStatus {
   PENDING
   PROCESSING
   PAID
+}
+// Add this Enum
+enum CandidateStatus {
+  SCREENING
+  INTERVIEWING
+  OFFERED
+  REJECTED
+  HIRED
 }
