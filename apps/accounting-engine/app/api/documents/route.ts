@@ -9,6 +9,8 @@ export async function GET(request: NextRequest) {
     // Parse query parameters
     const status = searchParams.get('status') as ProcessingStatus | null
     const orgId = searchParams.get('orgId')
+    const organizationId = searchParams.get('organizationId')
+    const companyId = searchParams.get('companyId')
     const limit = parseInt(searchParams.get('limit') || '20', 10)
     const offset = parseInt(searchParams.get('offset') || '0', 10)
 
@@ -16,6 +18,8 @@ export async function GET(request: NextRequest) {
     const where: any = {}
     if (status) where.status = status
     if (orgId) where.zohoOrgId = orgId
+    if (organizationId) where.organizationId = organizationId
+    if (companyId) where.companyId = companyId
 
     // Fetch documents with filters
     const [documents, total] = await Promise.all([
@@ -42,6 +46,8 @@ export async function GET(request: NextRequest) {
           postingResult: doc.postingResult,
           zohoVoucherId: doc.zohoVoucherId,
           zohoOrgId: doc.zohoOrgId,
+          organizationId: doc.organizationId,
+          companyId: doc.companyId,
           error: doc.error,
           createdAt: doc.createdAt,
           processedAt: doc.processedAt,

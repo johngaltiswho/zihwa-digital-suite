@@ -9,6 +9,9 @@ export interface CreateDocumentInput {
   fileType: string
   documentType: DocumentType
   status?: ProcessingStatus
+  organizationId?: string
+  companyId?: string
+  zohoOrgId?: string
 }
 
 export interface UpdateDocumentInput {

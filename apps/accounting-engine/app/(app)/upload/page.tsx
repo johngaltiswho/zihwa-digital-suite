@@ -23,6 +23,9 @@ type DocumentEntry = {
   status: string
   createdAt: string
   processedAt?: string | null
+  zohoOrgId?: string | null
+  organizationId?: string | null
+  companyId?: string | null
 }
 
 const QUEUE_STYLES: Record<UploadStatus, string> = {
@@ -61,6 +64,9 @@ export default function UploadPage() {
   const [documents, setDocuments] = useState<DocumentEntry[]>([])
   const [documentsLoading, setDocumentsLoading] = useState(true)
   const [documentsError, setDocumentsError] = useState<string | null>(null)
+  const [orgId, setOrgId] = useState('')
+  const [organizationId, setOrganizationId] = useState('')
+  const [companyId, setCompanyId] = useState('')
 
   const fetchDocuments = useCallback(async () => {
     try {
@@ -163,7 +169,9 @@ export default function UploadPage() {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      formData.append('orgId', 'default-org')
+      if (orgId.trim()) formData.append('orgId', orgId.trim())
+      if (organizationId.trim()) formData.append('organizationId', organizationId.trim())
+      if (companyId.trim()) formData.append('companyId', companyId.trim())
 
       const response = await fetch('/api/documents/upload', {
         method: 'POST',
@@ -266,6 +274,39 @@ export default function UploadPage() {
                 </p>
                 <p className="text-xs text-gray-500 mt-1">AI starts reading immediately.</p>
               </label>
+            </div>
+
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Zoho Org ID</label>
+                <input
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-gray-300 focus:ring-2 focus:ring-gray-200"
+                  value={orgId}
+                  onChange={(event) => setOrgId(event.target.value)}
+                  placeholder="e.g. 123456789"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Organization ID</label>
+                <input
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-gray-300 focus:ring-2 focus:ring-gray-200"
+                  value={organizationId}
+                  onChange={(event) => setOrganizationId(event.target.value)}
+                  placeholder="Internal org ID"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Company ID</label>
+                <input
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-gray-300 focus:ring-2 focus:ring-gray-200"
+                  value={companyId}
+                  onChange={(event) => setCompanyId(event.target.value)}
+                  placeholder="Internal company ID"
+                />
+              </div>
+              <div className="text-xs text-gray-500 flex items-end">
+                Optional. Leave empty to auto-detect a connected Zoho org.
+              </div>
             </div>
 
             {selectedFiles.length > 0 && (
@@ -393,6 +434,7 @@ export default function UploadPage() {
                   <tr>
                     <th className="py-3 px-4">Document</th>
                     <th className="py-3 px-4">Type</th>
+                    <th className="py-3 px-4">Org / Company</th>
                     <th className="py-3 px-4">Status</th>
                     <th className="py-3 px-4">Created</th>
                     <th className="py-3 px-4">Processed</th>
@@ -408,6 +450,13 @@ export default function UploadPage() {
                       </td>
                       <td className="py-4 px-4 capitalize text-gray-600">
                         {doc.documentType.toLowerCase()}
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="space-y-1 text-xs text-gray-600">
+                          <p>{doc.zohoOrgId ? `Zoho: ${doc.zohoOrgId}` : 'Zoho: —'}</p>
+                          <p>{doc.organizationId ? `Org: ${doc.organizationId}` : 'Org: —'}</p>
+                          <p>{doc.companyId ? `Company: ${doc.companyId}` : 'Company: —'}</p>
+                        </div>
                       </td>
                       <td className="py-4 px-4">
                         <span

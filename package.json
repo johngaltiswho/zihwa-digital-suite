@@ -25,17 +25,17 @@
     "@emailjs/browser": "^4.4.1",
     "framer-motion": "^12.23.26",
     "lucide-react": "^0.562.0",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "react-icons": "^5.5.0",
     "swiper": "^12.0.3"
   },
   "pnpm": {
     "overrides": {
-      "react": "18.2.0",
-      "react-dom": "18.2.0",
-      "@types/react": "18.2.47",
-      "@types/react-dom": "18.2.21",
+      "react": "^19.0.0",
+      "react-dom": "^19.0.0",
+      "@types/react": "^19.0.0",
+      "@types/react-dom": "^19.0.0",
       "bcrypt": "npm:bcryptjs@2.4.3"
     },
     "ignoredBuiltDependencies": [
