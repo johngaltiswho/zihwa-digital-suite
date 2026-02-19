@@ -14,6 +14,10 @@ type DocumentRow = {
   status: ProcessingStatus
   createdAt: string
   processedAt?: string | null
+  zohoOrgId?: string | null
+  organizationId?: string | null
+  companyId?: string | null
+  zohoVoucherId?: string | null
   extractedData?: {
     type: string
     confidence?: number
@@ -60,12 +64,24 @@ export default function DocumentsPage() {
   const [error, setError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<'ALL' | ProcessingStatus>('ALL')
   const [searchTerm, setSearchTerm] = useState('')
+  const [orgFilter, setOrgFilter] = useState('')
+  const [organizationFilter, setOrganizationFilter] = useState('')
+  const [companyFilter, setCompanyFilter] = useState('')
 
   const fetchDocuments = async () => {
     try {
       const params = new URLSearchParams({ limit: '200' })
       if (statusFilter !== 'ALL') {
         params.set('status', statusFilter)
+      }
+      if (orgFilter.trim()) {
+        params.set('orgId', orgFilter.trim())
+      }
+      if (organizationFilter.trim()) {
+        params.set('organizationId', organizationFilter.trim())
+      }
+      if (companyFilter.trim()) {
+        params.set('companyId', companyFilter.trim())
       }
 
       const response = await fetch(`/api/documents?${params.toString()}`)
@@ -87,7 +103,7 @@ export default function DocumentsPage() {
   useEffect(() => {
     setLoading(true)
     fetchDocuments()
-  }, [statusFilter])
+  }, [statusFilter, orgFilter, organizationFilter, companyFilter])
 
   const filteredDocuments = useMemo(() => {
     if (!searchTerm.trim()) return documents
@@ -162,6 +178,38 @@ export default function DocumentsPage() {
           </div>
         </div>
 
+        <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-gray-700">Zoho Org ID</p>
+              <input
+                value={orgFilter}
+                onChange={(event) => setOrgFilter(event.target.value)}
+                placeholder="Filter by Zoho org"
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-gray-300 focus:ring-2 focus:ring-gray-200"
+              />
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-gray-700">Organization ID</p>
+              <input
+                value={organizationFilter}
+                onChange={(event) => setOrganizationFilter(event.target.value)}
+                placeholder="Filter by internal org"
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-gray-300 focus:ring-2 focus:ring-gray-200"
+              />
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-gray-700">Company ID</p>
+              <input
+                value={companyFilter}
+                onChange={(event) => setCompanyFilter(event.target.value)}
+                placeholder="Filter by company"
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-gray-300 focus:ring-2 focus:ring-gray-200"
+              />
+            </div>
+          </div>
+        </div>
+
         <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
           {loading ? (
             <p className="p-6 text-gray-500 text-sm">Fetching documents…</p>
@@ -176,8 +224,10 @@ export default function DocumentsPage() {
                   <tr>
                     <th className="py-3 px-4">File</th>
                     <th className="py-3 px-4">AI suggestion</th>
+                    <th className="py-3 px-4">Org / Company</th>
                     <th className="py-3 px-4">Confidence</th>
                     <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4">Zoho</th>
                     <th className="py-3 px-4">Created</th>
                     <th className="py-3 px-4">Action</th>
                   </tr>
@@ -214,6 +264,13 @@ export default function DocumentsPage() {
                             </p>
                           </div>
                         </td>
+                        <td className="py-4 px-4 text-xs text-gray-600">
+                          <div className="space-y-1">
+                            <p>{doc.zohoOrgId ? `Zoho: ${doc.zohoOrgId}` : 'Zoho: —'}</p>
+                            <p>{doc.organizationId ? `Org: ${doc.organizationId}` : 'Org: —'}</p>
+                            <p>{doc.companyId ? `Company: ${doc.companyId}` : 'Company: —'}</p>
+                          </div>
+                        </td>
                         <td className="py-4 px-4">
                           <span
                             className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold border ${confidence.tone}`}
@@ -228,6 +285,9 @@ export default function DocumentsPage() {
                           >
                             {doc.status}
                           </span>
+                        </td>
+                        <td className="py-4 px-4 text-xs text-gray-600">
+                          {doc.zohoVoucherId ? `Voucher ${doc.zohoVoucherId}` : '—'}
                         </td>
                         <td className="py-4 px-4 text-xs text-gray-500">
                           <p>{new Date(doc.createdAt).toLocaleString()}</p>

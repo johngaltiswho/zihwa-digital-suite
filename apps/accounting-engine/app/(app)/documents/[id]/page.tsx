@@ -35,6 +35,10 @@ type DocumentDetail = {
   documentType: string
   status: string
   extractedData?: ExtractedPayload
+  zohoOrgId?: string | null
+  zohoVoucherId?: string | null
+  organizationId?: string | null
+  companyId?: string | null
   createdAt: string
   processedAt?: string | null
   error?: string | null
@@ -101,7 +105,7 @@ export default function DocumentDetailPage() {
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
   const [posting, setPosting] = useState(false)
   const [postResult, setPostResult] = useState<{ success: boolean; message: string } | null>(null)
-  const [orgId, setOrgId] = useState('default-org')
+  const [orgId, setOrgId] = useState('')
   const [accountId, setAccountId] = useState('')
   const [vendorId, setVendorId] = useState('')
 
@@ -127,6 +131,9 @@ export default function DocumentDetailPage() {
               } as ExtractedPayload)
             : null
       setFormData(normalizedExtracted)
+      if (data.data.zohoOrgId) {
+        setOrgId(data.data.zohoOrgId)
+      }
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load document')
@@ -340,6 +347,22 @@ export default function DocumentDetailPage() {
                   <span className={`inline-flex mt-1 text-xs font-semibold px-2 py-1 rounded-full border ${confidence.tone}`}>
                     {confidence.label}
                   </span>
+                </div>
+                <div>
+                  <p className="font-medium text-gray-500">Zoho Org ID</p>
+                  <p>{document.zohoOrgId || '—'}</p>
+                </div>
+                <div>
+                  <p className="font-medium text-gray-500">Zoho Voucher ID</p>
+                  <p>{document.zohoVoucherId || '—'}</p>
+                </div>
+                <div>
+                  <p className="font-medium text-gray-500">Organization ID</p>
+                  <p>{document.organizationId || '—'}</p>
+                </div>
+                <div>
+                  <p className="font-medium text-gray-500">Company ID</p>
+                  <p>{document.companyId || '—'}</p>
                 </div>
               </div>
               <a

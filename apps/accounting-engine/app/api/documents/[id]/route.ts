@@ -36,6 +36,8 @@ export async function GET(
         postingResult: document.postingResult,
         zohoVoucherId: document.zohoVoucherId,
         zohoOrgId: document.zohoOrgId,
+        organizationId: document.organizationId,
+        companyId: document.companyId,
         error: document.error,
         createdAt: document.createdAt,
         processedAt: document.processedAt,

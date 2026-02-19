@@ -18,6 +18,8 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     const file = formData.get('file') as File
     let orgId = formData.get('orgId') as string | null
+    const organizationId = formData.get('organizationId') as string | null
+    const companyId = formData.get('companyId') as string | null
 
     // 2. Validate file
     if (!file) {
@@ -97,6 +99,9 @@ export async function POST(request: NextRequest) {
       fileType: file.type,
       documentType: 'EXPENSE', // Will be updated after extraction
       status: 'UPLOADED',
+      organizationId: organizationId || undefined,
+      companyId: companyId || undefined,
+      zohoOrgId: orgId || undefined,
     })
 
     console.log(`Document created with ID: ${documentId}`)

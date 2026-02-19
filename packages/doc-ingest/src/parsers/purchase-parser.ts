@@ -84,6 +84,13 @@ export function parsePurchaseText(text: string): ParserResult<PurchaseData> {
  * Extract vendor name from invoice text
  */
 function extractVendorName(text: string): string | undefined {
+  if (isTataInvoice(text)) {
+    const tataVendor = extractTataVendorName(text)
+    if (tataVendor) {
+      return tataVendor
+    }
+  }
+
   // Look for "From:", "Vendor:", "Supplier:", etc.
   const patterns = [
     /(?:from|vendor|supplier)[:\s]+([^\n]+)/i,
@@ -113,6 +120,13 @@ function extractVendorName(text: string): string | undefined {
  * Extract bill/invoice number
  */
 function extractBillNumber(text: string): string | undefined {
+  if (isTataInvoice(text)) {
+    const tataBill = extractTataBillNumber(text)
+    if (tataBill) {
+      return tataBill
+    }
+  }
+
   const patterns = [
     /(?:invoice|bill|receipt)[\s#:]+([A-Z0-9-]+)/i,
     /(?:inv|bill)[\s#:]+([A-Z0-9-]+)/i,
@@ -133,6 +147,13 @@ function extractBillNumber(text: string): string | undefined {
  * Extract total amount
  */
 function extractAmount(text: string): number | undefined {
+  if (isTataInvoice(text)) {
+    const tataAmount = extractTataAmount(text)
+    if (tataAmount) {
+      return tataAmount
+    }
+  }
+
   const patterns = [
     /total[:\s]*[₹$€£]?\s*(\d+[,\d]*\.?\d*)/i,
     /amount\s+due[:\s]*[₹$€£]?\s*(\d+[,\d]*\.?\d*)/i,
@@ -158,6 +179,13 @@ function extractAmount(text: string): number | undefined {
  * Extract invoice date
  */
 function extractDate(text: string): Date | undefined {
+  if (isTataInvoice(text)) {
+    const tataDate = extractTataDate(text)
+    if (tataDate) {
+      return tataDate
+    }
+  }
+
   const patterns = [
     /(?:invoice|bill|date)[:\s]+(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/i,
     /(?:date)[:\s]+(\d{4}[-\/]\d{1,2}[-\/]\d{1,2})/i,
@@ -245,7 +273,141 @@ function extractLineItems(text: string): LineItem[] {
     }
   }
 
+  if (lineItems.length > 0) {
+    return lineItems
+  }
+
+  if (isTataInvoice(text)) {
+    return extractTataLineItems(text)
+  }
+
   return lineItems
+}
+
+function isTataInvoice(text: string): boolean {
+  return (
+    /Tata\s+Consumer/i.test(text) &&
+    /Description of Goods\/HSN Code\/MRP/i.test(text)
+  )
+}
+
+function extractTataLineItems(text: string): LineItem[] {
+  const descriptions = extractTataDescriptions(text)
+  const amounts = extractTataTaxableValues(text)
+
+  const items: LineItem[] = []
+  const maxCount = Math.max(descriptions.length, amounts.length)
+
+  for (let i = 0; i < maxCount; i += 1) {
+    const description = descriptions[i]
+    const amount = amounts[i]
+
+    if (!description) {
+      continue
+    }
+
+    const safeAmount = amount ?? 0
+    items.push({
+      description,
+      quantity: 1,
+      rate: safeAmount,
+      amount: safeAmount,
+    })
+  }
+
+  return items
+}
+
+function extractTataDescriptions(text: string): string[] {
+  const lines = text.split('\n').map((line) => line.trim()).filter(Boolean)
+  const descriptions: string[] = []
+  const seen = new Set<string>()
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i]
+    if (!/^\d{15,}/.test(line)) {
+      continue
+    }
+
+    let combined = line
+    let j = i + 1
+    let appended = 0
+    while (j < lines.length && !/^\d{15,}/.test(lines[j]) && appended < 2) {
+      const next = lines[j]
+      if (
+        /^(Quantity|UOM|Rate|Discount|Taxable|Invoice|Date|Our Reference|ShipTo|Shipped)/i.test(
+          next,
+        )
+      ) {
+        break
+      }
+      combined += ` ${next}`
+      appended += 1
+      j += 1
+    }
+    i = j - 1
+
+    if (!/HSN:\d{4,}/.test(combined)) {
+      continue
+    }
+
+    const cleaned = combined
+      .replace(/\s+/g, ' ')
+      .replace(/MRP[:.]?\s*\d+[.,]?\d*/i, '')
+      .replace(/Batch[:.]?\s*[A-Z0-9/.-]+/i, '')
+      .trim()
+
+    if (cleaned && !seen.has(cleaned)) {
+      seen.add(cleaned)
+      descriptions.push(cleaned)
+    }
+  }
+
+  return descriptions
+}
+
+function extractTataTaxableValues(text: string): number[] {
+  const values: number[] = []
+  const anchors = [...text.matchAll(/Discount\s*\(Taxable\s*Value/gi)]
+  const invoiceAmount = extractTataAmount(text)
+
+  for (const anchor of anchors) {
+    const start = anchor.index ?? 0
+    const slice = text.slice(start, start + 1200)
+    const stopIndex = findStopIndex(slice)
+    const segment = slice.slice(0, stopIndex)
+
+    const matches = segment.match(/\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+\.\d+/g)
+    if (matches) {
+      for (const raw of matches) {
+        const num = parseFloat(raw.replace(/,/g, ''))
+        const hasComma = raw.includes(',')
+        if (!isNaN(num) && (hasComma || num >= 100)) {
+          values.push(num)
+        }
+      }
+    }
+  }
+
+  if (invoiceAmount && values.length > 1) {
+    return values.filter((value) => Math.abs(value - invoiceAmount) > 0.01)
+  }
+
+  return values
+}
+
+function findStopIndex(segment: string): number {
+  const markers = ['Rate (INR)', 'Rate (NR)', 'Our Reference', 'Value Incl']
+  let stop = segment.length
+
+  for (const marker of markers) {
+    const idx = segment.indexOf(marker)
+    if (idx !== -1 && idx < stop) {
+      stop = idx
+    }
+  }
+
+  return stop
 }
 
 /**
@@ -281,6 +443,10 @@ function extractTaxAmount(text: string): number | undefined {
  * Extract currency
  */
 function extractCurrency(text: string): string | undefined {
+  if (isTataInvoice(text)) {
+    return 'INR'
+  }
+
   const currencyMap: Record<string, string> = {
     '₹': 'INR',
     '$': 'USD',
@@ -308,6 +474,13 @@ function extractCurrency(text: string): string | undefined {
  * Extract description
  */
 function extractDescription(text: string): string | undefined {
+  if (isTataInvoice(text)) {
+    if (/TAX\s+INVOICE/i.test(text)) {
+      return 'Tax invoice'
+    }
+    return undefined
+  }
+
   const patterns = [
     /(?:notes?|remarks?|description)[:\s]+([^\n]{10,200})/i,
     /(?:for|purpose)[:\s]+([^\n]{10,200})/i,
@@ -317,6 +490,111 @@ function extractDescription(text: string): string | undefined {
     const match = text.match(pattern)
     if (match && match[1]) {
       return match[1].trim()
+    }
+  }
+
+  return undefined
+}
+
+function extractTataVendorName(text: string): string | undefined {
+  const match = text.match(/Tata\s+Consumer\s+Products\s+LTD/i)
+  if (match) {
+    return 'Tata Consumer Products Ltd'
+  }
+
+  const altMatch = text.match(/Tata\s+Consumer\s+Products\s+Limited/i)
+  if (altMatch) {
+    return 'Tata Consumer Products Limited'
+  }
+
+  return undefined
+}
+
+function extractTataBillNumber(text: string): string | undefined {
+  const patterns = [
+    /Invoice\s*No\.?\s*\(ODN\)\s*[:\s]*([A-Z0-9-]+)/i,
+    /Invoice\s*No\.?\s*[:\s]*([A-Z0-9-]+)/i,
+  ]
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern)
+    if (match && match[1]) {
+      return match[1].trim()
+    }
+  }
+
+  return undefined
+}
+
+function extractTataAmount(text: string): number | undefined {
+  const patterns = [
+    /Invoice\s*Amount\s*Rs\.?\s*([0-9,]+\.\d{2})/i,
+    /Total\s+Invoice\s+Value\s*([0-9,]+\.\d{2})/i,
+    /Value\s+Incl\.\s*Tax\s*\(INR\)\s*([0-9,]+\.\d{2})/i,
+  ]
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern)
+    if (match && match[1]) {
+      const num = parseFloat(match[1].replace(/,/g, ''))
+      if (!isNaN(num) && num > 0) {
+        return num
+      }
+    }
+  }
+
+  return undefined
+}
+
+function extractTataDate(text: string): Date | undefined {
+  const invoiceDateMatch = text.match(
+    /Invoice\s*No\.\s*\(ODN\):\s*[A-Z0-9-]+\s*Date\s*[:\s]*([0-9./-]+)/i,
+  )
+  if (invoiceDateMatch && invoiceDateMatch[1]) {
+    try {
+      const normalized = invoiceDateMatch[1].replace(/\./g, '/')
+      const parsedDate = parseDateUtil(normalized)
+      if (parsedDate && !isNaN(parsedDate.getTime())) {
+        return parsedDate
+      }
+    } catch {
+      // fall through
+    }
+  }
+
+  const invoiceIndex = text.search(/Invoice\s*No\./i)
+  if (invoiceIndex !== -1) {
+    const slice = text.slice(invoiceIndex, invoiceIndex + 300)
+    const nearMatch = slice.match(/Date\s*[:\s]*([0-9./-]+)/i)
+    if (nearMatch && nearMatch[1]) {
+      try {
+        const normalized = nearMatch[1].replace(/\./g, '/')
+        const parsedDate = parseDateUtil(normalized)
+        if (parsedDate && !isNaN(parsedDate.getTime())) {
+          return parsedDate
+        }
+      } catch {
+        // fall through
+      }
+    }
+  }
+
+  const patterns = [
+    /Date\s*[:\s]*([0-9]{1,2}[./-][0-9]{1,2}[./-][0-9]{2,4})/i,
+  ]
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern)
+    if (match && match[1]) {
+      try {
+        const normalized = match[1].replace(/\./g, '/')
+        const parsedDate = parseDateUtil(normalized)
+        if (parsedDate && !isNaN(parsedDate.getTime())) {
+          return parsedDate
+        }
+      } catch {
+        continue
+      }
     }
   }
 

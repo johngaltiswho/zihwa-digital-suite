@@ -25,14 +25,14 @@
     "graphql": "^16.11.0",
     "pg": "^8.17.1",
     "razorpay": "^2.9.6",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "rxjs": "^7.8.2"
   },
   "devDependencies": {
     "@types/pg": "^8.11.10",
-    "@types/react": "18.2.47",
-    "@types/react-dom": "18.2.21",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
     "@vendure/cli": "3.5.2",
     "@vendure/dashboard": "3.5.2",
     "@vitejs/plugin-react": "^5.1.2",
