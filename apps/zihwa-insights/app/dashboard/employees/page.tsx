@@ -15,6 +15,9 @@ import {
   UserPlus,
   Users,
   HardHat,
+  Trash2,
+  X,
+  Check,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -41,6 +44,7 @@ type EmployeeRow = {
   ifscCode?: string | null
   elBalance?: number | null
   slBalance?: number | null
+   labourId?: string | null // <--- Add this line
   stats?: {
     attendance: number
     payrollRuns: number
@@ -207,7 +211,11 @@ export default function EmployeesPage() {
 																
 
   const [labours, setLabours] = useState<EmployeeRow[]>([])
-const [labourLoading, setLabourLoading] = useState(false)
+  const [labourLoading, setLabourLoading] = useState(false)
+  const [showAddLabourModal, setShowAddLabourModal] = useState(false)
+  const [savingLabour, setSavingLabour] = useState(false)
+  const [deletingLabourId, setDeletingLabourId] = useState<string | null>(null)
+
 
   const [attendanceMonth, setAttendanceMonth] = useState(defaultMonth)
   const [attendanceCompanyFilter, setAttendanceCompanyFilter] = useState('all')
@@ -217,7 +225,29 @@ const [labourLoading, setLabourLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | EmployeeStatus>('all')
   const [companyFilter, setCompanyFilter] = useState('all')
+  const [editingLabourId, setEditingLabourId] = useState<string | null>(null)
+  const [editLabourForm, setEditLabourForm] = useState({
+    firstName: '',
+    lastName: '',
+    designation: '',
+    phone: '',
+    dob: '',
+    netSalary: '',
+    status: 'ACTIVE',
+  })
 
+  const [newLabour, setNewLabour] = useState({
+    companyId: '',
+    labourId: '',
+    firstName: '',
+    lastName: '',
+    designation: '',
+    phone: '', // Mobile Number
+    dob: '',   // Date of Birth
+    netSalary: '',
+    grossSalary: '',
+    status: 'ACTIVE' as EmployeeStatus,
+  })
   const [newEmployee, setNewEmployee] = useState({
     companyId: '',
     employeeId: '',
@@ -232,6 +262,7 @@ const [labourLoading, setLabourLoading] = useState(false)
     status: 'ACTIVE' as EmployeeStatus,
   })
   const [savingEmployee, setSavingEmployee] = useState(false)
+  
 
   const [bulkCompanyId, setBulkCompanyId] = useState('')
   const [bulkFile, setBulkFile] = useState<File | null>(null)
@@ -300,6 +331,41 @@ const [labourLoading, setLabourLoading] = useState(false)
       }
     } catch (error) {
       console.error('Failed to load companies', error)
+    }
+  }
+  const startEditingLabour = (labour: any) => {
+    setEditingLabourId(labour.id)
+    setEditLabourForm({
+      firstName: labour.firstName,
+      lastName: labour.lastName,
+      designation: labour.designation || '',
+      phone: labour.phone || '',
+      dob: labour.dob ? new Date(labour.dob).toISOString().split('T')[0] : '',
+      netSalary: labour.netSalary ? String(labour.netSalary) : '',
+      status: labour.status,
+    })
+  }
+
+  const saveEditingLabour = async () => {
+    if (!editingLabourId) return
+    setSavingLabour(true)
+    try {
+      const res = await fetch('/api/employees/labours', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editingLabourId, ...editLabourForm }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        await fetchLabours()
+        setEditingLabourId(null)
+      } else {
+        throw new Error(data.error || 'Failed to update')
+      }
+    } catch (error) {
+      alert('Update failed')
+    } finally {
+      setSavingLabour(false)
     }
   }
 
@@ -460,6 +526,33 @@ const [labourLoading, setLabourLoading] = useState(false)
     link.remove()
     URL.revokeObjectURL(url)
   }
+  const handleLabourImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const file = event.target.files?.[0]
+  if (!file) return
+
+  const reader = new FileReader()
+  reader.onload = async (e) => {
+    const text = e.target?.result as string
+    setLabourLoading(true)
+    try {
+      const res = await fetch('/api/employees/labours/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ csvData: text }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        alert(`Successfully imported ${data.count} labourers!`)
+        fetchLabours()
+      }
+    } catch (err) {
+      alert('Import failed')
+    } finally {
+      setLabourLoading(false)
+    }
+  }
+  reader.readAsText(file)
+}
 
   const startEditingEmployee = (employee: EmployeeRow) => {
     setEditingEmployeeId(employee.id)
@@ -804,7 +897,87 @@ const [labourLoading, setLabourLoading] = useState(false)
       alert(error instanceof Error ? error.message : 'Failed to save attendance changes')
     }
   }
+ // --- LABOUR ACTIONS ---
+  const handleAddLabour = async () => {
+    if (!newLabour.companyId || !newLabour.labourId || !newLabour.firstName || !newLabour.lastName) {
+      alert('Company, Labour ID, and Names are required')
+      return
+    }
+    setSavingLabour(true)
+    try {
+      const res = await fetch('/api/employees/labours', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...newLabour,
+          salary: newLabour.netSalary ? Number(newLabour.netSalary) : undefined,
+          grossSalary: newLabour.grossSalary ? Number(newLabour.grossSalary) : undefined,
+        // The phone and dob are already in newLabour, but being explicit:
+        phone: newLabour.phone,
+        dob: newLabour.dob || undefined, 
+        }),
+      })
+      const data = await res.json()
+      if (!data.success) throw new Error(data.error)
+      
+      await fetchLabours()
+      setShowAddLabourModal(false)
+      // Reset form
+      setNewLabour({ companyId: '', labourId: '', firstName: '', lastName: '', designation: '', phone: '', dob: '', netSalary: '', grossSalary: '', status: 'ACTIVE' })
+    } catch (error: any) {
+      alert(error.message || 'Failed to add labourer')
+    } finally { 
+      setSavingLabour(false) 
+    }
+  }
+ const handleDeleteLabour = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this labourer?')) return
+    setDeletingLabourId(id)
+    try {
+      const res = await fetch('/api/employees/labours', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setLabours(prev => prev.filter(l => l.id !== id))
+      } else {
+        throw new Error(data.error)
+      }
+    } catch (error: any) {
+      alert(error.message || 'Delete failed')
+    } finally { 
+      setDeletingLabourId(null) 
+    }
+  }
 
+  const getfilteredLabours = useMemo(() => {
+    const term = searchTerm.toLowerCase().trim()
+    return labours.filter(l => {
+      // Use 'l' as the variable name, not '1'
+      const nameMatch = l.fullName.toLowerCase().includes(term)
+      // Note: Ensure your backend maps 'labourId' to 'employeeId' for this row type to work
+      const idMatch = (l.employeeId || '').toLowerCase().includes(term)
+      return nameMatch || idMatch
+    })
+  // ADD THIS SORT BLOCK
+      .sort((a, b) => {
+        const idA = a.labourId || a.employeeId || ''
+        const idB = b.labourId || b.employeeId || ''
+        return idA.localeCompare(idB, undefined, { numeric: true, sensitivity: 'base' })
+      })
+  }, [labours, searchTerm])
+
+  // Single statusBadge function to handle both Employees and Labours
+  const getStatusBadgeClass = (status: string) => {
+    const map: Record<string, string> = {
+      ACTIVE: 'bg-green-50 text-green-700',
+      INACTIVE: 'bg-gray-100 text-gray-600',
+      TERMINATED: 'bg-red-50 text-red-600',
+    }
+    return map[status] || 'bg-gray-100 text-gray-600'
+  }
   const handleGeneratePayroll = async () => {
     if (payrollCompanyFilter === 'all') {
       alert('Select a company to generate payroll.')
@@ -1644,60 +1817,148 @@ const [labourLoading, setLabourLoading] = useState(false)
           </div>
         </section>
       )}
-       {/* NEW: LABOURS TAB */}
+ {/* Labours Tab Content */}
       {tab === 'labours' && (
-        <section className="space-y-6">
-           <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="relative w-full max-w-sm">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input placeholder="Search labours..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9" />
-              </div>
+        <section className="space-y-6 text-gray-900">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="relative w-full max-w-sm">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Input 
+                placeholder="Search labours..." 
+                value={searchTerm} 
+                onChange={(e) => setSearchTerm(e.target.value)} 
+                className="pl-9" 
+              />
             </div>
+            <div className="flex items-center gap-2">
+              <input type="file" id="labour-csv" className="hidden" accept=".csv" onChange={handleLabourImport} />
+              <Button variant="ghost" onClick={() => document.getElementById('labour-csv')?.click()} className="border border-dashed border-gray-300 h-10">
+                <Upload className="h-4 w-4 mr-2 text-blue-600" />
+                Bulk Import
+              </Button>
+              <Button className="h-10" onClick={() => setShowAddLabourModal(true)} variant="primary">
+                <HardHat className="h-4 w-4 mr-2" />
+                Add Labour
+              </Button>
+            </div>
+          </div>
 
-            <div className="overflow-auto rounded-xl border border-gray-100 bg-white shadow-sm">
-              {labourLoading ? (
-                <div className="flex items-center justify-center py-12 text-gray-500">
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading labours...
-                </div>
-              ) : filteredLabours.length === 0 ? (
-                <div className="py-12 text-center text-gray-500">
-                  <HardHat className="mx-auto mb-2 h-6 w-6 text-gray-300" />
-                  No labours found matching your criteria.
-                </div>
-              ) : (
-                <table className="min-w-full text-sm">
-                  <thead className="bg-gray-50 text-xs font-semibold uppercase text-gray-500">
-                    <tr>
-                      <th className="px-4 py-2 text-left">Labour Name</th>
-                      <th className="px-4 py-2 text-left">Company</th>
-                      <th className="px-4 py-2 text-left">Designation/Trade</th>
-                      <th className="px-4 py-2 text-left">Net Salary</th>
-                      <th className="px-4 py-2 text-left">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredLabours.map((labour) => (
+          <div className="overflow-auto rounded-xl border border-gray-100 bg-white shadow-sm">
+            {labourLoading ? (
+              <div className="flex items-center justify-center py-12 text-gray-500">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading...
+              </div>
+            ) : getfilteredLabours.length === 0 ? (
+              <div className="py-24 text-center text-gray-500">
+                <HardHat className="mx-auto mb-4 h-10 w-10 text-gray-200" />
+                <p className="font-medium text-gray-900">No labours found.</p>
+              </div>
+            ) : (
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-50 text-xs font-semibold uppercase text-gray-500">
+                  <tr>
+                    <th className="px-4 py-3 text-left">Labour Name / ID</th>
+                    <th className="px-4 py-3 text-left">Mobile / DOB</th>
+                    <th className="px-4 py-3 text-left">Company</th>
+                    <th className="px-4 py-3 text-left">Designation</th>
+                    <th className="px-4 py-3 text-left">Net Salary</th>
+                    <th className="px-4 py-3 text-left">Status</th>
+                    <th className="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {getfilteredLabours.map((labour: any) => {
+                    const isEditing = editingLabourId === labour.id
+                    return (
                       <tr key={labour.id} className="border-t border-gray-50 hover:bg-gray-50/50">
-                        <td className="px-4 py-3">
-                          <div className="font-medium text-gray-900">{labour.fullName}</div>
-                          <div className="text-xs text-gray-500">#{labour.employeeId}</div>
+                        <td className="px-4 py-3 align-top">
+                          {isEditing ? (
+                            <div className="space-y-1">
+                              <Input className="h-8" value={editLabourForm.firstName} onChange={e => setEditLabourForm({...editLabourForm, firstName: e.target.value})} placeholder="First Name" />
+                              <Input className="h-8" value={editLabourForm.lastName} onChange={e => setEditLabourForm({...editLabourForm, lastName: e.target.value})} placeholder="Last Name" />
+                            </div>
+                          ) : (
+                            <div>
+                              <div className="font-medium text-gray-900">{labour.fullName}</div>
+                              <div className="text-xs text-gray-500">#{labour.labourId || labour.employeeId}</div>
+                            </div>
+                          )}
                         </td>
-                        <td className="px-4 py-3 text-gray-600">{labour.company?.name || 'Site Force'}</td>
-                        <td className="px-4 py-3 text-gray-600">{labour.designation || 'Labour'}</td>
-                        <td className="px-4 py-3 font-medium">{formatCurrency(labour.netSalary)}</td>
-                        <td className="px-4 py-3">
-                          <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusBadge(labour.status)}`}>
-                            {labour.status}
-                          </span>
+                        <td className="px-4 py-3 align-top">
+                          {isEditing ? (
+                            <div className="space-y-1">
+                              <Input className="h-8" value={editLabourForm.phone} onChange={e => setEditLabourForm({...editLabourForm, phone: e.target.value})} placeholder="Phone" />
+                              <Input type="date" className="h-8 text-[11px]" value={editLabourForm.dob} onChange={e => setEditLabourForm({...editLabourForm, dob: e.target.value})} />
+                            </div>
+                          ) : (
+                            <div className="text-gray-600">
+                              <div>{labour.phone || '—'}</div>
+                              <div className="text-xs">{formatDate(labour.dob)}</div>
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 align-top text-gray-600">
+                          {labour.company?.name || 'Unassigned'}
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                          {isEditing ? (
+                            <Input className="h-8" value={editLabourForm.designation} onChange={e => setEditLabourForm({...editLabourForm, designation: e.target.value})} />
+                          ) : (
+                            <span className="text-gray-600">{labour.designation || 'Labour'}</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                          {isEditing ? (
+                            <Input type="number" className="h-8" value={editLabourForm.netSalary} onChange={e => setEditLabourForm({...editLabourForm, netSalary: e.target.value})} />
+                          ) : (
+                            <span className="font-medium text-gray-900">{formatCurrency(labour.netSalary)}</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                          {isEditing ? (
+                            <select 
+                              className="h-8 w-full rounded border border-gray-200 text-xs px-1"
+                              value={editLabourForm.status}
+                              onChange={e => setEditLabourForm({...editLabourForm, status: e.target.value})}
+                            >
+                              <option value="ACTIVE">ACTIVE</option>
+                              <option value="INACTIVE">INACTIVE</option>
+                            </select>
+                          ) : (
+                            <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(labour.status)}`}>
+                              {labour.status}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-right align-top">
+                          {isEditing ? (
+                            <div className="flex justify-end gap-2">
+                              <button onClick={saveEditingLabour} disabled={savingLabour} className="text-blue-600 hover:text-blue-700">
+                                {savingLabour ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                              </button>
+                              <button onClick={() => setEditingLabourId(null)} className="text-gray-400 hover:text-gray-600">
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex justify-end gap-3">
+                              <button onClick={() => startEditingLabour(labour)} className="text-xs text-gray-400 hover:text-blue-600 font-medium">Edit</button>
+                              <button onClick={() => handleDeleteLabour(labour.id)} disabled={deletingLabourId === labour.id} className="text-gray-400 hover:text-red-600">
+                                {deletingLabourId === labour.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
+                    )
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
         </section>
       )}
+
 
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-8">
@@ -1757,6 +2018,7 @@ const [labourLoading, setLabourLoading] = useState(false)
                   />
                 </div>
               </div>
+              
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-1">
@@ -1844,6 +2106,78 @@ const [labourLoading, setLabourLoading] = useState(false)
                 ) : (
                   'Save employee'
                 )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+       {/* Add Labour Modal */}
+      {showAddLabourModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-8">
+          <div className="max-w-2xl w-full rounded-2xl bg-white p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Add Labour</h2>
+                <p className="text-sm text-gray-500">Register a new worker for field operations.</p>
+              </div>
+              <button onClick={() => setShowAddLabourModal(false)} className="text-sm text-gray-500">Close</button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700">Company</label>
+                  <select
+                    value={newLabour.companyId}
+                    onChange={(e) => setNewLabour(prev => ({ ...prev, companyId: e.target.value }))}
+                    className="h-10 w-full rounded-md border border-gray-200 px-3 text-sm text-gray-800 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  >
+                    <option value="">Select company</option>
+                    {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1 text-gray-800">
+                  <label className="text-sm font-medium text-gray-700">Labour ID</label>
+                  <Input placeholder="L-001" value={newLabour.labourId} onChange={(e) => setNewLabour(prev => ({ ...prev, labourId: e.target.value }))} />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 text-gray-800">
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700">First Name</label>
+                  <Input value={newLabour.firstName} onChange={(e) => setNewLabour(prev => ({ ...prev, firstName: e.target.value }))} />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700 text-gray-800">Last Name</label>
+                  <Input value={newLabour.lastName} onChange={(e) => setNewLabour(prev => ({ ...prev, lastName: e.target.value }))} />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 text-gray-800">
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700">Designation / Trade</label>
+                  <Input placeholder="e.g. Electrician" value={newLabour.designation} onChange={(e) => setNewLabour(prev => ({ ...prev, designation: e.target.value }))} />
+                </div>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+    <div className="space-y-1">
+      <label className="text-sm font-medium text-gray-700">Mobile Number</label>
+      <Input placeholder="+91 00000 00000" value={newLabour.phone} onChange={(e) => setNewLabour(prev => ({ ...prev, phone: e.target.value }))} />
+    </div>
+    <div className="space-y-1">
+      <label className="text-sm font-medium text-gray-700">Date of Birth</label>
+      <Input type="date" value={newLabour.dob} onChange={(e) => setNewLabour(prev => ({ ...prev, dob: e.target.value }))} />
+    </div>
+  </div>
+  
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700">Net Salary (INR)</label>
+                  <Input type="number" value={newLabour.netSalary} onChange={(e) => setNewLabour(prev => ({ ...prev, netSalary: e.target.value }))} />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 flex items-center justify-end gap-3 pt-4 border-t border-gray-100 text-gray-800">
+              <Button variant="ghost" onClick={() => setShowAddLabourModal(false)}>Cancel</Button>
+              <Button onClick={handleAddLabour} disabled={savingLabour}>
+                {savingLabour ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : 'Add Labourer'}
               </Button>
             </div>
           </div>

@@ -8,10 +8,8 @@ import { prisma } from '@/lib/prisma'
  */
 export async function GET() {
   try {
-    // 1. Fetch from Database using Prisma
-    // Note: Ensure 'labour' model exists in your schema.prisma
     const labours = await prisma.labour.findMany({
-      orderBy: { createdAt: 'desc' },
+      orderBy: { labourId: 'asc' }, 
       include: {
         company: {
           select: {
@@ -22,15 +20,17 @@ export async function GET() {
       },
     })
 
-    // 2. Format data for the frontend
-    const formatted = labours.map((labour) => ({
+     const formatted = labours.map((labour) => ({
       id: labour.id,
       labourId: labour.labourId,
+      employeeId: labour.labourId, // Alias for frontend compatibility
       firstName: labour.firstName,
       lastName: labour.lastName,
       fullName: `${labour.firstName} ${labour.lastName}`.trim(),
       designation: labour.designation,
       status: labour.status,
+      phone: labour.phone,       // <--- ADD THIS
+      dob: labour.dob,           // <--- ADD THIS
       netSalary: labour.netSalary,
       grossSalary: labour.grossSalary,
       company: labour.company,
@@ -59,19 +59,19 @@ export async function POST(request: Request) {
       lastName,
       companyId,
       designation,
-      salary,
+      salary, // coming from frontend state 'netSalary'
       status
     } = body
 
-    // Validation
+    // 1. Validation
     if (!labourId || !firstName || !lastName || !companyId) {
       return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
+        { success: false, error: 'Missing required fields: ID, Name, and Company' },
         { status: 400 }
       )
     }
 
-    // Check for duplicates
+    // 2. Check for duplicates (composite unique constraint in your schema)
     const existing = await prisma.labour.findFirst({
       where: { companyId, labourId },
     })
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
       )
     }
 
-    // Create in Supabase/Postgres
+    // 3. Create in Database
     const labour = await prisma.labour.create({
       data: {
         labourId,
@@ -103,23 +103,57 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('API_LABOURS_POST_ERROR', error)
     return NextResponse.json(
-      { success: false, error: 'Failed to create labourer' },
+      { success: false, error: 'Failed to create labourer record' },
       { status: 500 }
     )
   }
 }
+export async function PATCH(request: Request) {
+  try {
+    const body = await request.json()
+    const { id, firstName, lastName, designation, phone, dob, netSalary, status } = body
 
+    if (!id) return NextResponse.json({ success: false, error: 'ID is required' }, { status: 400 })
+
+    const updated = await prisma.labour.update({
+      where: { id },
+      data: {
+        firstName,
+        lastName,
+        designation,
+        phone,
+        dob: dob ? new Date(dob) : null,
+        netSalary: netSalary ? Number(netSalary) : null,
+        status,
+      },
+    })
+
+    return NextResponse.json({ success: true, data: updated })
+  } catch (error) {
+    console.error('LABOUR_UPDATE_ERROR', error)
+    return NextResponse.json({ success: false, error: 'Update failed' }, { status: 500 })
+  }
+}
 /**
  * DELETE: Remove a labourer
  */
 export async function DELETE(request: Request) {
   try {
     const { id } = await request.json()
-    if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
+    if (!id) {
+      return NextResponse.json({ success: false, error: 'ID is required' }, { status: 400 })
+    }
 
-    await prisma.labour.delete({ where: { id } })
+    await prisma.labour.delete({
+      where: { id }
+    })
+
     return NextResponse.json({ success: true })
   } catch (error) {
-    return NextResponse.json({ error: 'Delete failed' }, { status: 500 })
+    console.error('API_LABOURS_DELETE_ERROR', error)
+    return NextResponse.json(
+      { success: false, error: 'Failed to delete record' },
+      { status: 500 }
+    )
   }
 }

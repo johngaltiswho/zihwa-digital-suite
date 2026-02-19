@@ -11,6 +11,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+   directUrl = env("DIRECT_URL") 
 }
 
 model User {
@@ -306,6 +307,7 @@ model Labour {
   grossSalary Int?
   category    String?
   phone       String?
+   dob         DateTime?
   companyId   String
   company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
