@@ -5,14 +5,15 @@ import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  ArrowLeft, ShoppingCart, 
-  Star, Plus, Minus, 
+import {
+  ArrowLeft, ShoppingCart,
+  Star, Plus, Minus,
   PartyPopper, X,
   AlertCircle
 } from "lucide-react";
 import { vendureClient } from "@/lib/vendure/client";
 import { GET_PRODUCT_BY_SLUG, GET_PRODUCTS } from "@/lib/vendure/queries/products";
+import { getAssetUrl } from "@/lib/vendure/asset-utils";
 import { useCart } from "@/lib/vendure/cart-context";
 import type { Product, ProductVariant } from "@/lib/vendure/types";
 import Newsletter from "../../../components/NewsLetter";
@@ -42,7 +43,7 @@ export default function CreativeProductPage() {
         if (pData.product) {
           setProduct(pData.product);
           setSelectedVariant(pData.product.variants?.[0] || null);
-          setActiveImg(pData.product.featuredAsset?.preview || "/images/placeholder.jpg");
+          setActiveImg(getAssetUrl(pData.product.featuredAsset?.preview));
         }
         if (rData.products?.items) {
           setRecommendations(rData.products.items.filter((p: any) => p.slug !== slug).slice(0, 6));
@@ -54,9 +55,9 @@ export default function CreativeProductPage() {
 
   useEffect(() => {
     if (selectedVariant?.featuredAsset?.preview) {
-      setActiveImg(selectedVariant.featuredAsset.preview);
+      setActiveImg(getAssetUrl(selectedVariant.featuredAsset.preview));
     } else if (product?.featuredAsset?.preview) {
-      setActiveImg(product.featuredAsset.preview);
+      setActiveImg(getAssetUrl(product.featuredAsset.preview));
     }
     setQuantity(1);
   }, [selectedVariant, product]);
@@ -231,7 +232,7 @@ export default function CreativeProductPage() {
               {recommendations.map((item) => (
                   <div key={item.id} className="group bg-white p-6 rounded-[10px] border border-gray-50 hover:shadow-2xl transition-all">
                     <Link href={`/product/${item.slug}`}>
-                      <div className="relative aspect-square w-full mb-6"><Image src={item.featuredAsset?.preview || "/placeholder.jpg"} alt={item.name} fill className="object-contain p-4 group-hover:scale-110 transition-transform duration-700" /></div>
+                      <div className="relative aspect-square w-full mb-6"><Image src={getAssetUrl(item.featuredAsset?.preview)} alt={item.name} fill className="object-contain p-4 group-hover:scale-110 transition-transform duration-700" /></div>
                       <h4 className="font-bold text-center text-[11px] uppercase tracking-tight truncate">{item.name}</h4>
                       <p className="text-center text-[#8B2323] font-black text-[10px] mt-2 tracking-widest">₹{(item.variants?.[0]?.price || 0) / 100}</p>
                     </Link>

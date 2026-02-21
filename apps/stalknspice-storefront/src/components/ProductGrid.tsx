@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '@/lib/vendure/cart-context';
+import { getAssetUrl } from '@/lib/vendure/asset-utils';
 import type { Product } from '@/lib/vendure/types';
 import { Plus, ShoppingBasket } from 'lucide-react';
 
@@ -60,7 +61,7 @@ export default function ProductGrid({ products = [] }: ProductGridProps) {
         if (!variant) return null;
 
         const isInStock = variant.stockLevel !== 'OUT_OF_STOCK';
-        const imageUrl = product.featuredAsset?.preview || '/images/placeholder-product.png';
+        const imageUrl = getAssetUrl(product.featuredAsset?.preview);
         const isAdding = addingProductId === variant.id;
         const hasMultipleVariants = product.variants?.length > 1;
 

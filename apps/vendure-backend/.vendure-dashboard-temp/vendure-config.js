@@ -23,6 +23,8 @@ exports.config = {
             origin: [
                 'http://localhost:5176', // Dashboard port
                 'http://localhost:3100', // Server port
+                'http://localhost:3004', // Stalknspice storefront
+                'http://localhost:3009', // Accounting engine
             ],
             credentials: true,
             allowedHeaders: ['Content-Type', 'Authorization', 'vendure-token', 'vendure-auth-token', 'vendure-session-token'],
@@ -66,10 +68,10 @@ exports.config = {
         logging: false,
         ssl: { rejectUnauthorized: false },
         extra: {
-            max: 2,
-            min: 0,
-            idleTimeoutMillis: 10000,
-            connectionTimeoutMillis: 30000,
+            max: 10,
+            min: 2,
+            idleTimeoutMillis: 30000,
+            connectionTimeoutMillis: 60000,
         },
         maxQueryExecutionTime: 120000,
     },

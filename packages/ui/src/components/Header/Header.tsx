@@ -34,7 +34,21 @@ interface HeaderProps {
   logoSrc: string;
 }
 const toSlug = (value: string) =>
-  value.toLowerCase().replace(/&/g, "and").replace(/\s+/g, "-");
+  value.toLowerCase()
+    .replace(/,/g, "") // Remove commas
+    .replace(/&/g, "") // Remove ampersands
+    .replace(/\s+/g, "-") // Replace spaces with hyphens
+    .replace(/-+/g, "-") // Replace multiple hyphens with single hyphen
+    .replace(/^-|-$/g, ""); // Remove leading/trailing hyphens
+
+const MEGA_MENU_KEY_ALIASES: Record<string, string> = {
+  "RICE, PASTA & NOODLE": "RICE, PASTA & NOODLES",
+};
+
+const resolveMegaMenuKey = (label: string) => {
+  const normalized = label.toUpperCase();
+  return MEGA_MENU_KEY_ALIASES[normalized] ?? normalized;
+};
 
 // --- MEGA MENU DATA ---
 
@@ -109,8 +123,8 @@ interface HeaderProps {
   isEcommerce?: boolean;
   customer?: Customer | null;
   onLogout?: () => void;
-  onUserMenuToggle?: (isOpen: boolean) => void; 
-  
+  onUserMenuToggle?: (isOpen: boolean) => void;
+  mobileMenuContent?: React.ReactNode;
 }
 // --- SUB-COMPONENT: AUTH STATUS POPUP (UPDATED DESIGN & LOGIC) ---
 function AuthStatusToast({ type, onClose }: { type: string | null, onClose: () => void }) {
@@ -329,7 +343,7 @@ export function SharedHeader({ navItems, logoSrc }: HeaderProps) {
 }
 
 // --- 2. STALKS N SPICE HEADER ---
-export function StalksHeader({ navItems, logoSrc, customer, onUserMenuToggle, onLogout, }: HeaderProps) {
+export function StalksHeader({ navItems, logoSrc, customer, onUserMenuToggle, onLogout, mobileMenuContent }: HeaderProps) {
   const pathname = usePathname();
   const router = useRouter(); 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -440,6 +454,15 @@ export function StalksHeader({ navItems, logoSrc, customer, onUserMenuToggle, on
     setIsUserMenuOpen(false);
     setIsMenuLocked(false);
     router.push('/'); // Also redirect home on logout
+  };
+
+  const submitSearch = (rawValue?: string) => {
+    const term = (rawValue ?? searchValue).trim();
+    if (!term) {
+      router.push('/shop');
+      return;
+    }
+    router.push(`/shop?search=${encodeURIComponent(term)}`);
   };
 // ADD THIS BLOCK around line 410 in the file you just sent
 useEffect(() => {
@@ -572,6 +595,12 @@ useEffect(() => {
                   type="text" 
                   value={searchValue}
                   onChange={(e) => setSearchValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      submitSearch();
+                    }
+                  }}
                   onFocus={() => setIsSearchFocused(true)}
                   onBlur={() => setIsSearchFocused(false)}
                   className="w-full h-11 px-6 pr-14 border border-gray-300 rounded-full focus:outline-none focus:border-red-800 focus:ring-4 focus:ring-red-50/50 text-sm transition-all bg-white shadow-sm" 
@@ -597,7 +626,11 @@ useEffect(() => {
                 )}
 
                 {/* THEMED ROUNDED SEARCH BUTTON */}
-                <button className="absolute right-1 p-2.5 bg-[#8B2323] hover:bg-black text-white rounded-full transition-all duration-300 shadow-md active:scale-95 group-hover:shadow-lg">
+                <button
+                  type="button"
+                  onClick={() => submitSearch()}
+                  className="absolute right-1 p-2.5 bg-[#8B2323] hover:bg-black text-white rounded-full transition-all duration-300 shadow-md active:scale-95 group-hover:shadow-lg"
+                >
                   <Search size={18} strokeWidth={2.5} />
                 </button>
               </div>
@@ -634,7 +667,7 @@ useEffect(() => {
           <ul className="flex flex-wrap justify-center items-center gap-x-4 py-0 text-[16px] font-semibold text-gray-800 tracking-tight uppercase">
             {navItems?.map((item) => {
               const isCurrentlyActive = activeMenu === item.label;
-              const megaMenuKey = item.label.toUpperCase();
+              const megaMenuKey = resolveMegaMenuKey(item.label);
               const data = MEGA_MENU_DATA[megaMenuKey];
 
               return (
@@ -675,7 +708,17 @@ useEffect(() => {
                                 <h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest mb-4 border-b pb-2">Vegetables</h3>
                                 <div className="grid grid-cols-3 gap-x-6 gap-y-3">
                                   {data.vegetables?.map((v) => (
-                                    <Link key={v} href="#" className="text-gray-600 hover:text-red-800 text-[15px] font-medium transition-colors">{v}</Link>
+                                    <Link
+                                      key={v}
+                                      href={`/shop?collection=${toSlug(v)}`}
+                                      onClick={() => {
+                                        setActiveMenu(null);
+                                        setIsLocked(false);
+                                      }}
+                                      className="text-gray-600 hover:text-red-800 text-[15px] font-medium transition-colors"
+                                    >
+                                      {v}
+                                    </Link>
                                   ))}
                                 </div>
                               </div>
@@ -683,7 +726,17 @@ useEffect(() => {
                                 <h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest mb-4 border-b pb-2">Fruits</h3>
                                 <div className="grid grid-cols-6 gap-x-8 gap-y-2">
                                   {data.fruits?.map((f) => (
-                                    <Link key={f} href="#" className="text-gray-600 hover:text-red-800 text-[15px] font-medium transition-colors">{f}</Link>
+                                    <Link
+                                      key={f}
+                                      href={`/shop?collection=${toSlug(f)}`}
+                                      onClick={() => {
+                                        setActiveMenu(null);
+                                        setIsLocked(false);
+                                      }}
+                                      className="text-gray-600 hover:text-red-800 text-[15px] font-medium transition-colors"
+                                    >
+                                      {f}
+                                    </Link>
                                   ))}
                                 </div>
                               </div>
@@ -695,7 +748,7 @@ useEffect(() => {
                                 {data.products?.map((p) => (
                                   <Link
   key={p}
-  href={`/collection/${toSlug(p)}`}
+  href={`/shop?collection=${toSlug(p)}`}
   onClick={() => {
     setActiveMenu(null);
     setIsLocked(false);
@@ -718,7 +771,7 @@ useEffect(() => {
                                 {data.brands.map((brand) => (
                                   <Link
   key={brand}
-  href={`/collection/${toSlug(brand)}`}
+  href={`/shop?collection=${toSlug(brand)}`}
   onClick={() => {
     setActiveMenu(null);
     setIsLocked(false);
@@ -858,10 +911,19 @@ useEffect(() => {
 }
 export function ParsOptimaHeader({ logoSrc, navItems }: { logoSrc: string; navItems: {label: string, href: string}[] }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isCartOpen, setIsCartOpen] = useState(false); 
+  const [isCartOpen, setIsCartOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [expandedMobileCategory, setExpandedMobileCategory] = useState<string | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
+
+  // Reset expanded category when menu closes
+  useEffect(() => {
+    if (!isMenuOpen) {
+      setExpandedMobileCategory(null);
+    }
+  }, [isMenuOpen]);
+
   if (!mounted) return <div className="w-full h-[120px] bg-white border-b" />;
 
   return (
@@ -941,26 +1003,180 @@ export function ParsOptimaHeader({ logoSrc, navItems }: { logoSrc: string; navIt
           </div>
         </div>
         {/* MOBILE MENU DRAWER */}
-        <div 
-          className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] transition-opacity ${isMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`} 
-          onClick={() => setIsMenuOpen(false)} 
+        <div
+          className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] transition-opacity ${isMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+          onClick={() => {
+            setIsMenuOpen(false);
+            setExpandedMobileCategory(null);
+          }}
         />
         <aside className={`fixed top-0 left-0 w-[300px] h-full bg-white z-[201] transition-transform duration-300 ${isMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
-          <div className="p-5 border-b flex justify-between items-center bg-[#1a3a5a] text-white">
-            <span className="font-bold uppercase tracking-widest text-xs">Navigation</span>
-            <button onClick={() => setIsMenuOpen(false)}><X size={24} /></button>
-          </div>
-          <nav className="p-6">
-            <ul className="space-y-4">
-              {navItems.map((item) => (
-                <li key={item.href} className="border-b border-gray-50 pb-4">
-                  <Link href={item.href} className="flex justify-between items-center text-gray-800 font-bold uppercase text-[12px]" onClick={() => setIsMenuOpen(false)}>
-                    {item.label} <ChevronRight size={14} className="text-gray-300" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
+          {mobileMenuContent ? (
+            <>
+              <div className="p-5 border-b flex justify-between items-center bg-[#1a3a5a] text-white">
+                <span className="font-bold uppercase tracking-widest text-xs">CATEGORIES</span>
+                <button onClick={() => {
+                  setIsMenuOpen(false);
+                }}>
+                  <X size={24} />
+                </button>
+              </div>
+              {mobileMenuContent}
+            </>
+          ) : (
+            <>
+              <div className="p-5 border-b flex justify-between items-center bg-[#1a3a5a] text-white">
+                <span className="font-bold uppercase tracking-widest text-xs">Navigation</span>
+                <button onClick={() => {
+                  setIsMenuOpen(false);
+                  setExpandedMobileCategory(null);
+                }}>
+                  <X size={24} />
+                </button>
+              </div>
+              <nav className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 80px)' }}>
+            {/* All Products Button */}
+            <div className="border-b border-gray-100">
+              <Link
+                href="/shop"
+                onClick={() => setIsMenuOpen(false)}
+                className="flex items-center justify-between p-4 text-gray-800 font-bold uppercase text-[12px] hover:bg-gray-50"
+              >
+                All Products
+                <ChevronRight size={14} className="text-gray-300" />
+              </Link>
+            </div>
+
+            {/* Category List */}
+            {navItems.map((item) => {
+              const megaMenuKey = resolveMegaMenuKey(item.label);
+              const data = MEGA_MENU_DATA[megaMenuKey];
+              const isExpanded = expandedMobileCategory === item.label;
+              const hasSubcategories = data && (data.products || data.vegetables || data.fruits);
+
+              return (
+                <div key={item.label} className="border-b border-gray-100">
+                  {/* Parent Category */}
+                  <div
+                    onClick={() => {
+                      if (hasSubcategories) {
+                        setExpandedMobileCategory(isExpanded ? null : item.label);
+                      } else {
+                        setIsMenuOpen(false);
+                      }
+                    }}
+                    className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50"
+                  >
+                    <span className="text-gray-800 font-bold uppercase text-[12px]">
+                      {item.label}
+                    </span>
+                    {hasSubcategories ? (
+                      <ChevronDown
+                        size={14}
+                        className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                      />
+                    ) : (
+                      <ChevronRight size={14} className="text-gray-300" />
+                    )}
+                  </div>
+
+                  {/* Expanded Subcategories */}
+                  {isExpanded && hasSubcategories && (
+                    <div className="bg-gray-50 px-4 py-3 space-y-3">
+                      {/* Special handling for Fruits & Vegetables */}
+                      {megaMenuKey === "FRUITS & VEGETABLES" ? (
+                        <>
+                          {data.vegetables && data.vegetables.length > 0 && (
+                            <div>
+                              <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+                                Vegetables
+                              </h4>
+                              <div className="space-y-2">
+                                {data.vegetables.map((v) => (
+                                  <Link
+                                    key={v}
+                                    href={`/shop?collection=${toSlug(v)}`}
+                                    onClick={() => setIsMenuOpen(false)}
+                                    className="block text-[11px] text-gray-700 hover:text-[#8B2323] py-1"
+                                  >
+                                    {v}
+                                  </Link>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {data.fruits && data.fruits.length > 0 && (
+                            <div>
+                              <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+                                Fruits
+                              </h4>
+                              <div className="space-y-2">
+                                {data.fruits.map((f) => (
+                                  <Link
+                                    key={f}
+                                    href={`/shop?collection=${toSlug(f)}`}
+                                    onClick={() => setIsMenuOpen(false)}
+                                    className="block text-[11px] text-gray-700 hover:text-[#8B2323] py-1"
+                                  >
+                                    {f}
+                                  </Link>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {/* Products Section */}
+                          {data.products && data.products.length > 0 && (
+                            <div>
+                              <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+                                Products
+                              </h4>
+                              <div className="space-y-2">
+                                {data.products.map((product) => (
+                                  <Link
+                                    key={product}
+                                    href={`/shop?collection=${toSlug(product)}`}
+                                    onClick={() => setIsMenuOpen(false)}
+                                    className="block text-[11px] text-gray-700 hover:text-[#8B2323] py-1"
+                                  >
+                                    {product}
+                                  </Link>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {/* Brands Section */}
+                          {data.brands && data.brands.length > 0 && (
+                            <div>
+                              <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+                                Brands
+                              </h4>
+                              <div className="space-y-2">
+                                {data.brands.map((brand) => (
+                                  <Link
+                                    key={brand}
+                                    href={`/shop?collection=${toSlug(brand)}`}
+                                    onClick={() => setIsMenuOpen(false)}
+                                    className="block text-[11px] text-gray-700 hover:text-[#8B2323] py-1"
+                                  >
+                                    {brand}
+                                  </Link>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </nav>
+            </>
+          )}
         </aside>
       </header>
 

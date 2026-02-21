@@ -1,6 +1,7 @@
 "use client";
 
 import { useCart } from "@/lib/vendure/cart-context";
+import { getAssetUrl } from "@/lib/vendure/asset-utils";
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -79,7 +80,7 @@ export default function CartPage() {
           <div className="lg:col-span-2 space-y-4">
             {activeOrder.lines.map((line) => {
               const isUpdating = updatingLineId === line.id;
-              const imageUrl = line.featuredAsset?.preview || line.productVariant.product.featuredAsset?.preview;
+              const imageUrl = getAssetUrl(line.featuredAsset?.preview || line.productVariant.product.featuredAsset?.preview);
 
               return (
                 <div

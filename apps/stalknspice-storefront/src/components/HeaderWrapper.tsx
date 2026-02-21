@@ -22,8 +22,7 @@ interface HeaderWrapperProps {
 export default function HeaderWrapper({ navItems, logoSrc, isEcommerce, collections }: HeaderWrapperProps) {
   const { customer, logout } = useAuth();
   const router = useRouter();
-
-const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -38,7 +37,6 @@ const [isMenuOpen, setIsMenuOpen] = useState(false);
         isEcommerce={isEcommerce}
         customer={customer}
         onLogout={handleLogout}
-        collections={collections}
         onUserMenuToggle={setIsMenuOpen}
       />
       {/* 4. Only show this div if isMenuOpen is FALSE */}

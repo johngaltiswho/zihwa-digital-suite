@@ -60,7 +60,7 @@ export default function VerticalCategoryMenu() {
             {validCollections.map((collection) => (
               <Link
   key={collection.id}
-  href={`/collection/${collection.slug}`}
+  href={`/shop?collection=${collection.slug}`}
   onMouseEnter={() => setActiveTab(collection.id)}
   className={`flex items-center justify-between px-5 py-4 cursor-pointer border-b border-gray-100 transition-colors ${
     activeTab === collection.id
@@ -90,7 +90,7 @@ export default function VerticalCategoryMenu() {
                 <div className="text-center py-10">
                   <p className="text-gray-600 mb-4">Explore all products in</p>
                   <Link
-                    href={`/collection/${activeCollection?.slug}`}
+                    href={`/shop?collection=${activeCollection?.slug}`}
                     className="inline-block bg-[#00A86B] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#008F5B] transition-colors"
                   >
                     View {activeCollection?.name}
@@ -102,16 +102,45 @@ export default function VerticalCategoryMenu() {
             return (
               <div className="animate-in fade-in slide-in-from-left-2 duration-200">
                 <ul className="space-y-6">
-                  {children.map((child) => (
-                    <li key={child.id}>
-                      <Link
-                        href={`/collection/${child.slug}`}
-                        className="text-lg text-gray-800 hover:text-[#00A86B] transition-colors block"
-                      >
-                        {child.name}
-                      </Link>
-                    </li>
-                  ))}
+                  {children.map((child) => {
+                    // Check if child has grandchildren (like Vegetables/Fruits under Fruits & Vegetables)
+                    const hasGrandchildren = child.children && child.children.length > 0;
+
+                    if (hasGrandchildren) {
+                      // Show grandchildren as a section
+                      return (
+                        <li key={child.id} className="space-y-3">
+                          <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">
+                            {child.name}
+                          </h3>
+                          <ul className="space-y-2 ml-0">
+                            {child.children?.filter(gc => gc.slug && gc.slug.trim() !== '').map((grandchild) => (
+                              <li key={grandchild.id}>
+                                <Link
+                                  href={`/shop?collection=${grandchild.slug}`}
+                                  className="text-base text-gray-700 hover:text-[#00A86B] transition-colors block"
+                                >
+                                  {grandchild.name}
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                        </li>
+                      );
+                    }
+
+                    // Regular child without grandchildren
+                    return (
+                      <li key={child.id}>
+                        <Link
+                          href={`/shop?collection=${child.slug}`}
+                          className="text-lg text-gray-800 hover:text-[#00A86B] transition-colors block"
+                        >
+                          {child.name}
+                        </Link>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             );

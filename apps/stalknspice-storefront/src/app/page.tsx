@@ -8,7 +8,8 @@ import { HeroSliderSNS } from "@repo/ui";
 import { X, AlertCircle,Sparkles,ShoppingBag,Star } from "lucide-react";
 import ProductGrid from "../components/ProductGrid";
 import { vendureClient } from "@/lib/vendure/client";
-import { GET_PRODUCTS } from "@/lib/vendure/queries/products";
+import { GET_PRODUCTS_LIGHT } from "@/lib/vendure/queries/products";
+import { getAssetUrl } from "@/lib/vendure/asset-utils";
 import { motion, AnimatePresence} from "framer-motion";
 import type { Product } from "@/lib/vendure/types";
 
@@ -28,7 +29,7 @@ function ProductCard({ product }: { product: Product }) {
       <Link href={`/product/${product.slug}?variant=${selectedVariantId}`} className="block">
         <div className="relative aspect-square w-full bg-[#fcfcfc] overflow-hidden">
           <Image
-            src={currentVariant?.featuredAsset?.preview || product.featuredAsset?.preview || "/images/placeholder.jpg"}
+            src={getAssetUrl(currentVariant?.featuredAsset?.preview || product.featuredAsset?.preview)}
             alt={currentVariant?.name || product.name}
             fill
             className="object-contain p-2 group-hover:scale-110 transition-transform duration-500"
@@ -136,8 +137,8 @@ export default function Home() {
     const fetchProducts = async () => {
       try {
         setProductsLoading(true);
-        const data = await vendureClient.request(GET_PRODUCTS, {
-          options: { take: 7 } 
+        const data = await vendureClient.request(GET_PRODUCTS_LIGHT, {
+          options: { take: 7 }
         });
         setProducts(data.products.items);
         setProductsError(null);

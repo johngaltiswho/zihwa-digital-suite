@@ -7,6 +7,7 @@ import Link from "next/link";
 import { ArrowLeft, Clock } from "lucide-react";
 import { vendureClient } from "@/lib/vendure/client";
 import { GET_PRODUCTS } from "@/lib/vendure/queries/products";
+import { getAssetUrl } from "@/lib/vendure/asset-utils";
 import type { Product } from "@/lib/vendure/types";
 
 // List for the Sidebar
@@ -125,7 +126,7 @@ function ProductCard({ product }: { product: Product }) {
       <Link href={`/product/${product.slug}?variant=${selectedVariantId}`} className="flex-1">
         <div className="relative aspect-square w-full bg-gray-50 rounded-lg overflow-hidden mb-3">
           <Image
-            src={currentVariant?.featuredAsset?.preview || product.featuredAsset?.preview || "/images/placeholder.jpg"}
+            src={getAssetUrl(currentVariant?.featuredAsset?.preview || product.featuredAsset?.preview)}
             alt={product.name}
             fill
             className="object-contain p-2 group-hover:scale-105 transition-transform duration-500"
