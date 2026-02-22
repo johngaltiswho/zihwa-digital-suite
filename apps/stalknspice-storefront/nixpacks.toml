@@ -11,4 +11,4 @@ cmds = ['pnpm install --frozen-lockfile']
 cmds = ['pnpm --filter stalknspice-storefront build']
 
 [start]
-cmd = 'cd apps/stalknspice-storefront && NODE_ENV=production ../../node_modules/.bin/next start'
+cmd = 'node_modules/.bin/next start ./apps/stalknspice-storefront'
