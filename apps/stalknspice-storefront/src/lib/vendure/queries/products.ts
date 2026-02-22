@@ -349,3 +349,16 @@ export const GET_HIERARCHICAL_COLLECTIONS = `
     }
   }
 `;
+
+export const GET_BRAND_COLLECTIONS = `
+  query GetBrandCollections($options: CollectionListOptions) {
+    collections(options: $options) {
+      totalItems
+      items {
+        id
+        name
+        slug
+      }
+    }
+  }
+`;

@@ -77,7 +77,6 @@ exports.config = {
     },
     paymentOptions: {
         paymentMethodHandlers: [
-            core_1.dummyPaymentHandler,
             razorpay_plugin_1.razorpayPaymentHandler,
         ],
     },

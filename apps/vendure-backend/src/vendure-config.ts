@@ -1,5 +1,4 @@
 import {
-  dummyPaymentHandler,
   DefaultJobQueuePlugin,
   DefaultSchedulerPlugin,
   DefaultSearchPlugin,
@@ -87,7 +86,6 @@ export const config: VendureConfig = {
 },
   paymentOptions: {
     paymentMethodHandlers: [
-      dummyPaymentHandler,
       razorpayPaymentHandler,
     ],
   },

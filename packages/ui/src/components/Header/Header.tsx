@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Menu, Search, CircleUser,User, Heart, X,
   ChefHat, PhoneCall, MapPin, Tag, ShoppingCart, 
-  ChevronRight, ChevronDown, Headset, Pill, ShoppingBag, 
+  ChevronRight, ChevronDown, Headset, Pill, ShoppingBag, LayoutGrid, Package,
   ShieldCheck, Handbag, Store, LogOut, CheckCircle, Trash2 
 } from "lucide-react";
 
@@ -43,6 +43,8 @@ const toSlug = (value: string) =>
 
 const MEGA_MENU_KEY_ALIASES: Record<string, string> = {
   "RICE, PASTA & NOODLE": "RICE, PASTA & NOODLES",
+  "RICE, PASTA AND NOODLE": "RICE, PASTA & NOODLES",
+  "RICE, PASTA AND NOODLES": "RICE, PASTA & NOODLES",
 };
 
 const resolveMegaMenuKey = (label: string) => {
@@ -352,6 +354,7 @@ export function StalksHeader({ navItems, logoSrc, customer, onUserMenuToggle, on
   const [mounted, setMounted] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMenuLocked, setIsMenuLocked] = useState(false);
+  const [expandedMobileCategory, setExpandedMobileCategory] = useState<string | null>(null);
   // POPUP MANAGEMENT
   const [authPopup, setAuthPopup] = useState<"login" | "logout" | "created" | "deleted" | null>(null);
   const prevCustomerRef = useRef<Customer | null | undefined>(customer);
@@ -472,6 +475,12 @@ useEffect(() => {
   }
 }, [isUserMenuOpen, onUserMenuToggle]);
 
+  useEffect(() => {
+    if (!isMenuOpen) {
+      setExpandedMobileCategory(null);
+    }
+  }, [isMenuOpen]);
+
   if (!mounted) return <div className="w-full h-[180px] bg-white border-b" />;
   return (
     <header className="w-full bg-white border-b border-gray-100 font-sans sticky top-0 z-[100]">
@@ -579,10 +588,7 @@ useEffect(() => {
 
         {/* ROW 2: Logo & Search */}
         <div className="max-w-[1400px] mx-auto px-6 h-12 flex items-center justify-between gap-8 mt-0 mb-1">
-          <div className="flex items-center space-x-6 flex-shrink-0">
-          <div className="p-1 text-gray-800">
-          <Menu size={30} />
-          </div>
+          <div className="flex items-center space-x-4 flex-shrink-0">
             <Link href="/" className="block -mt-5">
               <Image src={logoSrc} alt="Logo" width={250} height={50} priority className="object-contain" />
             </Link>
@@ -848,61 +854,176 @@ useEffect(() => {
       
 
       {/* MOBILE SIDEBAR (DRAWER) */}
-      <div className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-[200] transition-opacity duration-300 ${isMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`} onClick={() => setIsMenuOpen(false)} />
-      <aside className={`fixed top-0 left-0 w-[300px] h-full bg-white z-[201] shadow-2xl transform transition-transform duration-300 ease-in-out ${isMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
-        <div className="p-6 border-b flex justify-between items-center bg-gray-50">
-          <span className="font-bold text-lg text-[#8B2323] uppercase tracking-widest">Menu</span>
-          <button onClick={() => setIsMenuOpen(false)}><X size={28} className="text-gray-900" /></button>
+      <div
+        className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-[200] transition-opacity duration-300 ${isMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        onClick={() => {
+          setIsMenuOpen(false);
+          setExpandedMobileCategory(null);
+        }}
+      />
+      <aside className={`fixed top-0 left-0 w-[320px] h-full bg-[#fafafa] z-[201] shadow-2xl transform transition-transform duration-300 ease-in-out ${isMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="p-5 border-b border-gray-100 bg-white flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <LayoutGrid size={18} className="text-gray-900" />
+            <span className="text-[13px] font-black uppercase tracking-[0.1em] text-gray-900 leading-none">Categories</span>
+          </div>
+          <button onClick={() => {
+            setIsMenuOpen(false);
+            setExpandedMobileCategory(null);
+          }}><X size={22} className="text-gray-900" /></button>
         </div>
-        <div className="overflow-y-auto h-[calc(100vh-80px)] p-6 bg-white">
-          <ul className="space-y-6">
-            {navItems.map((item) => (
-              <li key={item.href} className="border-b border-gray-50 pb-4 last:border-0">
-                <Link href={item.href} onClick={() => setIsMenuOpen(false)} className="text-[16px] font-bold text-gray-800 uppercase flex justify-between">
-                  {item.label}
-                  <ChevronRight size={18} className="text-gray-300" />
-                </Link>
-              </li>
-            ))}
+        <div className="overflow-y-auto h-[calc(100vh-76px)] bg-[#fafafa]">
+          <div>
+            <div className="border-b border-gray-100 bg-white">
+              <Link
+                href="/shop"
+                onClick={() => setIsMenuOpen(false)}
+                className="w-full text-left p-4 flex items-center justify-between"
+              >
+                <span className="text-[13px] font-black uppercase tracking-tight leading-tight text-[#8B2323]">All Products</span>
+                <ChevronRight size={16} className="text-gray-300" />
+              </Link>
+            </div>
+
+            <div>
+              {navItems.map((item) => {
+                const megaMenuKey = resolveMegaMenuKey(item.label);
+                const data = MEGA_MENU_DATA[megaMenuKey];
+                const hasProducts = (data?.products?.length ?? 0) > 0;
+                const hasBrands = (data?.brands?.length ?? 0) > 0;
+                const hasVegetables = (data?.vegetables?.length ?? 0) > 0;
+                const hasFruits = (data?.fruits?.length ?? 0) > 0;
+                const hasSubcategories = hasProducts || hasBrands || hasVegetables || hasFruits;
+                const isExpanded = expandedMobileCategory === item.label;
+
+                return (
+                  <div key={item.href} className="border-b border-gray-100 bg-white">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (hasSubcategories) {
+                          setExpandedMobileCategory(isExpanded ? null : item.label);
+                        } else {
+                          router.push(item.href);
+                          setIsMenuOpen(false);
+                        }
+                      }}
+                      className={`w-full p-4 flex items-center justify-between relative transition-all ${isExpanded ? "bg-gray-50/50" : "hover:bg-gray-50"}`}
+                    >
+                      {isExpanded && <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#8B2323] z-10" />}
+                      <span className={`text-[13px] font-black uppercase tracking-tight leading-tight text-left pr-3 ${isExpanded ? "text-[#8B2323]" : "text-gray-600"}`}>{item.label}</span>
+                      {hasSubcategories ? (
+                        <ChevronDown size={18} className={`transition-transform duration-300 ${isExpanded ? "rotate-180 text-[#8B2323]" : "text-gray-300"}`} />
+                      ) : (
+                        <ChevronRight size={16} className="text-gray-300" />
+                      )}
+                    </button>
+
+                    {isExpanded && hasSubcategories && (
+                      <div className="px-3 py-4 space-y-6 bg-white border-t border-gray-50">
+                        {(hasProducts || hasVegetables || hasFruits) && (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 mb-2 border-b border-gray-50 pb-1">
+                              <Package size={14} className="text-[#8B2323]" />
+                              <p className="text-[12px] font-black uppercase tracking-widest text-gray-900">Products</p>
+                            </div>
+                            {data?.products?.map((product) => (
+                              <Link
+                                key={product}
+                                href={`/shop?collection=${toSlug(product)}`}
+                                onClick={() => setIsMenuOpen(false)}
+                                className="block w-full text-left text-[13px] font-bold py-2 px-3 rounded-md transition-all text-gray-500 hover:text-[#8B2323] hover:bg-gray-50"
+                              >
+                                {product}
+                              </Link>
+                            ))}
+                            {data?.vegetables?.map((v) => (
+                              <Link
+                                key={v}
+                                href={`/shop?collection=${toSlug(v)}`}
+                                onClick={() => setIsMenuOpen(false)}
+                                className="block w-full text-left text-[13px] font-bold py-2 px-3 rounded-md transition-all text-gray-500 hover:text-[#8B2323] hover:bg-gray-50"
+                              >
+                                {v}
+                              </Link>
+                            ))}
+                            {data?.fruits?.map((f) => (
+                              <Link
+                                key={f}
+                                href={`/shop?collection=${toSlug(f)}`}
+                                onClick={() => setIsMenuOpen(false)}
+                                className="block w-full text-left text-[13px] font-bold py-2 px-3 rounded-md transition-all text-gray-500 hover:text-[#8B2323] hover:bg-gray-50"
+                              >
+                                {f}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+
+                        {hasBrands && (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 mb-2 border-b border-gray-50 pb-1">
+                              <ShieldCheck size={14} className="text-[#8B2323]" />
+                              <p className="text-[12px] font-black uppercase tracking-widest text-gray-900">Featured Brands</p>
+                            </div>
+                            {data?.brands?.map((brand) => (
+                              <Link
+                                key={brand}
+                                href={`/shop?collection=${toSlug(brand)}`}
+                                onClick={() => setIsMenuOpen(false)}
+                                className="block w-full text-left text-[13px] font-bold py-2 px-3 rounded-md transition-all text-gray-500 hover:text-[#8B2323] hover:bg-gray-50"
+                              >
+                                {brand}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
             {/* Auth Links */}
             {customer ? (
               <>
-                <li className="border-b border-gray-50 pb-4">
-                  <div className="text-[14px] font-bold text-gray-600 uppercase flex items-center gap-2">
+                <div className="border-t border-gray-100 p-4 bg-white">
+                  <div className="text-[12px] font-bold text-gray-600 uppercase flex items-center gap-2">
                     <User size={18} />
                     Hi, {customer.firstName}
                   </div>
-                </li>
-                <li className="border-b border-gray-50 pb-4">
-                  <Link href="/account" onClick={() => setIsMenuOpen(false)} className="text-[16px] font-bold text-[#8B2323] uppercase flex items-center gap-2">
+                </div>
+                <div className="border-b border-gray-50 px-4 py-3 bg-white">
+                  <Link href="/account" onClick={() => setIsMenuOpen(false)} className="text-[13px] font-black text-[#8B2323] uppercase flex items-center gap-2">
                     <User size={18} />
                     My Account
                   </Link>
-                </li>
-                <li className="border-b border-gray-50 pb-4">
-                  <button onClick={() => { onLogout?.(); setIsMenuOpen(false); }} className="text-[16px] font-bold text-[#8B2323] uppercase flex items-center gap-2 w-full">
+                </div>
+                <div className="border-b border-gray-50 px-4 py-3 bg-white">
+                  <button onClick={() => { onLogout?.(); setIsMenuOpen(false); }} className="text-[13px] font-black text-[#8B2323] uppercase flex items-center gap-2 w-full">
                     <User size={18} />
                     Logout
                   </button>
-                </li>
+                </div>
               </>
             ) : (
               <>
-                <li className="border-b border-gray-50 pb-4">
-                  <Link href="/register" onClick={() => setIsMenuOpen(false)} className="text-[16px] font-bold text-[#8B2323] uppercase flex items-center gap-2">
+                <div className="border-t border-gray-100 px-4 py-3 border-b border-gray-50 bg-white">
+                  <Link href="/register" onClick={() => setIsMenuOpen(false)} className="text-[13px] font-black text-[#8B2323] uppercase flex items-center gap-2">
                     <User size={18} />
                     Register
                   </Link>
-                </li>
-                <li className="border-b border-gray-50 pb-4">
-                  <Link href="/login" onClick={() => setIsMenuOpen(false)} className="text-[16px] font-bold text-[#8B2323] uppercase flex items-center gap-2">
+                </div>
+                <div className="border-b border-gray-50 px-4 py-3 bg-white">
+                  <Link href="/login" onClick={() => setIsMenuOpen(false)} className="text-[13px] font-black text-[#8B2323] uppercase flex items-center gap-2">
                     <User size={18} />
                     Login
                   </Link>
-                </li>
+                </div>
               </>
             )}
-          </ul>
+          </div>
         </div>
       </aside>
 

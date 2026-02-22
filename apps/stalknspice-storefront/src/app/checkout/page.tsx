@@ -12,19 +12,32 @@ import { ArrowLeft, ShoppingBag } from "lucide-react";
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { activeOrder, itemCount } = useCart();
+  const { activeOrder, itemCount, isLoading: isCartLoading } = useCart();
   const { customer, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(false);
 
   // Redirect if cart is empty or order already processed
   useEffect(() => {
+    if (isCartLoading) {
+      return;
+    }
+
     if (!activeOrder || itemCount === 0) {
       router.push("/cart");
-    } else if (activeOrder.state !== "AddingItems") {
-      // Order already has shipping/payment, redirect to cart
-      router.push("/cart");
+      return;
     }
-  }, [activeOrder, itemCount, router]);
+
+    // Resume checkout at the correct step instead of bouncing to /cart.
+    if (activeOrder.state === "ArrangingShipping") {
+      router.push("/checkout/shipping");
+      return;
+    }
+
+    if (activeOrder.state === "ArrangingPayment") {
+      router.push("/checkout/payment");
+      return;
+    }
+  }, [activeOrder, itemCount, isCartLoading, router]);
 
   const formatPrice = (price: number, currencyCode: string) => {
     return new Intl.NumberFormat("en-US", {
@@ -88,6 +101,10 @@ export default function CheckoutPage() {
       setLoading(false);
     }
   };
+
+  if (isCartLoading) {
+    return null;
+  }
 
   if (!activeOrder || itemCount === 0) {
     return null; // Will redirect

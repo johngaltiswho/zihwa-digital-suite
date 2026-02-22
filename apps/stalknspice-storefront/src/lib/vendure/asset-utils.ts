@@ -9,7 +9,7 @@
 export function getAssetUrl(assetUrl: string | undefined | null): string {
   // If no URL provided, use placeholder
   if (!assetUrl) {
-    return '/images/placeholder.jpg';
+    return '/images/sns-logo.png';
   }
 
   // Supabase URLs and other external URLs work directly

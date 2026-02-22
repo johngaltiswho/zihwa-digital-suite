@@ -41,8 +41,10 @@ export default function HeaderWrapper({ navItems, logoSrc, isEcommerce, collecti
       />
       {/* 4. Only show this div if isMenuOpen is FALSE */}
       {!isMenuOpen && (
-        <div className="hidden lg:block fixed top-[52px] right-4 z-[100]">
-          <CartIcon />
+        <div className="hidden lg:flex fixed bottom-8 right-6 z-[95]">
+          <div className="bg-white/95 backdrop-blur rounded-full shadow-xl border border-gray-200 p-1.5">
+            <CartIcon />
+          </div>
         </div>
       )}
     </>

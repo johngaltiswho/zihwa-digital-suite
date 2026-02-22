@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Newsletter from "../components/NewsLetter";
@@ -12,7 +12,41 @@ import { GET_PRODUCTS_LIGHT } from "@/lib/vendure/queries/products";
 import { getAssetUrl } from "@/lib/vendure/asset-utils";
 import { motion, AnimatePresence} from "framer-motion";
 import type { Product } from "@/lib/vendure/types";
+import { CategoryProductShelves } from "@/components/CategoryProductShelves";
+import { fetchHomeCategoryShelves, type CategoryShelf } from "@/lib/vendure/home-shelves";
 
+const HOME_SHELVES_CACHE_KEY = "stalks_home_category_shelves_v1";
+
+type ShelvesCachePayload = {
+  data: CategoryShelf[];
+  cachedAt: number;
+};
+
+function readShelvesCache(): CategoryShelf[] | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(HOME_SHELVES_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as ShelvesCachePayload;
+    if (!parsed?.data || !Array.isArray(parsed.data) || parsed.data.length === 0) return null;
+    return parsed.data;
+  } catch {
+    return null;
+  }
+}
+
+function writeShelvesCache(data: CategoryShelf[]) {
+  if (typeof window === "undefined") return;
+  try {
+    const payload: ShelvesCachePayload = {
+      data,
+      cachedAt: Date.now(),
+    };
+    window.sessionStorage.setItem(HOME_SHELVES_CACHE_KEY, JSON.stringify(payload));
+  } catch {
+    // ignore storage errors
+  }
+}
 
 function ProductCard({ product }: { product: Product }) {
   
@@ -122,6 +156,9 @@ export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
   const [productsError, setProductsError] = useState<string | null>(null);
+  const [categoryShelves, setCategoryShelves] = useState<CategoryShelf[]>([]);
+  const [shelvesLoading, setShelvesLoading] = useState(true);
+  const [shelvesError, setShelvesError] = useState<string | null>(null);
 
   // Slider State for Reviews
   const [reviewIndex, setReviewIndex] = useState(0);
@@ -152,6 +189,38 @@ export default function Home() {
 
     fetchProducts();
   }, []);
+
+  const loadCategoryShelves = useCallback(async (forceRefresh = false) => {
+    const cachedShelves = !forceRefresh ? readShelvesCache() : null;
+    if (cachedShelves) {
+      // Fast first paint, then revalidate with fresh inventory in background.
+      setCategoryShelves(cachedShelves);
+      setShelvesLoading(false);
+      setShelvesError(null);
+    }
+
+    try {
+      if (!cachedShelves) {
+        setShelvesLoading(true);
+      }
+      setShelvesError(null);
+      const shelves = await fetchHomeCategoryShelves(6, 8);
+      setCategoryShelves(shelves);
+      writeShelvesCache(shelves);
+    } catch (error) {
+      console.error("Failed to fetch home category shelves:", error);
+      if (!cachedShelves) {
+        setShelvesError("Could not load category items right now.");
+        setCategoryShelves([]);
+      }
+    } finally {
+      setShelvesLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadCategoryShelves(false);
+  }, [loadCategoryShelves]);
   
   useEffect(() => {
     const timer = setInterval(() => {
@@ -173,67 +242,12 @@ export default function Home() {
 
       <div className="max-w-[1250px] mx-auto px-5">
         
-      {/* SHOP BY CUISINES - with links */}
-<section className="py-2 text-center">
-  <h2 className="text-2xl md:text-4xl font-bold mb-10 text-gray-800">Shop By Cuisines</h2>
-  <div className="grid grid-cols-4 sm:grid-cols-4 lg:grid-cols-8 gap-3 md:gap-8">
-    {[
-      { name: "Italian", img: "/images/italian-food.png", slug: "italian" },
-              { name: "American", img: "/images/american-food.png", slug: "american" },
-              { name: "Indian", img: "/images/indian-food.png", slug: "indian" },
-              { name: "Chinese", img: "/images/chinese-food.png", slug: "chinese" },
-              { name: "Thai", img: "/images/thai-food.png", slug: "thai" },
-              { name: "European", img: "/images/european-food.png", slug: "european" },
-              { name: "Japanese", img: "/images/japanese-food.png", slug: "japanese" },
-              { name: "Korean", img: "/images/korean-food.jpg", slug: "korean" },
-    ].map((item) => (
-      <Link href={`/cuisine/${item.slug}`} key={item.name} className="flex flex-col items-center group cursor-pointer max-w-[160px] mx-auto w-full">
-        <div className="w-full aspect-square rounded-[40px] overflow-hidden flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-          <Image 
-            src={item.img} 
-            width={160}  
-            height={160} 
-            alt={item.name} 
-            className="object-contain" 
-          />
-        </div>
-        <span className="mt-3 font-bold text-sm md:text-lg">{item.name}</span>
-      </Link>
-    ))}
-  </div>
-</section>
-      {/* 3. SHOP BY CATEGORY */}
-<section className="py-4 text-center">
-  <h2 className="text-2xl md:text-4xl font-bold mb-10 text-gray-800">Shop By Category</h2>
-  <div className="grid grid-cols-4 md:grid-cols-3 lg:grid-cols-6 gap-6">
-    {[
-      { name: "Crushes", img: "/images/crushes.png", slug: "crushes" },
-      { name: "Syrups", img: "/images/syrup.png", slug: "syrups" },
-      { name: "Fruits & Veg", img: "/images/fruits-vegetable.png", slug: "fruits-vegetables" },
-      { name: "Pasta & Noodles", img: "/images/noodles-pasta.png", slug: "pastas-noodles" },
-      { name: "Milk & Cream", img: "/images/milk.png", slug: "milk-cream" },
-      { name: "Sauces", img: "/images/sauce.png", slug: "sauces" },
-    ].map((cat) => (
-      <Link 
-        href={`/category/${cat.slug}`} 
-        key={cat.name} 
-        className="flex flex-col items-center group cursor-pointer"
-      >
-        {/* Removed bg-[#FDF5E6] and rounded corners */}
-          <div className="w-full aspect-square rounded-[40px] overflow-hidden flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-          <Image 
-            src={cat.img} 
-            width={180}   
-            height={180}  
-            alt={cat.name} 
-            className="object-contain" 
-          />
-        </div>
-        <span className="mt-4 font-bold text-base">{cat.name}</span>
-      </Link>
-    ))}
-  </div>
-</section>
+      <CategoryProductShelves
+        shelves={categoryShelves}
+        loading={shelvesLoading}
+        error={shelvesError}
+        onRetry={() => loadCategoryShelves(true)}
+      />
          {/* FEATURED PRODUCTS */}
         <section className="py-8">
           <div className="flex justify-between items-center mb-6">
@@ -373,10 +387,10 @@ export default function Home() {
           </div>
         </section>
         {/* ATTRACTIVE DESKTOP SHOP BUTTON */}
-<motion.div 
+<motion.div
   initial={{ opacity: 0, x: 50 }}
   animate={{ opacity: 1, x: 0 }}
-  className="fixed bottom-8 right-8 z-[100] hidden md:block"
+  className="fixed bottom-8 right-28 z-[100] hidden md:block"
 >
   <Link href="/shop" className="relative group flex items-center">
     

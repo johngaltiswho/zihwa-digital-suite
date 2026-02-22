@@ -4,22 +4,49 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/vendure/cart-context";
 import { vendureClient } from "@/lib/vendure/client";
-import { ADD_PAYMENT_TO_ORDER, TRANSITION_ORDER_TO_STATE } from "@/lib/vendure/mutations/checkout";
+import { ADD_PAYMENT_TO_ORDER, GET_ORDER_BY_CODE, TRANSITION_ORDER_TO_STATE } from "@/lib/vendure/mutations/checkout";
 import { CREATE_RAZORPAY_ORDER } from "@/lib/vendure/mutations/razorpay";
 import { loadRazorpayScript, openRazorpayCheckout, RazorpayResponse } from "@/lib/vendure/razorpay";
+import { GET_ELIGIBLE_PAYMENT_METHODS } from "@/lib/vendure/queries/cart";
 import Link from "next/link";
-import { ArrowLeft, CreditCard, Lock } from "lucide-react";
+import { ArrowLeft, CreditCard, Loader2, Lock } from "lucide-react";
 import Image from "next/image";
 
-type PaymentMethod = 'razorpay' | 'dummy';
+type PaymentMethod = 'razorpay';
+
+function getAddPaymentErrorMessage(result: any): string {
+  if (!result) {
+    return "Payment failed: empty response from server";
+  }
+
+  const typeName = result.__typename as string | undefined;
+  if (typeName === "Order") {
+    return "";
+  }
+
+  if (result.paymentErrorMessage) {
+    return String(result.paymentErrorMessage);
+  }
+  if (result.eligibilityCheckerMessage) {
+    return String(result.eligibilityCheckerMessage);
+  }
+  if (result.message) {
+    return String(result.message);
+  }
+
+  return typeName
+    ? `Payment failed (${typeName}).`
+    : "Payment failed for an unknown reason.";
+}
 
 export default function PaymentPage() {
   const router = useRouter();
-  const { activeOrder, itemCount, refreshCart } = useCart();
+  const { activeOrder, itemCount, isLoading: isCartLoading } = useCart();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('razorpay');
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+  const [isCompletingOrder, setIsCompletingOrder] = useState(false);
 
   // Load Razorpay script
   useEffect(() => {
@@ -31,8 +58,56 @@ export default function PaymentPage() {
     });
   }, []);
 
+  // Dev-time diagnostic: surface payment method/channel configuration early.
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") {
+      return;
+    }
+
+    let mounted = true;
+    (async () => {
+      try {
+        const data = await vendureClient.request(GET_ELIGIBLE_PAYMENT_METHODS);
+        if (!mounted) return;
+
+        const methods = data?.eligiblePaymentMethods ?? [];
+        const channelToken =
+          typeof window !== "undefined"
+            ? localStorage.getItem("vendure-selected-channel-token") ??
+              localStorage.getItem("vendure-channel-token") ??
+              "__default_channel__"
+            : "__default_channel__";
+
+        console.info("[Checkout][Payment] Eligible payment methods", {
+          channelToken,
+          methods: methods.map((m: any) => ({
+            id: m?.id,
+            code: m?.code,
+            name: m?.name,
+            isEligible: m?.isEligible,
+            eligibilityMessage: m?.eligibilityMessage,
+          })),
+        });
+      } catch (e) {
+        console.warn("[Checkout][Payment] Failed to load eligible payment methods", e);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   // Redirect if cart is empty or order not ready for payment
   useEffect(() => {
+    if (isCompletingOrder) {
+      return;
+    }
+
+    if (isCartLoading) {
+      return;
+    }
+
     if (!activeOrder || itemCount === 0) {
       router.push("/cart");
     } else if (!activeOrder.shippingAddress || !activeOrder.shippingLines || activeOrder.shippingLines.length === 0) {
@@ -42,7 +117,7 @@ export default function PaymentPage() {
       // Order already paid, redirect to cart
       router.push("/cart");
     }
-  }, [activeOrder, itemCount, router]);
+  }, [activeOrder, itemCount, isCartLoading, isCompletingOrder, router]);
 
   const formatPrice = (price: number, currencyCode: string) => {
     return new Intl.NumberFormat("en-US", {
@@ -51,21 +126,81 @@ export default function PaymentPage() {
     }).format(price / 100);
   };
 
+  const ensureArrangingPayment = async () => {
+    if (!activeOrder) return;
+
+    // Avoid invalid self-transition when user retries payment on same order.
+    if (activeOrder.state === "ArrangingPayment") {
+      return;
+    }
+
+    const transitionResponse = await vendureClient.request(TRANSITION_ORDER_TO_STATE, {
+      state: "ArrangingPayment",
+    });
+
+    const result = transitionResponse.transitionOrderToState;
+    if (result?.errorCode) {
+      const transitionErrorText = `${result?.transitionError ?? ""} ${result?.message ?? ""}`;
+      const isAlreadyArrangingPayment =
+        result?.fromState === "ArrangingPayment" ||
+        transitionErrorText.includes('ArrangingPayment" to "ArrangingPayment');
+      if (isAlreadyArrangingPayment) {
+        return;
+      }
+      const message = result?.message || "Failed to transition order to payment state";
+      throw new Error(message);
+    }
+  };
+
+  const resolvePaymentMethodCode = async (preferred: PaymentMethod): Promise<string> => {
+    const data = await vendureClient.request(GET_ELIGIBLE_PAYMENT_METHODS);
+    const methods = (data?.eligiblePaymentMethods ?? []).filter((m: any) => m?.isEligible !== false);
+
+    if (methods.length === 0) {
+      throw new Error("No eligible payment methods available for this order.");
+    }
+
+    if (preferred === "razorpay") {
+      const razorpayMethod = methods.find((m: any) => {
+        const code = String(m?.code ?? "").toLowerCase();
+        const name = String(m?.name ?? "").toLowerCase();
+        const desc = String(m?.description ?? "").toLowerCase();
+        return code.includes("razorpay") || name.includes("razorpay") || desc.includes("razorpay");
+      });
+      if (razorpayMethod?.code) {
+        return razorpayMethod.code;
+      }
+      const availableCodes = methods.map((m: any) => m.code).filter(Boolean).join(", ");
+      throw new Error(
+        `Razorpay payment method is not eligible for this channel/order. Available methods: ${availableCodes || "none"}`
+      );
+    }
+
+    if (preferred === "dummy") {
+      const dummyMethod = methods.find((m: any) => {
+        const code = String(m?.code ?? "").toLowerCase();
+        const name = String(m?.name ?? "").toLowerCase();
+        const desc = String(m?.description ?? "").toLowerCase();
+        return code.includes("dummy") || name.includes("dummy") || desc.includes("dummy");
+      });
+      if (dummyMethod?.code) {
+        return dummyMethod.code;
+      }
+    }
+
+    // Final fallback: use first eligible method, but surface what was selected.
+    return methods[0].code;
+  };
+
   const handleRazorpayPayment = async () => {
     if (!activeOrder || !razorpayLoaded) return;
+    const orderCode = activeOrder.code;
 
     setLoading(true);
     setError(null);
 
     try {
-      // Transition order to ArrangingPayment state
-      const transitionResponse = await vendureClient.request(TRANSITION_ORDER_TO_STATE, {
-        state: "ArrangingPayment",
-      });
-
-      if (transitionResponse.transitionOrderToState.errorCode) {
-        throw new Error(transitionResponse.transitionOrderToState.message);
-      }
+      await ensureArrangingPayment();
 
       // Create Razorpay order
       const razorpayOrderResponse = await vendureClient.request(CREATE_RAZORPAY_ORDER, {
@@ -84,10 +219,13 @@ export default function PaymentPage() {
         order_id: id,
         handler: async (response: RazorpayResponse) => {
           try {
+            setIsCompletingOrder(true);
+            const paymentMethodCode = await resolvePaymentMethodCode("razorpay");
+
             // Add payment to order with Razorpay details
             const paymentResponse = await vendureClient.request(ADD_PAYMENT_TO_ORDER, {
               input: {
-                method: "razorpay-payment-handler",
+                method: paymentMethodCode,
                 metadata: {
                   razorpay_payment_id: response.razorpay_payment_id,
                   razorpay_order_id: response.razorpay_order_id,
@@ -96,21 +234,47 @@ export default function PaymentPage() {
               },
             });
 
-            if (paymentResponse.addPaymentToOrder.errorCode) {
-              throw new Error(paymentResponse.addPaymentToOrder.message);
+            const addPaymentResult = paymentResponse.addPaymentToOrder;
+            console.info("addPaymentToOrder response:", paymentResponse);
+            if (addPaymentResult?.__typename !== "Order") {
+              console.error("addPaymentToOrder returned non-Order result:", addPaymentResult);
+              // Defensive fallback: in some edge cases we get an empty object back.
+              // Verify the order status before failing the UX.
+              const isEmptyObject =
+                addPaymentResult &&
+                typeof addPaymentResult === "object" &&
+                Object.keys(addPaymentResult).length === 0;
+
+              if (isEmptyObject) {
+                try {
+                  const verify = await vendureClient.request(GET_ORDER_BY_CODE, { code: orderCode });
+                  const placedOrder = verify?.orderByCode;
+                  const looksPaid =
+                    placedOrder &&
+                    (placedOrder.state === "PaymentSettled" ||
+                      placedOrder.state === "PaymentAuthorized" ||
+                      placedOrder.active === false);
+                  if (looksPaid) {
+                    router.push(`/checkout/confirmation?orderCode=${placedOrder.code}`);
+                    return;
+                  }
+                } catch (verifyError) {
+                  console.error("Failed to verify placed order after empty addPaymentToOrder response:", verifyError);
+                }
+              }
+
+              throw new Error(getAddPaymentErrorMessage(addPaymentResult));
             }
 
             // Order placed successfully
-            const order = paymentResponse.addPaymentToOrder;
-
-            // Refresh cart (should now be empty)
-            await refreshCart();
+            const order = addPaymentResult;
 
             // Navigate to confirmation
             router.push(`/checkout/confirmation?orderCode=${order.code}`);
           } catch (err: any) {
             console.error("Failed to complete payment:", err);
             setError(err.message || "Payment processing failed");
+            setIsCompletingOrder(false);
             setLoading(false);
           }
         },
@@ -140,24 +304,20 @@ export default function PaymentPage() {
 
   const handleDummyPayment = async () => {
     if (!activeOrder) return;
+    const orderCode = activeOrder.code;
 
     setLoading(true);
     setError(null);
 
     try {
-      // First, transition order to ArrangingPayment state
-      const transitionResponse = await vendureClient.request(TRANSITION_ORDER_TO_STATE, {
-        state: "ArrangingPayment",
-      });
-
-      if (transitionResponse.transitionOrderToState.errorCode) {
-        throw new Error(transitionResponse.transitionOrderToState.message);
-      }
+      setIsCompletingOrder(true);
+      await ensureArrangingPayment();
+      const paymentMethodCode = await resolvePaymentMethodCode("dummy");
 
       // Add dummy payment
       const paymentResponse = await vendureClient.request(ADD_PAYMENT_TO_ORDER, {
         input: {
-          method: "dummy-payment-method",
+          method: paymentMethodCode,
           metadata: {
             cardNumber: "****-****-****-1234",
             cardHolder: "Test Customer",
@@ -165,21 +325,39 @@ export default function PaymentPage() {
         },
       });
 
-      if (paymentResponse.addPaymentToOrder.errorCode) {
-        throw new Error(paymentResponse.addPaymentToOrder.message);
+      const addPaymentResult = paymentResponse.addPaymentToOrder;
+      console.info("addPaymentToOrder response:", paymentResponse);
+      if (addPaymentResult?.__typename !== "Order") {
+        console.error("addPaymentToOrder returned non-Order result:", addPaymentResult);
+        throw new Error(getAddPaymentErrorMessage(addPaymentResult));
       }
 
       // Order placed successfully
-      const order = paymentResponse.addPaymentToOrder;
-
-      // Refresh cart (should now be empty)
-      await refreshCart();
+      const order = addPaymentResult;
 
       // Navigate to confirmation with order code
       router.push(`/checkout/confirmation?orderCode=${order.code}`);
     } catch (err: any) {
       console.error("Failed to place order:", err);
+      // Safety fallback in case order actually got placed but mutation returned an
+      // empty/non-order shape.
+      try {
+        const verify = await vendureClient.request(GET_ORDER_BY_CODE, { code: orderCode });
+        const placedOrder = verify?.orderByCode;
+        const looksPaid =
+          placedOrder &&
+          (placedOrder.state === "PaymentSettled" ||
+            placedOrder.state === "PaymentAuthorized" ||
+            placedOrder.active === false);
+        if (looksPaid) {
+          router.push(`/checkout/confirmation?orderCode=${placedOrder.code}`);
+          return;
+        }
+      } catch (verifyError) {
+        console.error("Failed to verify order after dummy payment error:", verifyError);
+      }
       setError(err.message || "Failed to place order. Please try again.");
+      setIsCompletingOrder(false);
     } finally {
       setLoading(false);
     }
@@ -193,12 +371,29 @@ export default function PaymentPage() {
     }
   };
 
+  if (isCartLoading) {
+    return null;
+  }
+
   if (!activeOrder || itemCount === 0) {
     return null; // Will redirect
   }
 
   return (
-    <section className="min-h-screen bg-gray-50 py-12 px-4">
+    <section className="min-h-screen bg-gray-50 py-12 px-4 relative">
+      {isCompletingOrder && (
+        <div className="fixed inset-0 z-[300] bg-white/85 backdrop-blur-sm flex items-center justify-center px-4">
+          <div className="w-full max-w-md bg-white rounded-2xl border border-gray-200 shadow-2xl p-8 text-center">
+            <Loader2 className="w-10 h-10 text-[#8B2323] animate-spin mx-auto mb-4" />
+            <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tight mb-2">
+              Confirming Payment
+            </h3>
+            <p className="text-gray-600">
+              Please wait while we verify your payment and finalize your order.
+            </p>
+          </div>
+        </div>
+      )}
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -299,37 +494,6 @@ export default function PaymentPage() {
                   </div>
                 </label>
 
-                {/* Dummy Payment Option (Test Mode) */}
-                <label
-                  className={`block p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                    paymentMethod === 'dummy'
-                      ? 'border-yellow-400 bg-yellow-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <input
-                      type="radio"
-                      name="payment"
-                      value="dummy"
-                      checked={paymentMethod === 'dummy'}
-                      onChange={() => setPaymentMethod('dummy')}
-                      className="mt-1"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <Lock size={20} className="text-yellow-600" />
-                        <h3 className="font-bold text-gray-900">Test Payment (Dummy)</h3>
-                        <span className="text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full font-bold">
-                          TEST MODE
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1">
-                        For testing only - Payment will be automatically approved
-                      </p>
-                    </div>
-                  </div>
-                </label>
               </div>
 
               {error && (

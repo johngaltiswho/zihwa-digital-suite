@@ -101,22 +101,23 @@ export function CategorySidebar({
   }, []);
 
   useEffect(() => {
-    if (selectedCollection && parentCollections.length > 0) {
-      const selectedParent = parentCollections.find((p) => p.slug === selectedCollection);
-      const parentWithProduct = parentCollections.find((parent) =>
-        (parent.productCategories || []).some((cat) => cat.slug === selectedCollection),
-      );
-      const parentWithBrand = parentCollections.find((parent) =>
-        (parent.brandCategories || []).some((cat) => cat.slug === selectedCollection),
-      );
+    if (!selectedCollection || parentCollections.length === 0) return;
 
-      const targetParent = selectedParent || parentWithProduct || parentWithBrand;
+    const selectedParent = parentCollections.find((p) => p.slug === selectedCollection);
+    const parentWithProduct = parentCollections.find((parent) =>
+      (parent.productCategories || []).some((cat) => cat.slug === selectedCollection),
+    );
+    const parentWithBrand = parentCollections.find((parent) =>
+      (parent.brandCategories || []).some((cat) => cat.slug === selectedCollection),
+    );
 
-      if (targetParent && expandedParentId !== targetParent.id) {
-        setExpandedParentId(targetParent.id);
-      }
-    }
-  }, [selectedCollection, parentCollections, expandedParentId]);
+    const targetParent = selectedParent || parentWithProduct || parentWithBrand;
+    if (!targetParent) return;
+
+    // Sync to route-selected category only when route/data changes.
+    // Do not include expandedParentId in deps, otherwise manual collapse gets overridden.
+    setExpandedParentId((current) => (current === targetParent.id ? current : targetParent.id));
+  }, [selectedCollection, parentCollections]);
 
   const handleCollectionClick = (slug: string | null) => {
     onCollectionClick?.(slug);

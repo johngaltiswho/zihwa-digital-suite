@@ -40,6 +40,13 @@ export default function CartPage() {
     }).format(price / 100);
   };
 
+  const checkoutHref =
+    activeOrder?.state === "ArrangingShipping"
+      ? "/checkout/shipping"
+      : activeOrder?.state === "ArrangingPayment"
+        ? "/checkout/payment"
+        : "/checkout";
+
   // Empty cart state
   if (!activeOrder || itemCount === 0) {
     return (
@@ -193,7 +200,7 @@ export default function CartPage() {
               </div>
 
               <Link
-                href="/checkout"
+                href={checkoutHref}
                 className="block w-full bg-[#8B2323] text-white font-bold uppercase tracking-widest py-4 rounded-full text-center hover:bg-black transition-all shadow-xl shadow-[#8B2323]/20 flex items-center justify-center gap-2"
               >
                 Proceed to Checkout
