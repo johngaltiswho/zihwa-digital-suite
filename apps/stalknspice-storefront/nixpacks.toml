@@ -1,11 +1,14 @@
+[variables]
+NIXPACKS_NO_MUSL = '1'
+
 [phases.setup]
-nixPkgs = ["nodejs", "pnpm"]
+nixPkgs = ['nodejs_20', 'pnpm-9_x']
 
 [phases.install]
-cmds = ["pnpm install --frozen-lockfile"]
+cmds = ['pnpm install --frozen-lockfile']
 
 [phases.build]
-cmds = ["pnpm --filter stalknspice-storefront build"]
+cmds = ['pnpm --filter stalknspice-storefront build']
 
 [start]
-cmd = "cd apps/stalknspice-storefront && pnpm start"
+cmd = 'cd apps/stalknspice-storefront && pnpm start'
