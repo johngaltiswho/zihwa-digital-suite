@@ -1,0 +1,6 @@
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+# This is the root railway.toml for the monorepo
+# Individual services use their own nixpacks.toml in apps/*/nixpacks.toml
