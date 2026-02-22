@@ -1,11 +1,19 @@
+[variables]
+NIXPACKS_NO_MUSL = '1'
+NODE_ENV = 'production'
+
 [phases.setup]
-nixPkgs = ["nodejs", "pnpm"]
+nixPkgs = ['nodejs_20', 'pnpm']
 
 [phases.install]
-cmds = ["pnpm install --frozen-lockfile"]
+cmds = [
+  'corepack enable',
+  'corepack prepare pnpm@10.28.2 --activate',
+  'pnpm install --frozen-lockfile'
+]
 
 [phases.build]
-cmds = ["pnpm --filter vendure-backend build"]
+cmds = ['pnpm --filter vendure-backend build']
 
 [start]
-cmd = "cd apps/vendure-backend && node dist/index.js"
+cmd = 'node apps/vendure-backend/dist/index.js'
