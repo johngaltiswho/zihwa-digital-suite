@@ -1,0 +1,17 @@
+[phases.setup]
+nixPkgs = ["nodejs", "pnpm"]
+
+[phases.install]
+cmds = [
+  "cd ../..",
+  "pnpm install --frozen-lockfile"
+]
+
+[phases.build]
+cmds = [
+  "cd ../..",
+  "pnpm --filter vendure-backend build"
+]
+
+[start]
+cmd = "cd apps/vendure-backend && pnpm start:server"

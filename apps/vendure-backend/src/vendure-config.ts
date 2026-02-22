@@ -20,18 +20,28 @@ import path from 'node:path';
 const IS_DEV = process.env.APP_ENV === 'dev';
 const serverPort = Number(process.env.PORT) || 3100;
 
+// Production frontend URLs
+const PRODUCTION_FRONTEND_URLS = [
+  process.env.FRONTEND_URL,
+  process.env.RAILWAY_STATIC_URL,
+  'https://stalknspice.com',
+  'https://www.stalknspice.com',
+].filter((url): url is string => Boolean(url));
+
+const DEV_URLS = [
+  'http://localhost:5176',  // Dashboard port
+  'http://localhost:3100',  // Server port
+  'http://localhost:3004',  // Stalknspice storefront
+  'http://localhost:3009',  // Accounting engine
+];
+
 export const config: VendureConfig = {
   apiOptions: {
     port: serverPort,
     adminApiPath: 'admin-api',
     shopApiPath: 'shop-api',
     cors: {
-  origin: [
-    'http://localhost:5176',  // Dashboard port
-    'http://localhost:3100',  // Server port
-    'http://localhost:3004',  // Stalknspice storefront
-    'http://localhost:3009',  // Accounting engine
-  ],
+  origin: IS_DEV ? DEV_URLS : PRODUCTION_FRONTEND_URLS,
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization', 'vendure-token', 'vendure-auth-token', 'vendure-session-token'],
   exposedHeaders: ['vendure-token', 'vendure-auth-token', 'vendure-session-token'],
@@ -57,8 +67,8 @@ export const config: VendureConfig = {
     cookieOptions: {
     secret: process.env.COOKIE_SECRET!,
     httpOnly: true,
-    sameSite: 'lax',    // Important for cross-origin
-    secure: false,      // Set to true in production
+    sameSite: IS_DEV ? 'lax' : 'none',
+    secure: !IS_DEV,
     path: '/',
     maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
   },
