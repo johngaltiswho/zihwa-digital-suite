@@ -2,16 +2,10 @@
 nixPkgs = ["nodejs", "pnpm"]
 
 [phases.install]
-cmds = [
-  "cd ../..",
-  "pnpm install --frozen-lockfile"
-]
+cmds = ["pnpm install --frozen-lockfile"]
 
 [phases.build]
-cmds = [
-  "cd ../..",
-  "pnpm --filter vendure-backend build"
-]
+cmds = ["pnpm --filter vendure-backend build"]
 
 [start]
-cmd = "cd apps/vendure-backend && pnpm start:server"
+cmd = "cd apps/vendure-backend && node dist/index.js"

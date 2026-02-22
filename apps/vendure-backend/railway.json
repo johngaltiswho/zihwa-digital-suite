@@ -2,10 +2,9 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "cd ../.. && pnpm install && pnpm --filter vendure-backend build"
+    "watchPatterns": ["apps/vendure-backend/**"]
   },
   "deploy": {
-    "startCommand": "cd apps/vendure-backend && pnpm start:server",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }

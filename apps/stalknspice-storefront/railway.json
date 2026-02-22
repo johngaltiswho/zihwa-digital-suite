@@ -2,10 +2,9 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "cd ../.. && pnpm install && pnpm --filter stalknspice-storefront build"
+    "watchPatterns": ["apps/stalknspice-storefront/**"]
   },
   "deploy": {
-    "startCommand": "cd apps/stalknspice-storefront && pnpm start",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }
