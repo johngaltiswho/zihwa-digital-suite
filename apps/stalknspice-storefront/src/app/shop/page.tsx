@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Zap, ChevronDown, Loader2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import { UnifiedProductCard } from "@/components/UnifiedProductCard";
 import { CategorySidebar } from "@/components/CategorySidebar";
 import { useInfiniteProducts } from "@/hooks/useInfiniteProducts";
@@ -69,7 +69,7 @@ function isOutOfStock(product: Product) {
   return stock === "OUT_OF_STOCK" || stock === "0";
 }
 
-export default function ShopPage() {
+function ShopPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [filters, setFilters] = useState<FiltersState>(defaultFilters);
@@ -358,5 +358,19 @@ export default function ShopPage() {
         </section>
       </div>
     </main>
+  );
+}
+
+export default function ShopPage() {
+  return (
+    <Suspense fallback={
+      <main className="bg-white min-h-screen">
+        <div className="flex items-center justify-center h-screen">
+          <Loader2 size={40} className="animate-spin text-[#8B2323]" />
+        </div>
+      </main>
+    }>
+      <ShopPageContent />
+    </Suspense>
   );
 }
