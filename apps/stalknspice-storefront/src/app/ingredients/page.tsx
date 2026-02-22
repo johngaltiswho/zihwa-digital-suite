@@ -27,8 +27,8 @@ export default function JapaneseIngredientsPage() {
           <p className="text-white text-lg md:text-xl font-medium max-w-2xl mb-10 opacity-90 uppercase tracking-[0.3em]">
             One stop shop for your japanese ingredients!
           </p>
-          <Link 
-            href="/shop/Japanese-c62145207" 
+          <Link
+            href="/shop"
             className="bg-[#8B2323] hover:bg-white hover:text-black text-white font-black uppercase tracking-[0.2em] px-12 py-5 rounded-full transition-all shadow-2xl active:scale-95 flex items-center gap-3"
           >
             Shop Now <ArrowRight size={20} />
@@ -72,42 +72,42 @@ export default function JapaneseIngredientsPage() {
               <section>
                 <h4 className="text-xl font-black text-[#8B2323] uppercase mb-3 tracking-widest">Sushi Rice</h4>
                 <p className="text-base">
-                  Everyday is Sushi day! It is a delightful plate of happiness! For authentic Japanese cooking you will require Japanese short-grain rice. It is also called <Link href="/shop/Topps-Sushi-Rice-1-kg-p377773011" className="font-bold underline decoration-[#8B2323] hover:text-black transition-colors">‘Sushi Rice.’</Link> The rice grains differ from the regular variety in being short and plump. They also cling together when properly cooked.
+                  Everyday is Sushi day! It is a delightful plate of happiness! For authentic Japanese cooking you will require Japanese short-grain rice. It is also called <Link href="/shop#Topps-Sushi-Rice-1-kg-p377773011" className="font-bold underline decoration-[#8B2323] hover:text-black transition-colors">‘Sushi Rice.’</Link> The rice grains differ from the regular variety in being short and plump. They also cling together when properly cooked.
                 </p>
               </section>
 
               <section>
                 <h4 className="text-xl font-black text-[#8B2323] uppercase mb-3 tracking-widest">Cooking Sake</h4>
                 <p className="text-base">
-                  <Link href="/shop/Sakura-Cooking-Sake-1-8L-p243701424" className="font-bold underline decoration-[#8B2323] hover:text-black transition-colors">Cooking Sake</Link>, is used as a seasoning and glazing agent in Japanese cooking. It is a type of rice wine that adds a distinct sweetness to dishes. Cooking Sake enhances the overall flavour of a dish.
+                  <Link href="/shop#Sakura-Cooking-Sake-1-8L-p243701424" className="font-bold underline decoration-[#8B2323] hover:text-black transition-colors">Cooking Sake</Link>, is used as a seasoning and glazing agent in Japanese cooking. It is a type of rice wine that adds a distinct sweetness to dishes. Cooking Sake enhances the overall flavour of a dish.
                 </p>
               </section>
 
               <section>
                 <h4 className="text-xl font-black text-[#8B2323] uppercase mb-3 tracking-widest">Sushi Nori Sheet</h4>
                 <p className="text-base">
-                  Nori is a dried edible seaweed used in Japanese cuisine. It has a strong and distinctive flavour and is often used to wrap rolls of sushi (rice balls). Explore <Link href="/shop/Yokoso-Sushi-Nori-Sheet-10-Sheets-p252024255" className="font-bold underline decoration-[#8B2323] hover:text-black transition-colors">Nori sheets</Link> here.
+                  Nori is a dried edible seaweed used in Japanese cuisine. It has a strong and distinctive flavour and is often used to wrap rolls of sushi (rice balls). Explore <Link href="/shop#Yokoso-Sushi-Nori-Sheet-10-Sheets-p252024255" className="font-bold underline decoration-[#8B2323] hover:text-black transition-colors">Nori sheets</Link> here.
                 </p>
               </section>
 
               <section>
                 <h4 className="text-xl font-black text-[#8B2323] uppercase mb-3 tracking-widest">Wasabi</h4>
                 <p className="text-base">
-                  Spicy and pungent in flavour, <Link href="/shop/Yokoso-Wasabi-Paste-43g-p267390892" className="font-bold underline decoration-[#8B2323] hover:text-black transition-colors">Wasabi</Link> is commonly served with sushi and sashimi - it has a fiery and spicy taste. Wasabi has a pungent flavour and gives a hit of heat as soon as you take the first bite. Wasabi is available as a <Link href="/shop/Yokoso-Wasabi-Powder-1Kg-p238632037" className="font-bold underline decoration-[#8B2323] hover:text-black transition-colors">dried powder</Link> or in a tube as a paste.
+                  Spicy and pungent in flavour, <Link href="/shop#Yokoso-Wasabi-Paste-43g-p267390892" className="font-bold underline decoration-[#8B2323] hover:text-black transition-colors">Wasabi</Link> is commonly served with sushi and sashimi - it has a fiery and spicy taste. Wasabi has a pungent flavour and gives a hit of heat as soon as you take the first bite. Wasabi is available as a <Link href="/shop#Yokoso-Wasabi-Powder-1Kg-p238632037" className="font-bold underline decoration-[#8B2323] hover:text-black transition-colors">dried powder</Link> or in a tube as a paste.
                 </p>
               </section>
 
               <section>
                 <h4 className="text-xl font-black text-[#8B2323] uppercase mb-3 tracking-widest">Soba (Buckwheat)</h4>
                 <p className="text-base">
-                  Made from buckwheat flour, or a combination of buckwheat and wheat flours, <Link href="/shop/Yokoso-Japanese-Soba-Buckwheat-Noodles-300g-p377772759" className="font-bold underline decoration-[#8B2323] hover:text-black transition-colors">Soba Noodles</Link> is a key staple in Japanese cuisine. It can be served chilled with a dipping sauce, or served in a hot broth as a noodle soup.
+                  Made from buckwheat flour, or a combination of buckwheat and wheat flours, <Link href="/shop#Yokoso-Japanese-Soba-Buckwheat-Noodles-300g-p377772759" className="font-bold underline decoration-[#8B2323] hover:text-black transition-colors">Soba Noodles</Link> is a key staple in Japanese cuisine. It can be served chilled with a dipping sauce, or served in a hot broth as a noodle soup.
                 </p>
               </section>
 
               <section>
                 <h4 className="text-xl font-black text-[#8B2323] uppercase mb-3 tracking-widest">Udon Noodles</h4>
                 <p className="text-base">
-                  <Link href="/shop/Sakura-Udon-Noodles-300g-p382915609" className="font-bold underline decoration-[#8B2323] hover:text-black transition-colors">Udon Noodles</Link> are thick, slippery and smooth. In other words, they are lusciously delicious! Udon Noodles can be served in a hot noodle soup, cold with dipping, or stir-fried.
+                  <Link href="/shop#Sakura-Udon-Noodles-300g-p382915609" className="font-bold underline decoration-[#8B2323] hover:text-black transition-colors">Udon Noodles</Link> are thick, slippery and smooth. In other words, they are lusciously delicious! Udon Noodles can be served in a hot noodle soup, cold with dipping, or stir-fried.
                 </p>
               </section>
             </div>

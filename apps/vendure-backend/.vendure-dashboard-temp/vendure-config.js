@@ -13,12 +13,23 @@ const graphiql_plugin_1 = require("@vendure/graphiql-plugin");
 require("dotenv/config");
 const node_path_1 = __importDefault(require("node:path"));
 const IS_DEV = process.env.APP_ENV === 'dev';
-const serverPort = Number(process.env.PORT) || 3002;
+const serverPort = Number(process.env.PORT) || 3100;
 exports.config = {
     apiOptions: {
         port: serverPort,
         adminApiPath: 'admin-api',
         shopApiPath: 'shop-api',
+        cors: {
+            origin: [
+                'http://localhost:5176', // Dashboard port
+                'http://localhost:3100', // Server port
+                'http://localhost:3004', // Stalknspice storefront
+                'http://localhost:3009', // Accounting engine
+            ],
+            credentials: true,
+            allowedHeaders: ['Content-Type', 'Authorization', 'vendure-token', 'vendure-auth-token', 'vendure-session-token'],
+            exposedHeaders: ['vendure-token', 'vendure-auth-token', 'vendure-session-token'],
+        },
         trustProxy: IS_DEV ? false : 1,
         ...(IS_DEV
             ? {
@@ -38,26 +49,34 @@ exports.config = {
         },
         cookieOptions: {
             secret: process.env.COOKIE_SECRET,
+            httpOnly: true,
+            sameSite: 'lax', // Important for cross-origin
+            secure: false, // Set to true in production
+            path: '/',
+            maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
         },
         requireVerification: false,
+        sessionDuration: '7d', // Session lasts 7 days
     },
     dbConnectionOptions: {
         type: 'postgres',
         url: process.env.DATABASE_URL,
-        host: process.env.DB_HOST,
-        port: parseInt(process.env.DB_PORT || '5432', 10),
-        username: process.env.DB_USERNAME,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-        schema: process.env.DB_SCHEMA,
-        synchronize: process.env.DB_SYNCHRONIZE !== 'false',
+        schema: process.env.DB_SCHEMA || 'vendure',
+        synchronize: false,
+        migrationsRun: false,
         migrations: [node_path_1.default.join(__dirname, './migrations/*.+(js|ts)')],
         logging: false,
         ssl: { rejectUnauthorized: false },
+        extra: {
+            max: 10,
+            min: 2,
+            idleTimeoutMillis: 30000,
+            connectionTimeoutMillis: 60000,
+        },
+        maxQueryExecutionTime: 120000,
     },
     paymentOptions: {
         paymentMethodHandlers: [
-            core_1.dummyPaymentHandler,
             razorpay_plugin_1.razorpayPaymentHandler,
         ],
     },
@@ -68,10 +87,29 @@ exports.config = {
             keySecret: process.env.RAZORPAY_KEY_SECRET,
         }),
         graphiql_plugin_1.GraphiqlPlugin.init(),
+        // TO:
         asset_server_plugin_1.AssetServerPlugin.init({
             route: 'assets',
             assetUploadDir: node_path_1.default.join(__dirname, '../static/assets'),
-            assetUrlPrefix: IS_DEV ? undefined : 'https://www.my-shop.com/assets/',
+            storageStrategyFactory: () => new asset_server_plugin_1.S3AssetStorageStrategy({
+                bucket: process.env.SUPABASE_STORAGE_BUCKET,
+                credentials: {
+                    accessKeyId: process.env.SUPABASE_S3_ACCESS_KEY_ID,
+                    secretAccessKey: process.env.SUPABASE_S3_SECRET_ACCESS_KEY,
+                },
+                nativeS3Configuration: {
+                    endpoint: process.env.SUPABASE_S3_ENDPOINT,
+                    forcePathStyle: true,
+                    region: process.env.SUPABASE_S3_REGION ?? 'ap-southeast-2',
+                },
+            }, (request, identifier) => {
+                const normalizedPath = identifier.replace(/\\/g, '/');
+                // Strip __02, __03 etc.
+                const cleanPath = normalizedPath.replace(/__\d+(\.[a-z]+)$/i, '$1');
+                // If source/ file doesn't exist in Supabase, serve from preview/ instead
+                const servePath = cleanPath.replace(/^source\//, 'preview/');
+                return `${process.env.SUPABASE_PUBLIC_URL}/${servePath}`;
+            }),
         }),
         core_1.DefaultSchedulerPlugin.init(),
         core_1.DefaultJobQueuePlugin.init({ useDatabaseForBuffer: true }),

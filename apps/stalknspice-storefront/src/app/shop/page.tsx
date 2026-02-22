@@ -1,224 +1,359 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Image from "next/image";
-import Link from "next/link"; // For navigation to details
-import { Zap, ChevronDown, LucideLoader2 } from "lucide-react";
-import { vendureClient } from "@/lib/vendure/client";
-import { GET_PRODUCTS } from "@/lib/vendure/queries/products";
+import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
+import { Zap, ChevronDown, Loader2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { UnifiedProductCard } from "@/components/UnifiedProductCard";
+import { CategorySidebar } from "@/components/CategorySidebar";
+import { useInfiniteProducts } from "@/hooks/useInfiniteProducts";
 import type { Product } from "@/lib/vendure/types";
+import { vendureClient } from "@/lib/vendure/client";
+import { GET_BRAND_COLLECTIONS } from "@/lib/vendure/queries/products";
 
-// 1. New Mutation for Cart Functionality
-const ADD_ITEM_TO_ORDER = `
-  mutation AddItemToOrder($productVariantId: ID!, $quantity: Int!) {
-    addItemToOrder(productVariantId: $productVariantId, quantity: $quantity) {
-      ... on Order {
-        id
-        totalQuantity
-      }
-      ... on ErrorResult {
-        errorCode
-        message
-      }
-    }
+type FiltersState = {
+  brand: string;
+  packSize: string;
+  price: string;
+  discount: string;
+  stockType: string;
+};
+
+const defaultFilters: FiltersState = {
+  brand: "all",
+  packSize: "all",
+  price: "all",
+  discount: "all",
+  stockType: "all",
+};
+
+function getPrimaryVariant(product: Product) {
+  return product.variants?.[0];
+}
+
+function getPackSize(product: Product) {
+  const variantName = getPrimaryVariant(product)?.name || "";
+  if (!variantName) return "Unknown";
+  if (variantName.includes("-")) {
+    return variantName.split("-").pop()?.trim() || "Unknown";
   }
-`;
+  if (variantName.includes(" - ")) {
+    return variantName.split(" - ").pop()?.trim() || "Unknown";
+  }
+  return variantName.trim();
+}
 
-// Query for Categories
-const GET_COLLECTIONS = `query { collections { items { id name slug featuredAsset { preview } } } }`;
+function getBrandNames(product: Product) {
+  const brandsFromCollections =
+    product.collections
+      ?.filter((c) => /brand/i.test(c.name))
+      .map((c) => c.name.replace(/^brand[-\s]*/i, "").trim())
+      .filter(Boolean) || [];
+  return brandsFromCollections;
+}
 
-function DmartProductCard({ product }: { product: Product }) {
-  const [selectedVariantId] = useState(product.variants[0]?.id);
-  const [adding, setAdding] = useState(false);
-  
-  const currentVariant = product.variants.find((v) => v.id === selectedVariantId) || product.variants[0];
-  const rawStock = currentVariant?.stockLevel;
-  const isOutOfStock = rawStock === 'OUT_OF_STOCK' || rawStock === 0 || rawStock === '0';
-  
-  const price = (currentVariant?.price || 0) / 100;
-  const mrp = price * 1.2; 
-  const savings = mrp - price;
+function getPriceInr(product: Product) {
+  const variant = getPrimaryVariant(product);
+  return ((variant?.price ?? 0) as number) / 100;
+}
 
-  // 2. Add to Cart Logic
-  const handleAddToCart = async (e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent navigating to details when clicking ADD
-    if (!selectedVariantId || adding) return;
+function getDiscountPercent(product: Product) {
+  const price = getPriceInr(product);
+  if (!price || price <= 0) return 0;
+  const mrp = price * 1.2;
+  return ((mrp - price) / mrp) * 100;
+}
 
-    setAdding(true);
-    try {
-      const result = await vendureClient.request(ADD_ITEM_TO_ORDER, {
-        productVariantId: selectedVariantId,
-        quantity: 1,
-      });
-      
-      if (result.addItemToOrder.errorCode) {
-        alert(`Error: ${result.addItemToOrder.message}`);
-      } else {
-        // Success! You might want to update a global cart state here
-        console.log("Added to cart:", result.addItemToOrder);
+function isOutOfStock(product: Product) {
+  const stock = getPrimaryVariant(product)?.stockLevel;
+  return stock === "OUT_OF_STOCK" || stock === "0";
+}
+
+export default function ShopPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [filters, setFilters] = useState<FiltersState>(defaultFilters);
+  const [allBrandOptions, setAllBrandOptions] = useState<string[]>([]);
+
+  const collectionFromUrl = searchParams.get("collection");
+  const selectedCollection = collectionFromUrl && collectionFromUrl.trim() !== "" ? collectionFromUrl : null;
+  const searchFromUrl = searchParams.get("search");
+  const selectedSearchTerm = searchFromUrl && searchFromUrl.trim() !== "" ? searchFromUrl.trim() : null;
+
+  const { products, loading, hasMore, error, sentinelRef, totalItems } = useInfiniteProducts({
+    pageSize: 20,
+    collectionSlug: selectedCollection || undefined,
+    searchTerm: selectedSearchTerm || undefined,
+  });
+
+  const activeCategoryName = selectedSearchTerm
+    ? `Search: "${selectedSearchTerm}"`
+    : selectedCollection
+      ? selectedCollection
+          .split("-")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ")
+      : "All Products";
+
+  const filterOptions = useMemo(() => {
+    const brandsFromLoadedProducts = Array.from(
+      new Set(
+        products.flatMap((p) => getBrandNames(p)),
+      ),
+    ).sort((a, b) => a.localeCompare(b));
+    const brands = Array.from(new Set([...allBrandOptions, ...brandsFromLoadedProducts])).sort((a, b) =>
+      a.localeCompare(b),
+    );
+
+    const packSizes = Array.from(
+      new Set(
+        products.map((p) => getPackSize(p)).filter(Boolean),
+      ),
+    ).sort((a, b) => a.localeCompare(b));
+
+    return {
+      brands,
+      packSizes,
+    };
+  }, [products, allBrandOptions]);
+
+  useEffect(() => {
+    let ignore = false;
+    const loadAllBrands = async () => {
+      try {
+        const pageSize = 100;
+        let skip = 0;
+        let totalItems = 0;
+        const allItems: Array<{ name: string }> = [];
+
+        do {
+          const data = await vendureClient.request(GET_BRAND_COLLECTIONS, {
+            options: {
+              filter: {
+                name: { contains: "Brand" },
+              },
+              take: pageSize,
+              skip,
+            },
+          });
+
+          const items = data.collections?.items || [];
+          totalItems = data.collections?.totalItems || 0;
+          allItems.push(...items);
+          skip += pageSize;
+        } while (skip < totalItems);
+
+        const brands =
+          allItems
+            .map((item) => item.name.replace(/^brand[-\s]*/i, "").trim())
+            .filter((name) => name.length > 0) || [];
+
+        if (!ignore) {
+          setAllBrandOptions(Array.from(new Set(brands)).sort((a, b) => a.localeCompare(b)));
+        }
+      } catch (e) {
+        console.error("Failed to load brand options:", e);
       }
-    } catch (err) {
-      console.error("Cart error:", err);
-    } finally {
-      setAdding(false);
+    };
+
+    loadAllBrands();
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const filteredProducts = useMemo(() => {
+    return products.filter((product) => {
+      if (filters.brand !== "all") {
+        const brandNames = getBrandNames(product);
+        if (!brandNames.includes(filters.brand)) return false;
+      }
+
+      if (filters.packSize !== "all") {
+        if (getPackSize(product) !== filters.packSize) return false;
+      }
+
+      if (filters.price !== "all") {
+        const price = getPriceInr(product);
+        if (filters.price === "under-100" && !(price < 100)) return false;
+        if (filters.price === "100-250" && !(price >= 100 && price <= 250)) return false;
+        if (filters.price === "250-500" && !(price > 250 && price <= 500)) return false;
+        if (filters.price === "500-plus" && !(price > 500)) return false;
+      }
+
+      if (filters.discount !== "all") {
+        const discount = getDiscountPercent(product);
+        if (filters.discount === "10-plus" && !(discount >= 10)) return false;
+        if (filters.discount === "20-plus" && !(discount >= 20)) return false;
+        if (filters.discount === "30-plus" && !(discount >= 30)) return false;
+      }
+
+      if (filters.stockType !== "all") {
+        const outOfStock = isOutOfStock(product);
+        if (filters.stockType === "in-stock" && outOfStock) return false;
+        if (filters.stockType === "out-of-stock" && !outOfStock) return false;
+      }
+
+      return true;
+    });
+  }, [products, filters]);
+
+  const hasActiveFilters = Object.values(filters).some((v) => v !== "all");
+
+  const handleCollectionClick = (slug: string | null) => {
+    if (slug) {
+      router.push(`/shop?collection=${slug}`);
+    } else {
+      router.push("/shop");
     }
   };
 
   return (
-    <div className="bg-white border border-gray-100 p-3 flex flex-col hover:shadow-md transition-shadow relative group">
-      {/* 3. Wrap Image & Info in Link for Detail Page Functionality */}
-      <Link href={`/product/${product.slug}`} className="flex-grow flex flex-col group/link">
-        <div className="relative aspect-square mb-2 bg-white flex items-center justify-center">
-          <div className="absolute top-0 right-0 border border-green-600 p-[1px] w-3 h-3 flex items-center justify-center z-10">
-            <div className="w-1.5 h-1.5 rounded-full bg-green-600" />
-          </div>
-
-          <Image
-            src={currentVariant?.featuredAsset?.preview || product.featuredAsset?.preview || "/images/placeholder.jpg"}
-            alt={product.name}
-            fill
-            className={`object-contain p-2 transition-transform group-hover/link:scale-105 ${isOutOfStock ? 'grayscale opacity-50' : ''}`}
-          />
-          
-          {isOutOfStock && (
-            <div className="absolute inset-0 flex items-center justify-center bg-white/60 z-20">
-              <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded italic">Out Of Stock</span>
+    <main className="bg-white">
+      <header className="sticky top-0 z-40 bg-white border-b border-gray-100 shadow-sm">
+        <div className="flex items-center justify-between px-4 md:px-6 py-3 max-w-[1600px] mx-auto">
+          <div className="flex items-center gap-4">
+            <Link href="/" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+              <ChevronDown size={20} className="rotate-90 text-gray-600" />
+            </Link>
+            <div>
+              <h1 className="text-lg md:text-xl font-black text-[#8B2323] uppercase tracking-tight">MARKETPLACE</h1>
+              <p className="text-[10px] md:text-xs text-gray-500 font-medium">{totalItems} GOURMET ITEMS</p>
             </div>
-          )}
-        </div>
-
-        <h3 className="text-[13px] font-medium text-gray-700 leading-tight line-clamp-2 h-8 mb-1 group-hover/link:text-green-600">
-          {product.name}
-        </h3>
-        <p className="text-[12px] text-gray-500 mb-2">
-          {currentVariant?.name.includes('-') ? currentVariant.name.split('-').pop() : '1 unit'}
-        </p>
-      </Link>
-
-      {/* Pricing and Action Button */}
-      <div className="mt-auto pt-2 border-t border-gray-50">
-        <div className="flex items-center gap-4 text-[11px]">
-          <span className="text-gray-400">MRP <span className="line-through">₹{mrp.toFixed(0)}</span></span>
-          <span className="font-bold text-gray-800">Our Price <span className="text-sm">₹{price.toFixed(0)}</span></span>
-        </div>
-        
-        <div className="flex items-center justify-between mt-2">
-          <div className="bg-green-50 text-green-700 text-[10px] font-bold px-1.5 py-0.5 border border-green-100">
-             ₹{savings.toFixed(0)} OFF
           </div>
-          
-          <button 
-            onClick={handleAddToCart}
-            disabled={isOutOfStock || adding}
-            className={`px-4 py-1 rounded text-xs font-bold border transition-colors flex items-center gap-1
-            ${isOutOfStock 
-              ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' 
-              : 'border-green-600 text-green-600 hover:bg-green-600 hover:text-white'
-            }`}
-          >
-            {adding ? <LucideLoader2 size={12} className="animate-spin" /> : null}
-            {isOutOfStock ? 'SOLD' : adding ? '...' : 'ADD'}
-          </button>
+          <div className="hidden md:flex items-center gap-2 bg-[#FEF2F2] px-5 py-2.5 rounded-full border border-red-100">
+            <Zap size={14} className="text-[#8B2323]" />
+            <span className="text-[11px] font-bold text-[#8B2323] uppercase tracking-tight">EXPRESS DELIVERY</span>
+          </div>
         </div>
-      </div>
-    </div>
-  );
-}
-
-export default function ShopPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [collections, setCollections] = useState<any[]>([]);
-  const [selectedCol, setSelectedCol] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [pData, cData] = await Promise.all([
-          vendureClient.request(GET_PRODUCTS, { options: { take: 100 } }),
-          vendureClient.request(GET_COLLECTIONS)
-        ]);
-        setProducts(pData.products.items);
-        setCollections(cData.collections.items);
-      } catch (err) { console.error(err); }
-      setLoading(false);
-    };
-    fetchData();
-  }, []);
-
-  const filteredProducts = selectedCol 
-    ? products.filter(p => p.collections?.some(c => c.id === selectedCol))
-    : products;
-
-  const activeCategoryName = selectedCol ? collections.find(c => c.id === selectedCol)?.name : 'All Products';
-
-  return (
-    <main className="bg-white min-h-screen">
-      <div className="bg-[#f3f4f6] px-6 py-2 flex items-center justify-between border-b border-gray-200">
-        <div className="flex items-center gap-4 text-xs font-medium text-gray-600">
-           <Link href="/">Home</Link>
-           <span>/</span>
-           <span className="text-black font-bold">{activeCategoryName}</span>
-        </div>
-        <div className="flex items-center gap-2 bg-white px-3 py-1 rounded-full border text-[10px] font-bold text-green-600">
-           <Zap size={12} fill="currentColor" /> FAST DELIVERY AVAILABLE
-        </div>
-      </div>
+      </header>
 
       <div className="flex max-w-[1600px] mx-auto">
-        <aside className="w-[260px] border-r border-gray-200 min-h-screen sticky top-0 bg-white hidden md:block">
-           <div className="p-4 border-b border-gray-100">
-              <h2 className="text-sm font-bold text-gray-800 uppercase tracking-tight">Categories</h2>
-           </div>
-           <nav className="p-2 space-y-0.5">
-              <button 
-                onClick={() => setSelectedCol(null)}
-                className={`w-full text-left px-3 py-2.5 text-[13px] rounded-md transition-all
-                ${!selectedCol ? 'bg-green-50 text-green-700 font-bold border-l-4 border-green-600' : 'text-gray-600 hover:bg-gray-50'}`}
-              >
-                All Provisions
-              </button>
-              {collections.map(col => (
-                <button 
-                  key={col.id}
-                  onClick={() => setSelectedCol(col.id)}
-                  className={`w-full text-left px-3 py-2.5 text-[13px] rounded-md transition-all flex justify-between items-center
-                  ${selectedCol === col.id ? 'bg-green-50 text-green-700 font-bold border-l-4 border-green-600' : 'text-gray-600 hover:bg-gray-50'}`}
-                >
-                  {col.name}
-                  <span className="text-[10px] text-gray-400">({products.filter(p => p.collections?.some(c => c.id === col.id)).length})</span>
-                </button>
-              ))}
-          </nav>
-        </aside>
+        <CategorySidebar selectedCollection={selectedCollection} onCollectionClick={handleCollectionClick} />
 
         <section className="flex-1 bg-white p-4 md:p-6">
           <div className="flex items-end gap-3 mb-6">
             <h1 className="text-2xl font-bold text-gray-800 leading-none">{activeCategoryName}</h1>
-            <span className="text-sm text-gray-400 font-medium">{filteredProducts.length} items</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 mb-8 border-b border-gray-100 pb-4">
-            {['Brand', 'Pack Size', 'Price', 'Discount', 'Type'].map((filter) => (
-              <button key={filter} className="px-4 py-1.5 border border-gray-300 rounded-full text-[12px] font-medium text-gray-600 flex items-center gap-2 hover:border-green-600 transition-colors">
-                  {filter} <ChevronDown size={14} />
+            <div className="relative">
+              <select
+                value={filters.brand}
+                onChange={(e) => setFilters((prev) => ({ ...prev, brand: e.target.value }))}
+                className="appearance-none pr-8 px-4 py-1.5 border border-gray-300 rounded-full text-[12px] font-medium text-gray-600 bg-white hover:border-[#8B2323] focus:border-[#8B2323] focus:outline-none"
+              >
+                <option value="all">Brand</option>
+                {filterOptions.brands.map((brand) => (
+                  <option key={brand} value={brand}>
+                    {brand}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" />
+            </div>
+
+            <div className="relative">
+              <select
+                value={filters.packSize}
+                onChange={(e) => setFilters((prev) => ({ ...prev, packSize: e.target.value }))}
+                className="appearance-none pr-8 px-4 py-1.5 border border-gray-300 rounded-full text-[12px] font-medium text-gray-600 bg-white hover:border-[#8B2323] focus:border-[#8B2323] focus:outline-none"
+              >
+                <option value="all">Pack Size</option>
+                {filterOptions.packSizes.map((pack) => (
+                  <option key={pack} value={pack}>
+                    {pack}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" />
+            </div>
+
+            <div className="relative">
+              <select
+                value={filters.price}
+                onChange={(e) => setFilters((prev) => ({ ...prev, price: e.target.value }))}
+                className="appearance-none pr-8 px-4 py-1.5 border border-gray-300 rounded-full text-[12px] font-medium text-gray-600 bg-white hover:border-[#8B2323] focus:border-[#8B2323] focus:outline-none"
+              >
+                <option value="all">Price</option>
+                <option value="under-100">Under Rs. 100</option>
+                <option value="100-250">Rs. 100 - Rs. 250</option>
+                <option value="250-500">Rs. 250 - Rs. 500</option>
+                <option value="500-plus">Rs. 500+</option>
+              </select>
+              <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" />
+            </div>
+
+            <div className="relative">
+              <select
+                value={filters.discount}
+                onChange={(e) => setFilters((prev) => ({ ...prev, discount: e.target.value }))}
+                className="appearance-none pr-8 px-4 py-1.5 border border-gray-300 rounded-full text-[12px] font-medium text-gray-600 bg-white hover:border-[#8B2323] focus:border-[#8B2323] focus:outline-none"
+              >
+                <option value="all">Discount</option>
+                <option value="10-plus">10%+ Off</option>
+                <option value="20-plus">20%+ Off</option>
+                <option value="30-plus">30%+ Off</option>
+              </select>
+              <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" />
+            </div>
+
+            <div className="relative">
+              <select
+                value={filters.stockType}
+                onChange={(e) => setFilters((prev) => ({ ...prev, stockType: e.target.value }))}
+                className="appearance-none pr-8 px-4 py-1.5 border border-gray-300 rounded-full text-[12px] font-medium text-gray-600 bg-white hover:border-[#8B2323] focus:border-[#8B2323] focus:outline-none"
+              >
+                <option value="all">Type</option>
+                <option value="in-stock">In Stock</option>
+                <option value="out-of-stock">Out of Stock</option>
+              </select>
+              <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" />
+            </div>
+
+            {hasActiveFilters && (
+              <button
+                onClick={() => setFilters(defaultFilters)}
+                className="px-4 py-1.5 border border-red-200 rounded-full text-[12px] font-semibold text-[#8B2323] bg-red-50 hover:bg-red-100 transition-colors"
+              >
+                Clear Filters
               </button>
-            ))}
+            )}
           </div>
 
-          {loading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-px bg-gray-100 border border-gray-100">
+          {error && <div className="p-4 mb-4 bg-red-50 border border-red-200 rounded text-red-700 text-sm">{error}</div>}
+
+          {loading && products.length === 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {[...Array(10)].map((_, i) => (
-                  <div key={i} className="bg-white aspect-[4/6] animate-pulse" />
+                <div key={i} className="bg-gray-50 aspect-square rounded-2xl animate-pulse" />
               ))}
+            </div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <p className="text-lg font-medium">No products found</p>
+              <p className="text-sm mt-2">
+                {hasActiveFilters ? "Try clearing some filters" : "Try selecting a different category"}
+              </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-px bg-gray-100 border border-gray-100">
-              {filteredProducts.map((p) => (
-                <DmartProductCard key={p.id} product={p} />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {filteredProducts.map((p) => (
+                  <UnifiedProductCard key={p.id} product={p} variant="premium" showMRP={false} />
+                ))}
+              </div>
+
+              <div ref={sentinelRef} className="h-20 flex items-center justify-center mt-4">
+                {loading && (
+                  <div className="flex items-center gap-2 text-gray-500">
+                    <Loader2 size={20} className="animate-spin" />
+                    <span className="text-sm">Loading more products...</span>
+                  </div>
+                )}
+                {!hasMore && filteredProducts.length > 0 && <p className="text-sm text-gray-400">You've reached the end</p>}
+              </div>
+            </>
           )}
         </section>
       </div>

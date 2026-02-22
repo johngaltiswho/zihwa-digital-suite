@@ -27,10 +27,34 @@
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
-  .no-scrollbar {
-    -ms-overflow-style: none; /* IE and Edge */
-    scrollbar-width: none; /* Firefox */
-  }
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* Thin themed horizontal scrollbar for category product shelves */
+.shelf-scrollbar {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: #8B2323 #e5e7eb; /* thumb / track */
+}
+
+.shelf-scrollbar::-webkit-scrollbar {
+  height: 5px;
+}
+
+.shelf-scrollbar::-webkit-scrollbar-track {
+  background: #e5e7eb;
+  border-radius: 9999px;
+}
+
+.shelf-scrollbar::-webkit-scrollbar-thumb {
+  background: #8B2323;
+  border-radius: 9999px;
+}
+
+.shelf-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #7a1d1d;
+}
 }
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;

@@ -189,7 +189,7 @@ export function StalknSpiceFooter() {
         </Link>
         
         {/* Centered "Home" button with Raised Design */}
-        <Link href="/Shop" className="relative -top-3 flex flex-col items-center">
+        <Link href="/shop" className="relative -top-3 flex flex-col items-center">
           <div className="p-1.5 bg-white rounded-full shadow-lg">
              <div className="w-14 h-14 bg-[#8B2323] text-white rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform">
                 <Store size={30} />

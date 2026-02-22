@@ -11,7 +11,7 @@ import { ArrowLeft, Truck, CheckCircle } from "lucide-react";
 
 export default function ShippingMethodPage() {
   const router = useRouter();
-  const { activeOrder, itemCount, refreshCart } = useCart();
+  const { activeOrder, itemCount, refreshCart, isLoading: isCartLoading } = useCart();
   const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([]);
   const [selectedMethodId, setSelectedMethodId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,13 +45,17 @@ export default function ShippingMethodPage() {
 
   // Redirect if cart is empty or order is not in correct state
   useEffect(() => {
+    if (isCartLoading) {
+      return;
+    }
+
     if (!activeOrder || itemCount === 0) {
       router.push("/cart");
     } else if (activeOrder.state !== "AddingItems" && activeOrder.state !== "ArrangingShipping") {
       // Order already processed, redirect to cart
       router.push("/cart");
     }
-  }, [activeOrder, itemCount, router]);
+  }, [activeOrder, itemCount, isCartLoading, router]);
 
   const formatPrice = (price: number, currencyCode: string) => {
     return new Intl.NumberFormat("en-US", {
@@ -88,6 +92,10 @@ export default function ShippingMethodPage() {
       setSubmitting(false);
     }
   };
+
+  if (isCartLoading) {
+    return null;
+  }
 
   if (!activeOrder || itemCount === 0) {
     return null; // Will redirect

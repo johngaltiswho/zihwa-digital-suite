@@ -90,6 +90,7 @@ export const TRANSITION_ORDER_TO_STATE = `
 export const ADD_PAYMENT_TO_ORDER = `
   mutation AddPaymentToOrder($input: PaymentInput!) {
     addPaymentToOrder(input: $input) {
+      __typename
       ... on Order {
         id
         code
@@ -180,6 +181,8 @@ export const GET_ORDER_BY_CODE = `
       createdAt
       updatedAt
       orderPlacedAt
+      subTotalWithTax
+      shippingWithTax
       totalWithTax
       currencyCode
       lines {

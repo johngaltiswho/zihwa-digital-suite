@@ -32,6 +32,11 @@ export const PRODUCT_FRAGMENT = `
         source
       }
     }
+    collections {
+      id
+      name
+      slug
+    }
   }
 `;
 
@@ -41,6 +46,38 @@ export const GET_PRODUCTS = `
     products(options: $options) {
       items {
         ...ProductFields
+      }
+      totalItems
+    }
+  }
+`;
+
+export const GET_PRODUCTS_LIGHT = `
+  query GetProductsLight($options: ProductListOptions) {
+    products(options: $options) {
+      items {
+        id
+        name
+        slug
+        featuredAsset {
+          id
+          preview
+        }
+        variants {
+          id
+          name
+          price
+          priceWithTax
+          stockLevel
+          featuredAsset {
+            preview
+          }
+        }
+        collections {
+          id
+          name
+          slug
+        }
       }
       totalItems
     }
@@ -148,6 +185,15 @@ export const GET_COLLECTIONS = `
             id
             preview
           }
+          children {
+            id
+            name
+            slug
+            featuredAsset {
+              id
+              preview
+            }
+          }
         }
       }
       totalItems
@@ -193,6 +239,15 @@ export const GET_COLLECTION = `
           id
           preview
         }
+        children {
+          id
+          name
+          slug
+          featuredAsset {
+            id
+            preview
+          }
+        }
       }
     }
   }
@@ -212,6 +267,97 @@ export const GET_SIDEBAR_COLLECTIONS = `
           name
           slug
         }
+      }
+    }
+  }
+`;
+
+export const GET_COLLECTIONS_WITH_COUNTS = `
+  query GetCollectionsWithCounts($options: CollectionListOptions) {
+    collections(options: $options) {
+      items {
+        id
+        name
+        slug
+        featuredAsset {
+          id
+          preview
+        }
+        productVariants(options: { take: 1 }) {
+          totalItems
+        }
+      }
+      totalItems
+    }
+  }
+`;
+
+export const GET_COLLECTION_PAGINATED = `
+  query GetCollectionPaginated($slug: String!, $options: ProductVariantListOptions) {
+    collection(slug: $slug) {
+      id
+      name
+      slug
+      productVariants(options: $options) {
+        totalItems
+        items {
+          id
+          name
+          price
+          priceWithTax
+          stockLevel
+          featuredAsset {
+            preview
+          }
+          product {
+            id
+            name
+            slug
+            featuredAsset {
+              preview
+            }
+            collections {
+              id
+              name
+              slug
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const GET_HIERARCHICAL_COLLECTIONS = `
+  query GetHierarchicalCollections {
+    collections(options: { filter: { parentId: { eq: "1" } }, take: 100 }) {
+      items {
+        id
+        name
+        slug
+        children {
+          id
+          name
+          slug
+          children {
+            id
+            name
+            slug
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const GET_BRAND_COLLECTIONS = `
+  query GetBrandCollections($options: CollectionListOptions) {
+    collections(options: $options) {
+      totalItems
+      items {
+        id
+        name
+        slug
       }
     }
   }

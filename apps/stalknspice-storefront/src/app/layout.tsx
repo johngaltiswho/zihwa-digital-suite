@@ -24,7 +24,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
       .filter(collection => collection.slug && collection.slug.trim() !== '')
       .map(collection => ({
         label: collection.name,
-        href: `/collection/${collection.slug}`,
+        href: `/shop?collection=${collection.slug}`,
       }));
   }, [topLevelCollections, isLoading]);
 

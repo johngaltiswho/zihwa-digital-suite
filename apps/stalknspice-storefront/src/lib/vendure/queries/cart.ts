@@ -18,6 +18,25 @@ export const ORDER_FRAGMENT = `
     total
     totalWithTax
     currencyCode
+    shippingAddress {
+      fullName
+      streetLine1
+      streetLine2
+      city
+      province
+      postalCode
+      country
+      phoneNumber
+    }
+    shippingLines {
+      shippingMethod {
+        id
+        code
+        name
+        description
+      }
+      priceWithTax
+    }
     lines {
       id
       productVariant {

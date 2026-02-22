@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Building2, Calendar, FileText, Users, Home, CreditCard, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Building2, Calendar, FileText, Users, Home, CreditCard, ChevronLeft, ChevronRight,UserPlus } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useSupabase } from '@/components/providers/SupabaseProvider'
@@ -53,6 +53,7 @@ export default function DashboardLayout({
     { href: '/dashboard/documents', label: 'Documents', icon: FileText },
     { href: '/dashboard/employees', label: 'Employees', icon: Users },
     { href: '/dashboard/users', label: 'Users', icon: Users },
+    { href: '/dashboard/hiring', label: 'Hiring Candidates', icon: UserPlus },
     { href: '/dashboard/vendor-payments', label: 'Vendor Payments', icon: CreditCard },
   ]
 

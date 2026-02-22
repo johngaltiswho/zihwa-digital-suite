@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Menu, Search, CircleUser,User, Heart, X,
   ChefHat, PhoneCall, MapPin, Tag, ShoppingCart, 
-  ChevronRight, ChevronDown, Headset, Pill, ShoppingBag, 
+  ChevronRight, ChevronDown, Headset, Pill, ShoppingBag, LayoutGrid, Package,
   ShieldCheck, Handbag, Store, LogOut, CheckCircle, Trash2 
 } from "lucide-react";
 
@@ -34,7 +34,23 @@ interface HeaderProps {
   logoSrc: string;
 }
 const toSlug = (value: string) =>
-  value.toLowerCase().replace(/&/g, "and").replace(/\s+/g, "-");
+  value.toLowerCase()
+    .replace(/,/g, "") // Remove commas
+    .replace(/&/g, "") // Remove ampersands
+    .replace(/\s+/g, "-") // Replace spaces with hyphens
+    .replace(/-+/g, "-") // Replace multiple hyphens with single hyphen
+    .replace(/^-|-$/g, ""); // Remove leading/trailing hyphens
+
+const MEGA_MENU_KEY_ALIASES: Record<string, string> = {
+  "RICE, PASTA & NOODLE": "RICE, PASTA & NOODLES",
+  "RICE, PASTA AND NOODLE": "RICE, PASTA & NOODLES",
+  "RICE, PASTA AND NOODLES": "RICE, PASTA & NOODLES",
+};
+
+const resolveMegaMenuKey = (label: string) => {
+  const normalized = label.toUpperCase();
+  return MEGA_MENU_KEY_ALIASES[normalized] ?? normalized;
+};
 
 // --- MEGA MENU DATA ---
 
@@ -51,12 +67,12 @@ const MEGA_MENU_DATA: Record<string, {
     promoTitle: "DESERT SYRUPS & TOPPINGS"
   },
   "BREAKFAST, DAIRY & FROZEN FOOD": {
-    products: ["Almond, Coconut & Soy Milk", "Caffeine", "Desert Syrups & Sauces", "Frozen Fast Food", "Beans, Corn & Peas", "Cereals", "Ghee & Condensed Milk", "Spreads", "Butter, Cheese & Paneer", "Cooking Cream"],
+    products: ["Almond, Coconut & Soy Milk", "Caffeine", "Desert Syrups & Sauces", "Frozen Fast Food", "Beans, Corn & Peas", "Cereals", "Ghee & Condensed Milk", "Spreads", "Butter, Cheese & Paneer", "Cooking Cream", "Spring Roll Pastry & Gyoza Skin"],
     brands: ["ABBIE'S", "CHAYAM", "MCCAIN", "SOFIT", "AMERICAN GARDEN", "DAIRY CRAFT", "NUTELLA", "AMUL", "HERSHEY'S", "RICH"],
     promoTitle: "DIPS & FRUITY MARMALADES"
   },
   "CANNED FOODS": {
-    products: ["Artichokes & Asparagus", "Cherry, Litchi & Pears", "Gherkins & Jalapeno", "Olives & Capers", "Paste", "Thai Cooking Paste", "Bamboo Shoots", "Coconut Products", "Mango & Pineapple", "Soups & Stews", "Water Chestnuts"],
+    products: ["Artichokes & Asparagus", "Cherry, Litchi & Pears", "Gherkins & Jalapeno","Pastes", "Pickles","Olives & Capers", "Paste", "Thai Cooking Paste", "Bamboo Shoots", "Coconut Products", "Mango & Pineapple", "Soups & Stews", "Water Chestnuts"],
     brands: ["FRESHO'S", "LEE KUM KEE", "NAMJAI", "WOH HUP", "GOLDEN CROWN", "NANI KI BARNI", "REAL THAI", "HABIT", "TOPPS"],
     promoTitle: "AUTHENTIC CANNED SELECTION"
   },
@@ -109,8 +125,8 @@ interface HeaderProps {
   isEcommerce?: boolean;
   customer?: Customer | null;
   onLogout?: () => void;
-  onUserMenuToggle?: (isOpen: boolean) => void; 
-  
+  onUserMenuToggle?: (isOpen: boolean) => void;
+  mobileMenuContent?: React.ReactNode;
 }
 // --- SUB-COMPONENT: AUTH STATUS POPUP (UPDATED DESIGN & LOGIC) ---
 function AuthStatusToast({ type, onClose }: { type: string | null, onClose: () => void }) {
@@ -329,7 +345,7 @@ export function SharedHeader({ navItems, logoSrc }: HeaderProps) {
 }
 
 // --- 2. STALKS N SPICE HEADER ---
-export function StalksHeader({ navItems, logoSrc, customer, onUserMenuToggle, onLogout, }: HeaderProps) {
+export function StalksHeader({ navItems, logoSrc, customer, onUserMenuToggle, onLogout, mobileMenuContent }: HeaderProps) {
   const pathname = usePathname();
   const router = useRouter(); 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -338,6 +354,7 @@ export function StalksHeader({ navItems, logoSrc, customer, onUserMenuToggle, on
   const [mounted, setMounted] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMenuLocked, setIsMenuLocked] = useState(false);
+  const [expandedMobileCategory, setExpandedMobileCategory] = useState<string | null>(null);
   // POPUP MANAGEMENT
   const [authPopup, setAuthPopup] = useState<"login" | "logout" | "created" | "deleted" | null>(null);
   const prevCustomerRef = useRef<Customer | null | undefined>(customer);
@@ -441,6 +458,15 @@ export function StalksHeader({ navItems, logoSrc, customer, onUserMenuToggle, on
     setIsMenuLocked(false);
     router.push('/'); // Also redirect home on logout
   };
+
+  const submitSearch = (rawValue?: string) => {
+    const term = (rawValue ?? searchValue).trim();
+    if (!term) {
+      router.push('/shop');
+      return;
+    }
+    router.push(`/shop?search=${encodeURIComponent(term)}`);
+  };
 // ADD THIS BLOCK around line 410 in the file you just sent
 useEffect(() => {
   // This notifies the HeaderWrapper whenever the login menu opens or closes
@@ -448,6 +474,12 @@ useEffect(() => {
     onUserMenuToggle(isUserMenuOpen);
   }
 }, [isUserMenuOpen, onUserMenuToggle]);
+
+  useEffect(() => {
+    if (!isMenuOpen) {
+      setExpandedMobileCategory(null);
+    }
+  }, [isMenuOpen]);
 
   if (!mounted) return <div className="w-full h-[180px] bg-white border-b" />;
   return (
@@ -556,10 +588,7 @@ useEffect(() => {
 
         {/* ROW 2: Logo & Search */}
         <div className="max-w-[1400px] mx-auto px-6 h-12 flex items-center justify-between gap-8 mt-0 mb-1">
-          <div className="flex items-center space-x-6 flex-shrink-0">
-          <div className="p-1 text-gray-800">
-          <Menu size={30} />
-          </div>
+          <div className="flex items-center space-x-4 flex-shrink-0">
             <Link href="/" className="block -mt-5">
               <Image src={logoSrc} alt="Logo" width={250} height={50} priority className="object-contain" />
             </Link>
@@ -572,6 +601,12 @@ useEffect(() => {
                   type="text" 
                   value={searchValue}
                   onChange={(e) => setSearchValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      submitSearch();
+                    }
+                  }}
                   onFocus={() => setIsSearchFocused(true)}
                   onBlur={() => setIsSearchFocused(false)}
                   className="w-full h-11 px-6 pr-14 border border-gray-300 rounded-full focus:outline-none focus:border-red-800 focus:ring-4 focus:ring-red-50/50 text-sm transition-all bg-white shadow-sm" 
@@ -597,7 +632,11 @@ useEffect(() => {
                 )}
 
                 {/* THEMED ROUNDED SEARCH BUTTON */}
-                <button className="absolute right-1 p-2.5 bg-[#8B2323] hover:bg-black text-white rounded-full transition-all duration-300 shadow-md active:scale-95 group-hover:shadow-lg">
+                <button
+                  type="button"
+                  onClick={() => submitSearch()}
+                  className="absolute right-1 p-2.5 bg-[#8B2323] hover:bg-black text-white rounded-full transition-all duration-300 shadow-md active:scale-95 group-hover:shadow-lg"
+                >
                   <Search size={18} strokeWidth={2.5} />
                 </button>
               </div>
@@ -634,7 +673,7 @@ useEffect(() => {
           <ul className="flex flex-wrap justify-center items-center gap-x-4 py-0 text-[16px] font-semibold text-gray-800 tracking-tight uppercase">
             {navItems?.map((item) => {
               const isCurrentlyActive = activeMenu === item.label;
-              const megaMenuKey = item.label.toUpperCase();
+              const megaMenuKey = resolveMegaMenuKey(item.label);
               const data = MEGA_MENU_DATA[megaMenuKey];
 
               return (
@@ -675,7 +714,17 @@ useEffect(() => {
                                 <h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest mb-4 border-b pb-2">Vegetables</h3>
                                 <div className="grid grid-cols-3 gap-x-6 gap-y-3">
                                   {data.vegetables?.map((v) => (
-                                    <Link key={v} href="#" className="text-gray-600 hover:text-red-800 text-[15px] font-medium transition-colors">{v}</Link>
+                                    <Link
+                                      key={v}
+                                      href={`/shop?collection=${toSlug(v)}`}
+                                      onClick={() => {
+                                        setActiveMenu(null);
+                                        setIsLocked(false);
+                                      }}
+                                      className="text-gray-600 hover:text-red-800 text-[15px] font-medium transition-colors"
+                                    >
+                                      {v}
+                                    </Link>
                                   ))}
                                 </div>
                               </div>
@@ -683,7 +732,17 @@ useEffect(() => {
                                 <h3 className="text-[#8B2323] font-bold text-center uppercase tracking-widest mb-4 border-b pb-2">Fruits</h3>
                                 <div className="grid grid-cols-6 gap-x-8 gap-y-2">
                                   {data.fruits?.map((f) => (
-                                    <Link key={f} href="#" className="text-gray-600 hover:text-red-800 text-[15px] font-medium transition-colors">{f}</Link>
+                                    <Link
+                                      key={f}
+                                      href={`/shop?collection=${toSlug(f)}`}
+                                      onClick={() => {
+                                        setActiveMenu(null);
+                                        setIsLocked(false);
+                                      }}
+                                      className="text-gray-600 hover:text-red-800 text-[15px] font-medium transition-colors"
+                                    >
+                                      {f}
+                                    </Link>
                                   ))}
                                 </div>
                               </div>
@@ -695,7 +754,7 @@ useEffect(() => {
                                 {data.products?.map((p) => (
                                   <Link
   key={p}
-  href={`/collection/${toSlug(p)}`}
+  href={`/shop?collection=${toSlug(p)}`}
   onClick={() => {
     setActiveMenu(null);
     setIsLocked(false);
@@ -718,7 +777,7 @@ useEffect(() => {
                                 {data.brands.map((brand) => (
                                   <Link
   key={brand}
-  href={`/collection/${toSlug(brand)}`}
+  href={`/shop?collection=${toSlug(brand)}`}
   onClick={() => {
     setActiveMenu(null);
     setIsLocked(false);
@@ -795,61 +854,176 @@ useEffect(() => {
       
 
       {/* MOBILE SIDEBAR (DRAWER) */}
-      <div className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-[200] transition-opacity duration-300 ${isMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`} onClick={() => setIsMenuOpen(false)} />
-      <aside className={`fixed top-0 left-0 w-[300px] h-full bg-white z-[201] shadow-2xl transform transition-transform duration-300 ease-in-out ${isMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
-        <div className="p-6 border-b flex justify-between items-center bg-gray-50">
-          <span className="font-bold text-lg text-[#8B2323] uppercase tracking-widest">Menu</span>
-          <button onClick={() => setIsMenuOpen(false)}><X size={28} className="text-gray-900" /></button>
+      <div
+        className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-[200] transition-opacity duration-300 ${isMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        onClick={() => {
+          setIsMenuOpen(false);
+          setExpandedMobileCategory(null);
+        }}
+      />
+      <aside className={`fixed top-0 left-0 w-[320px] h-full bg-[#fafafa] z-[201] shadow-2xl transform transition-transform duration-300 ease-in-out ${isMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="p-5 border-b border-gray-100 bg-white flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <LayoutGrid size={18} className="text-gray-900" />
+            <span className="text-[13px] font-black uppercase tracking-[0.1em] text-gray-900 leading-none">Categories</span>
+          </div>
+          <button onClick={() => {
+            setIsMenuOpen(false);
+            setExpandedMobileCategory(null);
+          }}><X size={22} className="text-gray-900" /></button>
         </div>
-        <div className="overflow-y-auto h-[calc(100vh-80px)] p-6 bg-white">
-          <ul className="space-y-6">
-            {navItems.map((item) => (
-              <li key={item.href} className="border-b border-gray-50 pb-4 last:border-0">
-                <Link href={item.href} onClick={() => setIsMenuOpen(false)} className="text-[16px] font-bold text-gray-800 uppercase flex justify-between">
-                  {item.label}
-                  <ChevronRight size={18} className="text-gray-300" />
-                </Link>
-              </li>
-            ))}
+        <div className="overflow-y-auto h-[calc(100vh-76px)] bg-[#fafafa]">
+          <div>
+            <div className="border-b border-gray-100 bg-white">
+              <Link
+                href="/shop"
+                onClick={() => setIsMenuOpen(false)}
+                className="w-full text-left p-4 flex items-center justify-between"
+              >
+                <span className="text-[13px] font-black uppercase tracking-tight leading-tight text-[#8B2323]">All Products</span>
+                <ChevronRight size={16} className="text-gray-300" />
+              </Link>
+            </div>
+
+            <div>
+              {navItems.map((item) => {
+                const megaMenuKey = resolveMegaMenuKey(item.label);
+                const data = MEGA_MENU_DATA[megaMenuKey];
+                const hasProducts = (data?.products?.length ?? 0) > 0;
+                const hasBrands = (data?.brands?.length ?? 0) > 0;
+                const hasVegetables = (data?.vegetables?.length ?? 0) > 0;
+                const hasFruits = (data?.fruits?.length ?? 0) > 0;
+                const hasSubcategories = hasProducts || hasBrands || hasVegetables || hasFruits;
+                const isExpanded = expandedMobileCategory === item.label;
+
+                return (
+                  <div key={item.href} className="border-b border-gray-100 bg-white">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (hasSubcategories) {
+                          setExpandedMobileCategory(isExpanded ? null : item.label);
+                        } else {
+                          router.push(item.href);
+                          setIsMenuOpen(false);
+                        }
+                      }}
+                      className={`w-full p-4 flex items-center justify-between relative transition-all ${isExpanded ? "bg-gray-50/50" : "hover:bg-gray-50"}`}
+                    >
+                      {isExpanded && <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#8B2323] z-10" />}
+                      <span className={`text-[13px] font-black uppercase tracking-tight leading-tight text-left pr-3 ${isExpanded ? "text-[#8B2323]" : "text-gray-600"}`}>{item.label}</span>
+                      {hasSubcategories ? (
+                        <ChevronDown size={18} className={`transition-transform duration-300 ${isExpanded ? "rotate-180 text-[#8B2323]" : "text-gray-300"}`} />
+                      ) : (
+                        <ChevronRight size={16} className="text-gray-300" />
+                      )}
+                    </button>
+
+                    {isExpanded && hasSubcategories && (
+                      <div className="px-3 py-4 space-y-6 bg-white border-t border-gray-50">
+                        {(hasProducts || hasVegetables || hasFruits) && (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 mb-2 border-b border-gray-50 pb-1">
+                              <Package size={14} className="text-[#8B2323]" />
+                              <p className="text-[12px] font-black uppercase tracking-widest text-gray-900">Products</p>
+                            </div>
+                            {data?.products?.map((product) => (
+                              <Link
+                                key={product}
+                                href={`/shop?collection=${toSlug(product)}`}
+                                onClick={() => setIsMenuOpen(false)}
+                                className="block w-full text-left text-[13px] font-bold py-2 px-3 rounded-md transition-all text-gray-500 hover:text-[#8B2323] hover:bg-gray-50"
+                              >
+                                {product}
+                              </Link>
+                            ))}
+                            {data?.vegetables?.map((v) => (
+                              <Link
+                                key={v}
+                                href={`/shop?collection=${toSlug(v)}`}
+                                onClick={() => setIsMenuOpen(false)}
+                                className="block w-full text-left text-[13px] font-bold py-2 px-3 rounded-md transition-all text-gray-500 hover:text-[#8B2323] hover:bg-gray-50"
+                              >
+                                {v}
+                              </Link>
+                            ))}
+                            {data?.fruits?.map((f) => (
+                              <Link
+                                key={f}
+                                href={`/shop?collection=${toSlug(f)}`}
+                                onClick={() => setIsMenuOpen(false)}
+                                className="block w-full text-left text-[13px] font-bold py-2 px-3 rounded-md transition-all text-gray-500 hover:text-[#8B2323] hover:bg-gray-50"
+                              >
+                                {f}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+
+                        {hasBrands && (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 mb-2 border-b border-gray-50 pb-1">
+                              <ShieldCheck size={14} className="text-[#8B2323]" />
+                              <p className="text-[12px] font-black uppercase tracking-widest text-gray-900">Featured Brands</p>
+                            </div>
+                            {data?.brands?.map((brand) => (
+                              <Link
+                                key={brand}
+                                href={`/shop?collection=${toSlug(brand)}`}
+                                onClick={() => setIsMenuOpen(false)}
+                                className="block w-full text-left text-[13px] font-bold py-2 px-3 rounded-md transition-all text-gray-500 hover:text-[#8B2323] hover:bg-gray-50"
+                              >
+                                {brand}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
             {/* Auth Links */}
             {customer ? (
               <>
-                <li className="border-b border-gray-50 pb-4">
-                  <div className="text-[14px] font-bold text-gray-600 uppercase flex items-center gap-2">
+                <div className="border-t border-gray-100 p-4 bg-white">
+                  <div className="text-[12px] font-bold text-gray-600 uppercase flex items-center gap-2">
                     <User size={18} />
                     Hi, {customer.firstName}
                   </div>
-                </li>
-                <li className="border-b border-gray-50 pb-4">
-                  <Link href="/account" onClick={() => setIsMenuOpen(false)} className="text-[16px] font-bold text-[#8B2323] uppercase flex items-center gap-2">
+                </div>
+                <div className="border-b border-gray-50 px-4 py-3 bg-white">
+                  <Link href="/account" onClick={() => setIsMenuOpen(false)} className="text-[13px] font-black text-[#8B2323] uppercase flex items-center gap-2">
                     <User size={18} />
                     My Account
                   </Link>
-                </li>
-                <li className="border-b border-gray-50 pb-4">
-                  <button onClick={() => { onLogout?.(); setIsMenuOpen(false); }} className="text-[16px] font-bold text-[#8B2323] uppercase flex items-center gap-2 w-full">
+                </div>
+                <div className="border-b border-gray-50 px-4 py-3 bg-white">
+                  <button onClick={() => { onLogout?.(); setIsMenuOpen(false); }} className="text-[13px] font-black text-[#8B2323] uppercase flex items-center gap-2 w-full">
                     <User size={18} />
                     Logout
                   </button>
-                </li>
+                </div>
               </>
             ) : (
               <>
-                <li className="border-b border-gray-50 pb-4">
-                  <Link href="/register" onClick={() => setIsMenuOpen(false)} className="text-[16px] font-bold text-[#8B2323] uppercase flex items-center gap-2">
+                <div className="border-t border-gray-100 px-4 py-3 border-b border-gray-50 bg-white">
+                  <Link href="/register" onClick={() => setIsMenuOpen(false)} className="text-[13px] font-black text-[#8B2323] uppercase flex items-center gap-2">
                     <User size={18} />
                     Register
                   </Link>
-                </li>
-                <li className="border-b border-gray-50 pb-4">
-                  <Link href="/login" onClick={() => setIsMenuOpen(false)} className="text-[16px] font-bold text-[#8B2323] uppercase flex items-center gap-2">
+                </div>
+                <div className="border-b border-gray-50 px-4 py-3 bg-white">
+                  <Link href="/login" onClick={() => setIsMenuOpen(false)} className="text-[13px] font-black text-[#8B2323] uppercase flex items-center gap-2">
                     <User size={18} />
                     Login
                   </Link>
-                </li>
+                </div>
               </>
             )}
-          </ul>
+          </div>
         </div>
       </aside>
 
@@ -858,10 +1032,19 @@ useEffect(() => {
 }
 export function ParsOptimaHeader({ logoSrc, navItems }: { logoSrc: string; navItems: {label: string, href: string}[] }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isCartOpen, setIsCartOpen] = useState(false); 
+  const [isCartOpen, setIsCartOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [expandedMobileCategory, setExpandedMobileCategory] = useState<string | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
+
+  // Reset expanded category when menu closes
+  useEffect(() => {
+    if (!isMenuOpen) {
+      setExpandedMobileCategory(null);
+    }
+  }, [isMenuOpen]);
+
   if (!mounted) return <div className="w-full h-[120px] bg-white border-b" />;
 
   return (
@@ -941,26 +1124,180 @@ export function ParsOptimaHeader({ logoSrc, navItems }: { logoSrc: string; navIt
           </div>
         </div>
         {/* MOBILE MENU DRAWER */}
-        <div 
-          className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] transition-opacity ${isMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`} 
-          onClick={() => setIsMenuOpen(false)} 
+        <div
+          className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] transition-opacity ${isMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+          onClick={() => {
+            setIsMenuOpen(false);
+            setExpandedMobileCategory(null);
+          }}
         />
         <aside className={`fixed top-0 left-0 w-[300px] h-full bg-white z-[201] transition-transform duration-300 ${isMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
-          <div className="p-5 border-b flex justify-between items-center bg-[#1a3a5a] text-white">
-            <span className="font-bold uppercase tracking-widest text-xs">Navigation</span>
-            <button onClick={() => setIsMenuOpen(false)}><X size={24} /></button>
-          </div>
-          <nav className="p-6">
-            <ul className="space-y-4">
-              {navItems.map((item) => (
-                <li key={item.href} className="border-b border-gray-50 pb-4">
-                  <Link href={item.href} className="flex justify-between items-center text-gray-800 font-bold uppercase text-[12px]" onClick={() => setIsMenuOpen(false)}>
-                    {item.label} <ChevronRight size={14} className="text-gray-300" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
+          {mobileMenuContent ? (
+            <>
+              <div className="p-5 border-b flex justify-between items-center bg-[#1a3a5a] text-white">
+                <span className="font-bold uppercase tracking-widest text-xs">CATEGORIES</span>
+                <button onClick={() => {
+                  setIsMenuOpen(false);
+                }}>
+                  <X size={24} />
+                </button>
+              </div>
+              {mobileMenuContent}
+            </>
+          ) : (
+            <>
+              <div className="p-5 border-b flex justify-between items-center bg-[#1a3a5a] text-white">
+                <span className="font-bold uppercase tracking-widest text-xs">Navigation</span>
+                <button onClick={() => {
+                  setIsMenuOpen(false);
+                  setExpandedMobileCategory(null);
+                }}>
+                  <X size={24} />
+                </button>
+              </div>
+              <nav className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 80px)' }}>
+            {/* All Products Button */}
+            <div className="border-b border-gray-100">
+              <Link
+                href="/shop"
+                onClick={() => setIsMenuOpen(false)}
+                className="flex items-center justify-between p-4 text-gray-800 font-bold uppercase text-[12px] hover:bg-gray-50"
+              >
+                All Products
+                <ChevronRight size={14} className="text-gray-300" />
+              </Link>
+            </div>
+
+            {/* Category List */}
+            {navItems.map((item) => {
+              const megaMenuKey = resolveMegaMenuKey(item.label);
+              const data = MEGA_MENU_DATA[megaMenuKey];
+              const isExpanded = expandedMobileCategory === item.label;
+              const hasSubcategories = data && (data.products || data.vegetables || data.fruits);
+
+              return (
+                <div key={item.label} className="border-b border-gray-100">
+                  {/* Parent Category */}
+                  <div
+                    onClick={() => {
+                      if (hasSubcategories) {
+                        setExpandedMobileCategory(isExpanded ? null : item.label);
+                      } else {
+                        setIsMenuOpen(false);
+                      }
+                    }}
+                    className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50"
+                  >
+                    <span className="text-gray-800 font-bold uppercase text-[12px]">
+                      {item.label}
+                    </span>
+                    {hasSubcategories ? (
+                      <ChevronDown
+                        size={14}
+                        className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                      />
+                    ) : (
+                      <ChevronRight size={14} className="text-gray-300" />
+                    )}
+                  </div>
+
+                  {/* Expanded Subcategories */}
+                  {isExpanded && hasSubcategories && (
+                    <div className="bg-gray-50 px-4 py-3 space-y-3">
+                      {/* Special handling for Fruits & Vegetables */}
+                      {megaMenuKey === "FRUITS & VEGETABLES" ? (
+                        <>
+                          {data.vegetables && data.vegetables.length > 0 && (
+                            <div>
+                              <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+                                Vegetables
+                              </h4>
+                              <div className="space-y-2">
+                                {data.vegetables.map((v) => (
+                                  <Link
+                                    key={v}
+                                    href={`/shop?collection=${toSlug(v)}`}
+                                    onClick={() => setIsMenuOpen(false)}
+                                    className="block text-[11px] text-gray-700 hover:text-[#8B2323] py-1"
+                                  >
+                                    {v}
+                                  </Link>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {data.fruits && data.fruits.length > 0 && (
+                            <div>
+                              <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+                                Fruits
+                              </h4>
+                              <div className="space-y-2">
+                                {data.fruits.map((f) => (
+                                  <Link
+                                    key={f}
+                                    href={`/shop?collection=${toSlug(f)}`}
+                                    onClick={() => setIsMenuOpen(false)}
+                                    className="block text-[11px] text-gray-700 hover:text-[#8B2323] py-1"
+                                  >
+                                    {f}
+                                  </Link>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {/* Products Section */}
+                          {data.products && data.products.length > 0 && (
+                            <div>
+                              <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+                                Products
+                              </h4>
+                              <div className="space-y-2">
+                                {data.products.map((product) => (
+                                  <Link
+                                    key={product}
+                                    href={`/shop?collection=${toSlug(product)}`}
+                                    onClick={() => setIsMenuOpen(false)}
+                                    className="block text-[11px] text-gray-700 hover:text-[#8B2323] py-1"
+                                  >
+                                    {product}
+                                  </Link>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {/* Brands Section */}
+                          {data.brands && data.brands.length > 0 && (
+                            <div>
+                              <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+                                Brands
+                              </h4>
+                              <div className="space-y-2">
+                                {data.brands.map((brand) => (
+                                  <Link
+                                    key={brand}
+                                    href={`/shop?collection=${toSlug(brand)}`}
+                                    onClick={() => setIsMenuOpen(false)}
+                                    className="block text-[11px] text-gray-700 hover:text-[#8B2323] py-1"
+                                  >
+                                    {brand}
+                                  </Link>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </nav>
+            </>
+          )}
         </aside>
       </header>
 
