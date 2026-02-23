@@ -89,8 +89,11 @@ model ComplianceDeadline {
   priority    Priority         @default(MEDIUM)
   frequency   Frequency?       // For recurring deadlines
   companyId   String
+
+  notes     String?
   createdById String
   assignedToId String?
+  fileUrl     String?
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
   completedAt DateTime?
@@ -316,7 +319,21 @@ model Labour {
   @@unique([companyId, labourId]) 
   @@map("labours")
 }
+
 // Enums
+enum ComplianceStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  OVERDUE
+}
+
+enum CompliancePriority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
 enum UserRole {
   ADMIN
   CONSULTANT
