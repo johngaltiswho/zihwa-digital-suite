@@ -91,7 +91,7 @@ export const config: VendureConfig = {
     min: 3,
     idleTimeoutMillis: 60000,
     connectionTimeoutMillis: 90000,
-    statement_timeout: 180000, // 3 minutes - optimized queries shouldn't take longer
+    statement_timeout: '180000ms', // 3 minutes - explicit milliseconds format
   },
   maxQueryExecutionTime: 180000, // 3 minutes
 },

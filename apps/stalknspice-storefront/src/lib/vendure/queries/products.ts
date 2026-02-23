@@ -319,6 +319,37 @@ export const GET_COLLECTION_PAGINATED = `
   }
 `;
 
+export const GET_COLLECTION_PAGINATED_LIGHT = `
+  query GetCollectionPaginatedLight($slug: String!, $options: ProductVariantListOptions) {
+    collection(slug: $slug) {
+      id
+      name
+      slug
+      productVariants(options: $options) {
+        totalItems
+        items {
+          id
+          name
+          price
+          priceWithTax
+          stockLevel
+          featuredAsset {
+            preview
+          }
+          product {
+            id
+            name
+            slug
+            featuredAsset {
+              preview
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
 export const GET_HIERARCHICAL_COLLECTIONS = `
   query GetHierarchicalCollections {
     collections(options: { filter: { parentId: { eq: "1" } }, take: 100 }) {

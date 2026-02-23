@@ -1,5 +1,5 @@
 import { vendureClient } from "@/lib/vendure/client";
-import { GET_COLLECTION_PAGINATED, GET_HIERARCHICAL_COLLECTIONS } from "@/lib/vendure/queries/products";
+import { GET_COLLECTION_PAGINATED_LIGHT, GET_HIERARCHICAL_COLLECTIONS } from "@/lib/vendure/queries/products";
 import type { Product } from "@/lib/vendure/types";
 
 export type CategoryShelf = {
@@ -105,14 +105,14 @@ export async function fetchHomeCategoryShelves(limit = 6, productsPerShelf = 8):
   );
 
   const shelves: CategoryShelf[] = [];
-  const batchSize = Math.max(limit * 2, 10);
+  const batchSize = 4; // Process 4 collections at a time to avoid overwhelming the database
 
   for (let i = 0; i < candidates.length && shelves.length < limit; i += batchSize) {
     const batch = candidates.slice(i, i + batchSize);
 
     const batchResults = await Promise.allSettled(
       batch.map(async (collection) => {
-        const collectionData = await vendureClient.request(GET_COLLECTION_PAGINATED, {
+        const collectionData = await vendureClient.request(GET_COLLECTION_PAGINATED_LIGHT, {
           slug: collection.slug,
           options: {
             take: productsPerShelf,
