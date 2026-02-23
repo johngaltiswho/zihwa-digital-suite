@@ -170,7 +170,6 @@ export const GET_COLLECTIONS = `
         featuredAsset {
           id
           preview
-          source
         }
         parent {
           id
@@ -181,18 +180,10 @@ export const GET_COLLECTIONS = `
           id
           name
           slug
-          featuredAsset {
-            id
-            preview
-          }
           children {
             id
             name
             slug
-            featuredAsset {
-              id
-              preview
-            }
           }
         }
       }

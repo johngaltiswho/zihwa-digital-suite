@@ -87,12 +87,13 @@ export const config: VendureConfig = {
   logging: false,
   ssl: { rejectUnauthorized: false },
   extra: {
-    max: 10,
-    min: 2,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 60000,
+    max: 15,
+    min: 3,
+    idleTimeoutMillis: 60000,
+    connectionTimeoutMillis: 90000,
+    statement_timeout: 180000, // 3 minutes - optimized queries shouldn't take longer
   },
-  maxQueryExecutionTime: 120000,
+  maxQueryExecutionTime: 180000, // 3 minutes
 },
   paymentOptions: {
     paymentMethodHandlers: [
@@ -145,7 +146,7 @@ AssetServerPlugin.init({
     DefaultSchedulerPlugin.init(),
     DefaultJobQueuePlugin.init({ useDatabaseForBuffer: true }),
     DefaultSearchPlugin.init({
-      bufferUpdates: false,
+      bufferUpdates: true, // Buffer updates to reduce database load
       indexStockStatus: true,
     }),
 
