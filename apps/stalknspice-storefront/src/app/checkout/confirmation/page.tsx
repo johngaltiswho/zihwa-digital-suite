@@ -46,11 +46,21 @@ function ConfirmationContent() {
     fetchOrder();
   }, [orderCode]);
 
-  const formatPrice = (price: number, currencyCode: string) => {
+  const toValidMoney = (value: unknown): number | null => {
+    const n = typeof value === "number" ? value : Number(value);
+    return Number.isFinite(n) ? n : null;
+  };
+
+  const formatPrice = (price: number | undefined | null, currencyCode: string | undefined | null) => {
+    const money = toValidMoney(price);
+    const code = currencyCode || "INR";
+    if (money === null) {
+      return "—";
+    }
     return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: currencyCode,
-    }).format(price / 100);
+      currency: code,
+    }).format(money / 100);
   };
 
   const formatDate = (dateString: string) => {

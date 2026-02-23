@@ -22,10 +22,33 @@ const graphql_1 = require("graphql");
 const razorpay_1 = __importDefault(require("razorpay"));
 const crypto_1 = require("crypto");
 const graphql_2 = require("@nestjs/graphql");
-// Shared Razorpay instance and credentials
+// Plugin-level Razorpay credentials and instance used by the custom mutation.
 let razorpayInstance;
 let razorpayKeyId;
 let razorpayKeySecret;
+// Optional handler-level overrides from PaymentMethod args.
+let paymentHandlerKeyId;
+let paymentHandlerKeySecret;
+let paymentHandlerInstance;
+function getErrorMessage(error) {
+    const err = error;
+    return (err?.error?.description ||
+        err?.error?.reason ||
+        err?.message ||
+        (typeof err === 'string' ? err : JSON.stringify(err)));
+}
+function normalizeCredential(value) {
+    if (typeof value === 'string' && value.trim().length > 0) {
+        return value;
+    }
+    if (value && typeof value === 'object') {
+        const maybeValue = value.value;
+        if (typeof maybeValue === 'string' && maybeValue.trim().length > 0) {
+            return maybeValue;
+        }
+    }
+    return undefined;
+}
 /**
  * Razorpay Payment Handler
  * Handles payment creation, verification, and refunds
@@ -65,12 +88,16 @@ exports.razorpayPaymentHandler = new core_1.PaymentMethodHandler({
      */
     init(injector) {
         const args = this.args;
-        razorpayKeySecret = args.keySecret;
-        razorpayKeyId = args.keyId;
-        razorpayInstance = new razorpay_1.default({
-            key_id: args.keyId,
-            key_secret: args.keySecret,
-        });
+        const keyId = normalizeCredential(args?.keyId);
+        const keySecret = normalizeCredential(args?.keySecret);
+        if (keyId && keySecret) {
+            paymentHandlerKeySecret = keySecret;
+            paymentHandlerKeyId = keyId;
+            paymentHandlerInstance = new razorpay_1.default({
+                key_id: keyId,
+                key_secret: keySecret,
+            });
+        }
     },
     /**
      * Create payment
@@ -89,7 +116,21 @@ exports.razorpayPaymentHandler = new core_1.PaymentMethodHandler({
                 };
             }
             // Verify payment signature using HMAC-SHA256
-            const expectedSignature = (0, crypto_1.createHmac)('sha256', razorpayKeySecret)
+            const keySecret = normalizeCredential(args?.keySecret) ??
+                paymentHandlerKeySecret ??
+                normalizeCredential(razorpayKeySecret);
+            if (!keySecret) {
+                return {
+                    amount,
+                    state: 'Error',
+                    errorMessage: 'Razorpay key secret is not configured as a valid string',
+                    metadata: {
+                        razorpay_payment_id,
+                        razorpay_order_id,
+                    },
+                };
+            }
+            const expectedSignature = (0, crypto_1.createHmac)('sha256', keySecret)
                 .update(`${razorpay_order_id}|${razorpay_payment_id}`)
                 .digest('hex');
             if (expectedSignature !== razorpay_signature) {
@@ -108,7 +149,12 @@ exports.razorpayPaymentHandler = new core_1.PaymentMethodHandler({
                 };
             }
             // Fetch payment details from Razorpay
-            const payment = await razorpayInstance.payments.fetch(razorpay_payment_id);
+            const keyId = normalizeCredential(args?.keyId) ?? paymentHandlerKeyId;
+            const keySecretForClient = normalizeCredential(args?.keySecret) ?? paymentHandlerKeySecret;
+            const client = keyId && keySecretForClient
+                ? new razorpay_1.default({ key_id: keyId, key_secret: keySecretForClient })
+                : paymentHandlerInstance ?? razorpayInstance;
+            const payment = await client.payments.fetch(razorpay_payment_id);
             if (payment.status === 'captured' || payment.status === 'authorized') {
                 console.log('Payment successful', {
                     payment_id: razorpay_payment_id,
@@ -154,7 +200,7 @@ exports.razorpayPaymentHandler = new core_1.PaymentMethodHandler({
             return {
                 amount,
                 state: 'Error',
-                errorMessage: error.message || 'Payment processing failed',
+                errorMessage: getErrorMessage(error) || 'Payment processing failed',
                 metadata: {},
             };
         }
@@ -184,7 +230,12 @@ exports.razorpayPaymentHandler = new core_1.PaymentMethodHandler({
                 };
             }
             // Create refund in Razorpay
-            const refund = await razorpayInstance.payments.refund(razorpay_payment_id, {
+            const keyId = normalizeCredential(args?.keyId) ?? paymentHandlerKeyId;
+            const keySecretForClient = normalizeCredential(args?.keySecret) ?? paymentHandlerKeySecret;
+            const client = keyId && keySecretForClient
+                ? new razorpay_1.default({ key_id: keyId, key_secret: keySecretForClient })
+                : paymentHandlerInstance ?? razorpayInstance;
+            const refund = await client.payments.refund(razorpay_payment_id, {
                 amount: amount, // Amount in smallest currency unit (paise)
             });
             console.log('Refund created', {
@@ -221,7 +272,7 @@ exports.razorpayPaymentHandler = new core_1.PaymentMethodHandler({
             return {
                 state: 'Failed',
                 metadata: {
-                    errorMessage: error.message,
+                    errorMessage: getErrorMessage(error),
                 },
             };
         }
@@ -246,6 +297,9 @@ const razorpayShopSchema = (0, graphql_1.parse)(`
 let RazorpayResolver = class RazorpayResolver {
     async createRazorpayOrder(amount) {
         try {
+            if (!razorpayInstance || !razorpayKeyId || !razorpayKeySecret) {
+                throw new Error('Razorpay is not configured on the server');
+            }
             const order = await razorpayInstance.orders.create({
                 amount,
                 currency: 'INR',
@@ -266,7 +320,7 @@ let RazorpayResolver = class RazorpayResolver {
         }
         catch (error) {
             console.error('Error creating Razorpay order:', error);
-            throw new Error(`Failed to create Razorpay order: ${error.message}`);
+            throw new Error(`Failed to create Razorpay order: ${getErrorMessage(error)}`);
         }
     }
 };

@@ -8,8 +8,11 @@ const VENDURE_CHANNEL_TOKEN =
   process.env.NEXT_PUBLIC_VENDURE_CHANNEL_TOKEN || 'stalks-n-spice';
 
 // Get the Vendure Shop API URL from environment variables
+// Use the proxied path for browser requests to avoid CORS issues in Safari
 const VENDURE_SHOP_API_URL =
-  process.env.NEXT_PUBLIC_VENDURE_SHOP_API_URL || 'http://localhost:3100/shop-api';
+  typeof window !== 'undefined'
+    ? `${window.location.origin}/api/vendure/shop-api` // Use proxy in browser with absolute URL
+    : process.env.NEXT_PUBLIC_VENDURE_SHOP_API_URL || 'http://localhost:3100/shop-api'; // Direct URL for SSR
 
 console.log('USING VENDURE CHANNEL TOKEN:', VENDURE_CHANNEL_TOKEN);
 

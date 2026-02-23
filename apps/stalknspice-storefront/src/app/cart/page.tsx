@@ -1,6 +1,7 @@
 "use client";
 
 import { useCart } from "@/lib/vendure/cart-context";
+import { getAssetUrl } from "@/lib/vendure/asset-utils";
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -38,6 +39,13 @@ export default function CartPage() {
       currency: currencyCode,
     }).format(price / 100);
   };
+
+  const checkoutHref =
+    activeOrder?.state === "ArrangingShipping"
+      ? "/checkout/shipping"
+      : activeOrder?.state === "ArrangingPayment"
+        ? "/checkout/payment"
+        : "/checkout";
 
   // Empty cart state
   if (!activeOrder || itemCount === 0) {
@@ -79,7 +87,7 @@ export default function CartPage() {
           <div className="lg:col-span-2 space-y-4">
             {activeOrder.lines.map((line) => {
               const isUpdating = updatingLineId === line.id;
-              const imageUrl = line.featuredAsset?.preview || line.productVariant.product.featuredAsset?.preview;
+              const imageUrl = getAssetUrl(line.featuredAsset?.preview || line.productVariant.product.featuredAsset?.preview);
 
               return (
                 <div
@@ -192,7 +200,7 @@ export default function CartPage() {
               </div>
 
               <Link
-                href="/checkout"
+                href={checkoutHref}
                 className="block w-full bg-[#8B2323] text-white font-bold uppercase tracking-widest py-4 rounded-full text-center hover:bg-black transition-all shadow-xl shadow-[#8B2323]/20 flex items-center justify-center gap-2"
               >
                 Proceed to Checkout

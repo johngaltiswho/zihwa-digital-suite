@@ -56,9 +56,9 @@ export default function Newsletter() {
     <h3 className="text-lg font-bold uppercase underline black mb-1">Links</h3>
     <Link href="/shop" className="text-[15px] font-bold text-gray-900 hover:text-[#8B2323] transition-colors">Shop</Link>
     <Link href="/recipes" className="text-[15px] font-bold text-gray-900 hover:text-[#8B2323] transition-colors">Recipe's</Link>
-    <Link href="/shop/beverages" className="text-[15px] font-bold text-gray-900 hover:text-[#8B2323] transition-colors">Beverages</Link>
-    <Link href="/shop/dairy" className="text-[15px] font-bold text-gray-900 hover:text-[#8B2323] transition-colors">Dairy & Frozen</Link>
-    <Link href="/shop/fruits" className="text-[15px] font-bold text-gray-900 hover:text-[#8B2323] transition-colors">Fruits & Vegetables</Link>
+    <Link href="/shop?collection=beverages" className="text-[15px] font-bold text-gray-900 hover:text-[#8B2323] transition-colors">Beverages</Link>
+    <Link href="/shop?collection=breakfast-dairy-frozen-food" className="text-[15px] font-bold text-gray-900 hover:text-[#8B2323] transition-colors">Dairy & Frozen</Link>
+    <Link href="/shop?collection=fruits-vegetables" className="text-[15px] font-bold text-gray-900 hover:text-[#8B2323] transition-colors">Fruits & Vegetables</Link>
   </div>
           {/* RIGHT SIDE: NEWSLETTER FORM */}
           <div className="w-full col-span-2 lg:max-w-md text-center pt-6 lg:pt-0 border-t border-gray-100 lg:border-none">
