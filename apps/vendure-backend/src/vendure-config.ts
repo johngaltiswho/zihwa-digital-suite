@@ -169,8 +169,8 @@ AssetServerPlugin.init({
     // Vendure 3.x Dashboard (Vite-based)
     DashboardPlugin.init({
       route: 'dashboard',
-      appDir: path.join(__dirname, '../vendure-dashboard-temp'),
-      
+      appDir: path.join(__dirname, '../dist'),
+
     }),
   ],
 };

@@ -8,7 +8,10 @@ nixPkgs = ['nodejs_20', 'pnpm-9_x']
 cmds = ['pnpm install --frozen-lockfile']
 
 [phases.build]
-cmds = ['pnpm --filter vendure-backend build']
+cmds = [
+  'pnpm --filter vendure-backend build',
+  'cd apps/vendure-backend && pnpm build:dashboard'
+]
 
 [start]
 cmd = 'node apps/vendure-backend/dist/index.js'
