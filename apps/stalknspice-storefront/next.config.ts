@@ -23,10 +23,11 @@ const nextConfig: NextConfig = {
 
   // Proxy API requests to avoid CORS issues in Safari
   async rewrites() {
+    const vendureUrl = process.env.NEXT_PUBLIC_VENDURE_SHOP_API_URL?.replace('/shop-api', '') || 'http://localhost:3100';
     return [
       {
         source: '/api/vendure/:path*',
-        destination: 'http://localhost:3100/:path*',
+        destination: `${vendureUrl}/:path*`,
       },
     ];
   },
