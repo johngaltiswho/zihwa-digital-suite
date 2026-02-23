@@ -24,8 +24,9 @@ const serverPort = Number(process.env.PORT) || 3100;
 const PRODUCTION_FRONTEND_URLS = [
   process.env.FRONTEND_URL,
   process.env.RAILWAY_STATIC_URL,
-  'https://stalknspice.com',
-  'https://www.stalknspice.com',
+  'https://stalksnspice.com',
+  'https://www.stalksnspice.com',
+  'https://shop.zihwainsights.com',
 ].filter((url): url is string => Boolean(url));
 
 const DEV_URLS = [
