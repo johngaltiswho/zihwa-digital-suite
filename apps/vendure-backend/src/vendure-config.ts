@@ -24,8 +24,9 @@ const serverPort = Number(process.env.PORT) || 3100;
 const PRODUCTION_FRONTEND_URLS = [
   process.env.FRONTEND_URL,
   process.env.RAILWAY_STATIC_URL,
-  'https://stalknspice.com',
-  'https://www.stalknspice.com',
+  'https://stalksnspice.com',
+  'https://www.stalksnspice.com',
+  'https://shop.zihwainsights.com',
 ].filter((url): url is string => Boolean(url));
 
 const DEV_URLS = [
@@ -87,12 +88,13 @@ export const config: VendureConfig = {
   logging: false,
   ssl: { rejectUnauthorized: false },
   extra: {
-    max: 10,
-    min: 2,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 60000,
+    max: 15,
+    min: 3,
+    idleTimeoutMillis: 60000,
+    connectionTimeoutMillis: 90000,
+    statement_timeout: '180000ms', // 3 minutes - explicit milliseconds format
   },
-  maxQueryExecutionTime: 120000,
+  maxQueryExecutionTime: 180000, // 3 minutes
 },
   paymentOptions: {
     paymentMethodHandlers: [
@@ -145,7 +147,7 @@ AssetServerPlugin.init({
     DefaultSchedulerPlugin.init(),
     DefaultJobQueuePlugin.init({ useDatabaseForBuffer: true }),
     DefaultSearchPlugin.init({
-      bufferUpdates: false,
+      bufferUpdates: true, // Buffer updates to reduce database load
       indexStockStatus: true,
     }),
 
@@ -169,8 +171,8 @@ AssetServerPlugin.init({
     // Vendure 3.x Dashboard (Vite-based)
     DashboardPlugin.init({
       route: 'dashboard',
-      appDir: path.join(__dirname, '../vendure-dashboard-temp'),
-      
+      appDir: path.join(__dirname, '../dist'),
+
     }),
   ],
 };

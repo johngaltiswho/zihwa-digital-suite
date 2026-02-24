@@ -170,7 +170,6 @@ export const GET_COLLECTIONS = `
         featuredAsset {
           id
           preview
-          source
         }
         parent {
           id
@@ -181,18 +180,10 @@ export const GET_COLLECTIONS = `
           id
           name
           slug
-          featuredAsset {
-            id
-            preview
-          }
           children {
             id
             name
             slug
-            featuredAsset {
-              id
-              preview
-            }
           }
         }
       }
@@ -320,6 +311,37 @@ export const GET_COLLECTION_PAGINATED = `
               id
               name
               slug
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const GET_COLLECTION_PAGINATED_LIGHT = `
+  query GetCollectionPaginatedLight($slug: String!, $options: ProductVariantListOptions) {
+    collection(slug: $slug) {
+      id
+      name
+      slug
+      productVariants(options: $options) {
+        totalItems
+        items {
+          id
+          name
+          price
+          priceWithTax
+          stockLevel
+          featuredAsset {
+            preview
+          }
+          product {
+            id
+            name
+            slug
+            featuredAsset {
+              preview
             }
           }
         }

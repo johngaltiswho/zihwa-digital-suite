@@ -21,13 +21,17 @@ const nextConfig: NextConfig = {
     VENDURE_SHOP_API_URL: process.env.VENDURE_SHOP_API_URL || 'http://localhost:3000/shop-api',
   },
 
-  // Proxy API requests to avoid CORS issues in Safari
+  // Proxy API requests to avoid CORS issues in Safari (dev only)
   async rewrites() {
-    const vendureUrl = process.env.NEXT_PUBLIC_VENDURE_SHOP_API_URL?.replace('/shop-api', '') || 'http://localhost:3100';
+    // Only use proxy in development - production uses direct backend URLs with CORS
+    if (process.env.NODE_ENV === 'production') {
+      return [];
+    }
+
     return [
       {
         source: '/api/vendure/:path*',
-        destination: `${vendureUrl}/:path*`,
+        destination: 'http://localhost:3100/:path*',
       },
     ];
   },
