@@ -14,8 +14,7 @@ import {
   GraduationCap,
   IndianRupee,
   UploadCloud,
-  Trash2,
-  CheckCircle2
+  Trash2
 } from 'lucide-react';
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -34,6 +33,8 @@ interface Candidate {
   status: string;
   resumeUrl: string;
   companyId: string;
+  source?: string;
+  company?: { name: string };
 }
 
 interface Company {
@@ -212,7 +213,23 @@ const HiringPage = () => {
       setIsSubmitting(false);
     }
   };
+// Inside HiringPage component, before the return (...)
+const copyPublicApplyLink = (source: string) => {
+  // We use the first company ID available in your state
+  const companyId = companies[0]?.id;
+  
+  if (!companyId) {
+    alert("Error: No company found to generate a link.");
+    return;
+  }
 
+  const baseUrl = window.location.origin; 
+  const applyUrl = `${baseUrl}/apply?c=${companyId}&source=${source}`;
+  
+  navigator.clipboard.writeText(applyUrl).then(() => {
+    alert(`Success! ${source} application link copied to clipboard.`);
+  });
+};
   const filteredCandidates = candidates.filter((c: any) => {
     const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           c.designation?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -230,9 +247,27 @@ const HiringPage = () => {
           <h1 className="text-2xl font-bold text-gray-900">Hiring Candidates</h1>
           <p className="text-sm text-gray-500 font-medium">Recruitment lifecycle management.</p>
         </div>
+        <div className="flex items-center gap-3">
+    {/* NEW: Link Generator Buttons
+    <div className="hidden md:flex bg-white border border-gray-200 rounded-lg p-1 shadow-sm items-center">
+      <button 
+        onClick={() => copyPublicApplyLink('LinkedIn')}
+        className="px-3 py-1.5 text-[11px] font-bold text-blue-600 hover:bg-blue-50 rounded-md transition-colors flex items-center gap-1"
+      >
+        <Plus className="w-3 h-3" /> LinkedIn
+      </button>
+      <div className="w-[1px] h-4 bg-gray-100 mx-1" />
+      <button 
+        onClick={() => copyPublicApplyLink('WhatsApp')}
+        className="px-3 py-1.5 text-[11px] font-bold text-green-600 hover:bg-green-50 rounded-md transition-colors flex items-center gap-1"
+      >
+        <Plus className="w-3 h-3" /> WhatsApp
+      </button>
+    </div> */}
         <Button onClick={() => setIsModalOpen(true)} className="bg-[#0f172a] text-white flex items-center gap-2 h-11 px-6 rounded-lg font-bold">
           <Plus className="w-4 h-4" /> Add Candidate
         </Button>
+      </div>
       </div>
 
       {/* Filter Bar */}
@@ -259,10 +294,13 @@ const HiringPage = () => {
           <thead className="bg-gray-50/50 border-b border-gray-100 font-bold">
             <tr>
               <th className="px-6 py-4 text-[12px] text-gray-500 uppercase">Candidate Name</th>
+              <th className="px-6 py-4 text-[12px] text-gray-500 uppercase">Contact</th>
+              <th className="px-6 py-4 text-[12px] text-gray-500 uppercase">Applied To</th> 
               <th className="px-6 py-4 text-[12px] text-gray-500 uppercase">Designation</th>
               <th className="px-6 py-4 text-[12px] text-gray-500 uppercase">Qualification</th>
               <th className="px-6 py-4 text-[12px] text-gray-500 uppercase">Exp (Yrs)</th>
               <th className="px-6 py-4 text-[12px] text-gray-500 uppercase">Current CTC</th>
+              <th className="px-6 py-4 text-[12px] text-gray-500 uppercase">Source</th>
               <th className="px-6 py-4 text-[12px] text-gray-500 uppercase">Status</th>
               <th className="px-6 py-4 text-[12px] text-gray-500 uppercase text-center">Resume/CSV</th>
               <th className="px-6 py-4 text-[12px] text-gray-500 uppercase text-right">Actions</th>
@@ -275,6 +313,19 @@ const HiringPage = () => {
                   <div className="font-semibold text-gray-900">{c.name}</div>
                   <div className="text-gray-400 font-normal">{c.email}</div>
                 </td>
+                
+                {/* NEW: Contact Column */}
+      <td className="px-6 py-5">
+        <div className="text-slate-700 font-medium">{c.phone || 'N/A'}</div>
+      </td>
+      {/* NEW: Company Column */}
+      <td className="px-6 py-5">
+        <div className="flex items-center gap-2">
+          <span className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded text-[11px] font-bold border border-indigo-100">
+            {c.company?.name || 'Unknown Company'}
+          </span>
+        </div>
+      </td>
                 <td className="px-6 py-5 text-gray-700 font-medium">{c.designation || 'N/A'}</td>
                 <td className="px-6 py-5">
                     <div className="flex items-center gap-1.5 text-gray-600">
@@ -284,6 +335,11 @@ const HiringPage = () => {
                 <td className="px-6 py-5 text-gray-600">{c.experience}</td>
                 <td className="px-6 py-5 font-bold text-gray-900">
                     <div className="flex items-center gap-1"><IndianRupee className="w-3 h-3 text-green-600" /> {c.currentCTC || '0'}</div>
+                </td>
+                <td className="px-6 py-5">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 uppercase tracking-wider">
+                {c.source || 'Admin'} 
+                </span>
                 </td>
                 <td className="px-6 py-5">
                   {/* FUNCTIONAL STATUS SELECT */}

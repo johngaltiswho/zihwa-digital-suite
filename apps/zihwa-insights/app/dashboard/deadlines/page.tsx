@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Plus, Calendar as CalendarIcon, AlertCircle, CheckCircle2, Search, Filter, 
-  MoreVertical, FileCheck, Building2, Loader2, X, ChevronLeft, ChevronRight,
-  Pencil, Trash2, FileUp, ShieldCheck, Clock, List, Zap, Landmark
+  Plus, Calendar as CalendarIcon, AlertCircle, Search,
+  Building2, Loader2, X, ChevronLeft, ChevronRight,
+  Pencil, Trash2, ShieldCheck, Clock,  Zap, Landmark
 } from 'lucide-react';
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -38,6 +38,7 @@ const DeadlinesPage = () => {
       ]);
       const dData = await dRes.json();
       const cData = await cRes.json();
+      
       setDeadlines(Array.isArray(dData) ? dData : []);
       setCompanies(Array.isArray(cData) ? cData : []);
     } catch (e) { console.error(e); } finally { setIsLoading(false); }
@@ -137,7 +138,7 @@ const DeadlinesPage = () => {
           <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mt-1">Audit Trail & Regulatory Monitoring</p>
         </div>
         <div className="flex gap-3">
-             <Button onClick={handleAutoSetMonthlyDeadlines} className="h-10 border-indigo-100 text-indigo-700 bg-indigo-50 font-bold text-[10px] uppercase flex items-center gap-2">
+             <Button onClick={handleAutoSetMonthlyDeadlines} className="h-10 border-indigo-100 text-indigo-700 bg-indigo-10 font-bold text-[10px] uppercase flex items-center gap-2">
                 <Zap className="w-3.5 h-3.5" /> Auto-Set PF/ESI (15th)
             </Button>
             <Button onClick={() => { setEditingItem(null); setIsModalOpen(true); }} className="bg-[#0f172a] text-white h-10 px-6 rounded-xl font-bold text-xs shadow-md">

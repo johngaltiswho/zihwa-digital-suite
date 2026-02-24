@@ -31,6 +31,7 @@ export default function SignInPage() {
 
       if (hasRecoveryInHash || hasRecoveryInQuery || hasCode) {
         console.log('Recovery detected:', { hasRecoveryInHash, hasRecoveryInQuery, hasCode })
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setView('update_password')
         return
       }
