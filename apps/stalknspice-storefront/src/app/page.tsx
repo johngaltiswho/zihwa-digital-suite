@@ -249,7 +249,7 @@ export default function Home() {
         onRetry={() => loadCategoryShelves(true)}
       />
          {/* FEATURED PRODUCTS */}
-        <section className="py-8">
+        {/* <section className="py-8">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl md:text-3xl font-bold text-gray-800">Featured Products</h2>
             <Link href="/shop" className="text-red-800 font-bold text-sm hover:underline">View All →</Link>
@@ -258,16 +258,16 @@ export default function Home() {
           {productsLoading ? (
             <div className="text-center py-10"><p className="text-gray-400 text-sm">Loading...</p></div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 md:gap-4">
+            <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-7 gap-3 md:gap-4">
               {products.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
           )}
-        </section>
+        </section>  */}
           {/* 4. TOP OFFERS */}
-<section className="py-6 text-center">
-  <h2 className="text-2xl md:text-4xl font-bold mb-12 text-gray-800">Top Offers</h2>
+<section className="py-4 text-center">
+  <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gray-800">Top Offers</h2>
   <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
     {[
       { img: "/images/monin.jpg" },
@@ -290,9 +290,9 @@ export default function Home() {
 
 
        {/* 6. BRAND STORE */}
-<section className="py-10 text-center">
-  <h2 className="text-2xl md:text-4xl font-bold mb-8 text-gray-800">Brand Store</h2>
-  <div className="flex flex-wrap justify-center items-center gap-8 md:gap-20 hover:opacity-100 transition-opacity px-5">
+<section className="py-6 text-center">
+  <h2 className="text-3xl md:text-4xl font-bold mb-8 text-gray-800">Brand Store</h2>
+  <div className="flex flex-wrap justify-center items-center gap-6 md:gap-20 hover:opacity-100 transition-opacity px-5">
     {[
       { name: "Tops", img: "/images/topps-logo.jpg" },
       { name: "My Favourite", img: "/images/myfavourite-logo.jpg" },

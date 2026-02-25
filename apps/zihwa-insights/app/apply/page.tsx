@@ -36,7 +36,6 @@ import { useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { UploadCloud, CheckCircle2, Loader2 } from "lucide-react";
-import PhoneInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
 
 function ApplyForm() {
@@ -44,7 +43,7 @@ function ApplyForm() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [phone, setPhone] = useState<string | undefined>();
+  const [phone, setPhone] = useState("");
   const [companyName, setCompanyName] = useState("Our Team");
 
   // URL parameters: /apply?c=[COMPANY_ID]&source=LinkedIn
@@ -70,7 +69,7 @@ function ApplyForm() {
     const formData = new FormData(e.currentTarget);
     formData.append("companyId", companyId);
     formData.append("source", source);
-    formData.append("phone", phone); // Send formatted phone with country code
+    formData.append("phone", `+91${phone}`);// Send formatted phone with country code
 
     try {
       const res = await fetch("/api/public/apply", { method: "POST", body: formData });
@@ -119,19 +118,30 @@ function ApplyForm() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-500 uppercase">Phone Number <span className="text-red-500">*</span></label>
-              <div className="flex items-center border border-slate-200 rounded-md px-3 h-12 bg-white hover:border-slate-400 transition-colors">
-                <PhoneInput
-                  international
-                  defaultCountry="IN"
-                  value={phone}
-                  onChange={setPhone}
-                  className="w-full outline-none phone-input-custom"
-                />
-              </div>
-            </div>
+          <div className="space-y-2">
+  <label className="text-xs font-bold text-slate-500 uppercase">
+    Phone Number <span className="text-red-500">*</span>
+  </label>
+  <div className="flex items-center border border-slate-200 rounded-md px-2 h-12 bg-white hover:border-slate-400 focus-within:border-slate-400 transition-colors">
+    
+    {/* Hardcoded Country Code Prefix */}
+    <span className="text-slate-500 font-s pr-6 border-r border-slate-200 mr-3">
+      +91
+    </span>
+    
+    {/* Standard HTML Input */}
+    <input
+      type="tel"
+      name="phone"
+      required
+      value={phone}
+      onChange={(e) => setPhone(e.target.value)}
+      placeholder="12345 67890"
+      maxLength={10}
+      className="w-full outline-none bg-transparent text-gray-700"
+    />
+  </div>
+
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase">Applying for Designation</label>
               <Input name="designation" placeholder="e.g. Software Engineer" className="h-12 border-slate-200" />

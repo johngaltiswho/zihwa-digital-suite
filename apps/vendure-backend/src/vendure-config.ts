@@ -88,7 +88,7 @@ export const config: VendureConfig = {
   logging: false,
   ssl: { rejectUnauthorized: false },
   extra: {
-    max: 15,
+    max: 2,
     min: 3,
     idleTimeoutMillis: 60000,
     connectionTimeoutMillis: 90000,

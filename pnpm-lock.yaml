@@ -622,8 +622,8 @@ importers:
         specifier: ^19.0.0
         version: 19.2.4(react@19.2.4)
       react-phone-number-input:
-        specifier: ^3.4.14
-        version: 3.4.14(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        specifier: ^3.4.16
+        version: 3.4.16(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       xlsx:
         specifier: ^0.18.5
         version: 0.18.5
@@ -6420,8 +6420,8 @@ packages:
       typescript:
         optional: true
 
-  country-flag-icons@1.6.13:
-    resolution: {integrity: sha512-mR9GoTXtj3zAXoZXBkb3J4QvyDllFEPtEfZvHb9U23TAHYXfkJyP03pRtZiR0spxo6Ibja3R/hn6a68T4LHBuA==}
+  country-flag-icons@1.6.14:
+    resolution: {integrity: sha512-tPis+tN/esXXSuQJZCbkUhnIeUrZmtDKSjUuSI7Sss2GHsgAGvbSAQkx4Ut0qethZbDfPGYco8EjzOPElxYIFw==}
 
   crc-32@1.2.2:
     resolution: {integrity: sha512-ROmzCKrTnOwybPcJApAA6WBWij23HVfGVNKqqrZpuyZOHqK2CwHSvpGuyt/UNNvaIjEd8X5IFGp4Mh+Ie1IHJQ==}
@@ -9683,8 +9683,8 @@ packages:
       maplibre-gl:
         optional: true
 
-  react-phone-number-input@3.4.14:
-    resolution: {integrity: sha512-T9MziNuvthzv6+JAhKD71ab/jVXW5U20nQZRBJd6+q+ujmkC+/ISOf2GYo8pIi4VGjdIYRIHDftMAYn3WKZT3w==}
+  react-phone-number-input@3.4.16:
+    resolution: {integrity: sha512-ix1+SIyGuLxnlAeW+XQNhwOmmDd4Zmr6Ng1eQl0E2XS8xIuue3gdZeBG4LGTMjTIFneOTO9pUPL+AEDhV6+r+A==}
     peerDependencies:
       react: ^19.0.0
       react-dom: ^19.0.0
@@ -17771,7 +17771,7 @@ snapshots:
     optionalDependencies:
       typescript: 5.8.2
 
-  country-flag-icons@1.6.13: {}
+  country-flag-icons@1.6.14: {}
 
   crc-32@1.2.2: {}
 
@@ -21810,10 +21810,10 @@ snapshots:
     optionalDependencies:
       mapbox-gl: 3.17.0
 
-  react-phone-number-input@3.4.14(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+  react-phone-number-input@3.4.16(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
       classnames: 2.5.1
-      country-flag-icons: 1.6.13
+      country-flag-icons: 1.6.14
       input-format: 0.3.14(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       libphonenumber-js: 1.12.37
       prop-types: 15.8.1

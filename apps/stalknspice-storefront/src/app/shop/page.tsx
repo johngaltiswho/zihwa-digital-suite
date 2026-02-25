@@ -211,13 +211,13 @@ function ShopPageContent() {
   return (
     <main className="bg-white">
       <header className="sticky top-0 z-40 bg-white border-b border-gray-100 shadow-sm">
-        <div className="flex items-center justify-between px-4 md:px-6 py-3 max-w-[1600px] mx-auto">
+        <div className="flex items-center justify-between px-4 md:px-6 py-1 max-w-[1600px] mx-auto">
           <div className="flex items-center gap-4">
-            <Link href="/" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <Link href="/" className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
               <ChevronDown size={20} className="rotate-90 text-gray-600" />
             </Link>
             <div>
-              <h1 className="text-lg md:text-xl font-black text-[#8B2323] uppercase tracking-tight">MARKETPLACE</h1>
+              <h1 className="text-lg md:text-lg font-black text-[#8B2323] uppercase tracking-tight">MARKETPLACE</h1>
               <p className="text-[10px] md:text-xs text-gray-500 font-medium">{totalItems} GOURMET ITEMS</p>
             </div>
           </div>
@@ -231,12 +231,12 @@ function ShopPageContent() {
       <div className="flex max-w-[1600px] mx-auto">
         <CategorySidebar selectedCollection={selectedCollection} onCollectionClick={handleCollectionClick} />
 
-        <section className="flex-1 bg-white p-4 md:p-6">
-          <div className="flex items-end gap-3 mb-6">
+        <section className="flex-1 bg-white px-2 py-3 md:p-5 w-full overflow-hidden">
+          <div className="flex items-end gap-3 mb-3">
             <h1 className="text-2xl font-bold text-gray-800 leading-none">{activeCategoryName}</h1>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 mb-8 border-b border-gray-100 pb-4">
+          <div className="flex flex-wrap items-center gap-2 mb-3 border-b border-gray-100 pb-4">
             <div className="relative">
               <select
                 value={filters.brand}
@@ -324,12 +324,12 @@ function ShopPageContent() {
           {error && <div className="p-4 mb-4 bg-red-50 border border-red-200 rounded text-red-700 text-sm">{error}</div>}
 
           {loading && products.length === 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {[...Array(10)].map((_, i) => (
-                <div key={i} className="bg-gray-50 aspect-square rounded-2xl animate-pulse" />
-              ))}
-            </div>
-          ) : filteredProducts.length === 0 ? (
+  <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-4">
+    {[...Array(12)].map((_, i) => (
+      <div key={i} className="bg-gray-100 aspect-[3/4] rounded-xl animate-pulse" />
+    ))}
+  </div>
+) : filteredProducts.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               <p className="text-lg font-medium">No products found</p>
               <p className="text-sm mt-2">
@@ -338,11 +338,11 @@ function ShopPageContent() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                {filteredProducts.map((p) => (
-                  <UnifiedProductCard key={p.id} product={p} variant="premium" showMRP={false} />
-                ))}
-              </div>
+              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-4">
+  {filteredProducts.map((p) => (
+    <UnifiedProductCard key={p.id} product={p} variant="premium" showMRP={false} />
+  ))}
+</div>
 
               <div ref={sentinelRef} className="h-20 flex items-center justify-center mt-4">
                 {loading && (

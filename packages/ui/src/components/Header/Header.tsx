@@ -1,11 +1,9 @@
 "use client";
-
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-
 
 import { 
   Menu, Search, CircleUser,User, Heart, X,
@@ -27,6 +25,14 @@ const SEARCH_SUGGESTIONS = [
 interface NavItem {
   label: string;
   href: string;
+}
+
+interface ProductSearchResult {
+  id: string;
+  name: string;
+  slug: string;
+  price: string;
+  image: string;
 }
 
 interface HeaderProps {
@@ -128,6 +134,25 @@ interface HeaderProps {
   onUserMenuToggle?: (isOpen: boolean) => void;
   mobileMenuContent?: React.ReactNode;
 }
+const ZeptoHighlight = ({ text, search }: { text: string; search: string }) => {
+  if (!search) return <span>{text}</span>;
+  
+  const parts = text.split(new RegExp(`(${search})`, 'gi'));
+  
+  return (
+    <span className="text-[15px] text-gray-800">
+      {parts.map((part, i) =>
+        part.toLowerCase() === search.toLowerCase() ? (
+          <span key={i} className="font-normal">{part}</span>
+        ) : (
+          <strong key={i} className="font-bold">{part}</strong>
+        )
+      )}
+    </span>
+  );
+};
+
+
 // --- SUB-COMPONENT: AUTH STATUS POPUP (UPDATED DESIGN & LOGIC) ---
 function AuthStatusToast({ type, onClose }: { type: string | null, onClose: () => void }) {
   const content: Record<string, any> = {
@@ -363,6 +388,12 @@ export function StalksHeader({ navItems, logoSrc, customer, onUserMenuToggle, on
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [searchValue, setSearchValue] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  // NEW Search states for API integration
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<ProductSearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
   // Smart Reveal Logic
   const [showRow3, setShowRow3] = useState(true);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -387,7 +418,108 @@ export function StalksHeader({ navItems, logoSrc, customer, onUserMenuToggle, on
 
   const navRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+  const handler = setTimeout(() => {
+    setDebouncedSearch(searchValue.trim());
+  }, 300); // 300ms debounce (Zepto-like)
 
+  return () => clearTimeout(handler);
+}, [searchValue]);
+// Handle REAL Vendure GraphQL Search
+  useEffect(() => {
+    if (debouncedSearch.length < 2) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    const fetchSearchData = async () => {
+      setIsSearching(true);
+      try {
+        // 1. FIX: Use the exact variable name from your .env file (added _URL)
+        const apiUrl = process.env.NEXT_PUBLIC_VENDURE_SHOP_API_URL || 'http://localhost:3100/shop-api';
+        const channelToken = process.env.NEXT_PUBLIC_VENDURE_CHANNEL_TOKEN;
+
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            // 2. FIX: Inject the channel token into the headers if it exists
+            ...(channelToken && { 'vendure-token': channelToken })
+          },
+          body: JSON.stringify({
+            query: `
+              query SearchProducts($term: String!) {
+                search(input: { term: $term, take: 8, groupByProduct: true }) {
+                  items {
+                    productId
+                    productName
+                    slug
+                    price {
+                      ... on PriceRange {
+                        min
+                      }
+                      ... on SinglePrice {
+                        value
+                      }
+                    }
+                    productAsset {
+                      preview
+                    }
+                  }
+                }
+              }
+            `,
+            variables: {
+              term: debouncedSearch
+            }
+          })
+        });
+
+        const json = await response.json();
+
+        // Check if data returned successfully
+        if (json.data && json.data.search && json.data.search.items) {
+          const formattedResults = json.data.search.items.map((item) => {
+            let rawPrice = 0;
+            if (item.price && typeof item.price.value === 'number') {
+              rawPrice = item.price.value;
+            } else if (item.price && typeof item.price.min === 'number') {
+              rawPrice = item.price.min;
+            }
+
+            const formattedPrice = new Intl.NumberFormat('en-IN', {
+              style: 'currency',
+              currency: 'INR',
+              minimumFractionDigits: 0
+            }).format(rawPrice / 100);
+
+            return {
+              id: item.productId,
+              name: item.productName,
+              slug: item.slug,
+              price: formattedPrice,
+              image: item.productAsset?.preview || 'https://via.placeholder.com/100/f8f9fa/000000?text=No+Image'
+            };
+          });
+
+          setSearchResults(formattedResults);
+        } else {
+          setSearchResults([]);
+        }
+
+      } catch (error) {
+        console.error("Vendure Search API Error:", error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    fetchSearchData();
+  }, [debouncedSearch]);
+
+  
   useEffect(() => { 
     setMounted(true); 
     
@@ -483,6 +615,7 @@ useEffect(() => {
 
   if (!mounted) return <div className="w-full h-[180px] bg-white border-b" />;
   return (
+    
     <header className="w-full bg-white border-b border-gray-100 font-sans sticky top-0 z-[100]">
        {/* AUTH POPUP RENDERER */}
       <AnimatePresence>
@@ -587,7 +720,7 @@ useEffect(() => {
         </div>
 
         {/* ROW 2: Logo & Search */}
-        <div className="max-w-[1400px] mx-auto px-6 h-12 flex items-center justify-between gap-8 mt-0 mb-1">
+        <div className="max-w-[1400px] mx-auto px-6 h-12 flex items-center gap-6 mt-0 mb-1">
           <div className="flex items-center space-x-4 flex-shrink-0">
             <Link href="/" className="block -mt-5">
               <Image src={logoSrc} alt="Logo" width={250} height={50} priority className="object-contain" />
@@ -595,7 +728,7 @@ useEffect(() => {
           </div>
 
           {/* --- UPDATED ANIMATED SEARCH BOX --- */}
-            <div className="flex-1 max-w-3xl mx-auto relative group">
+            <div className="flex-1 relative group">
               <div className="relative flex items-center">
                 <input 
                   type="text" 
@@ -640,6 +773,86 @@ useEffect(() => {
                   <Search size={18} strokeWidth={2.5} />
                 </button>
               </div>
+              {/* ZEPTO-STYLE SEARCH DROPDOWN */}
+              <AnimatePresence>
+                {debouncedSearch.length >= 1 && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    transition={{ duration: 0.15 }}
+                    className="
+  fixed lg:absolute
+  left-3 right-3 lg:left-0 lg:right-0
+  top-[140px] lg:top-[calc(100%+10px)]
+  bg-[#fffdfa]
+  border border-[#8B2323]/15
+  rounded-2xl
+  shadow-[0_20px_60px_rgba(0,0,0,0.25)]
+  z-[9999]
+  overflow-hidden
+"
+                  >
+                    
+                    {isSearching ? (
+                      // LOADING STATE
+                      <div className="flex flex-col items-center justify-center p-8">
+                        <div className="w-6 h-6 border-2 border-gray-200 border-t-[#8B2323] rounded-full animate-spin"></div>
+                      </div>
+                    ) : searchResults.length > 0 ? (
+                      // RESULTS LIST (Zepto Style)
+                      <div
+  className="
+    flex flex-col py-2 max-h-[60vh] overflow-y-auto
+
+    [&::-webkit-scrollbar]:w-1.5
+    [&::-webkit-scrollbar-thumb]:bg-[#8B2323]/30
+    [&::-webkit-scrollbar-thumb]:rounded-full
+    hover:[&::-webkit-scrollbar-thumb]:bg-[#8B2323]/50
+  "
+>
+                        {searchResults.map((product, index) => (
+                          <React.Fragment key={product.id}>
+
+                            {/* STANDARD ZEPTO ROW */}
+                            <button
+  onMouseDown={(e) => e.preventDefault()}
+  onClick={() => {
+    router.push(`/product/${product.slug}`);
+    setIsSearchFocused(false);
+  }}
+  className="
+    group flex items-center gap-4
+    px-5 py-3
+    w-full text-left
+    transition-all
+    hover:bg-[#8B2323]/5
+  "
+>
+
+  <div className="flex-1 min-w-0">
+    <ZeptoHighlight text={product.name} search={debouncedSearch} />
+    {/* <p className="text-[12px] text-gray-400 mt-0.5">
+      {product.price}
+    </p> */}
+  </div>
+</button>
+
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    ) : (
+                      // NO RESULTS STATE
+                      <div className="px-4 py-6 text-center">
+                        <p className="text-[15px] text-gray-600 font-medium">No results found for "{debouncedSearch}"</p>
+                        <p className="text-[13px] text-gray-400 mt-1">Check the spelling or try a different term.</p>
+                      </div>
+                    )}
+
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
             </div>
           </div>
         </div>
@@ -839,16 +1052,97 @@ useEffect(() => {
         </div>
 
         {/* Mobile Row 2: Search Bar Row */}
-        <div className="px-4 py-3 bg-white">
-          <div className="relative">
-            <input 
-              type="text" 
-              placeholder="Search products" 
-              className="w-full h-11 px-5 pr-12 border border-gray-200 rounded-full bg-gray-50 focus:bg-white focus:outline-none focus:border-red-800 text-sm transition-all shadow-sm" 
-            />
-            <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-          </div>
-        </div>
+<div className="px-4 py-3 bg-white relative z-[300]">
+  <div className="relative">
+    <input
+      type="search"
+      value={searchValue}
+      onChange={(e) => setSearchValue(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          submitSearch();
+        }
+      }}
+      onFocus={() => setIsSearchFocused(true)}
+      placeholder="Search products"
+      className="
+        w-full h-11 px-5 pr-12
+        border border-gray-200
+        rounded-full
+        bg-gray-50
+        focus:bg-white
+        focus:outline-none
+        focus:border-[#8B2323]
+        text-sm
+        shadow-sm
+      "
+    />
+
+    {/* SEARCH BUTTON */}
+    <button
+      type="button"
+      onClick={() => submitSearch()}
+      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-[#8B2323] rounded-full text-white"
+    >
+      <Search size={16} />
+    </button>
+          {/* MOBILE SEARCH DROPDOWN — ADDED */}
+    <AnimatePresence>
+      {debouncedSearch.length >= 1 && (
+        <motion.div
+          initial={{ opacity: 0, y: -5 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -5 }}
+          transition={{ duration: 0.15 }}
+          className="
+            absolute
+            left-0 right-0
+            top-[52px]
+            bg-[#fffdfa]
+            border border-[#8B2323]/15
+            rounded-2xl
+            shadow-[0_20px_60px_rgba(0,0,0,0.25)]
+            z-[1000]
+            overflow-hidden
+          "
+        >
+          {isSearching ? (
+            <div className="p-6 text-center">
+              <div className="w-6 h-6 mx-auto border-2 border-gray-200 border-t-[#8B2323] rounded-full animate-spin" />
+            </div>
+          ) : searchResults.length > 0 ? (
+            <div className="max-h-[60vh] overflow-y-auto">
+              {searchResults.map((product) => (
+                <button
+                  key={product.id}
+                  onClick={() => {
+                    router.push(`/product/${product.slug}`);
+                    setSearchValue("");
+                    setDebouncedSearch("");
+                  }}
+                  className="w-full text-left px-4 py-3 text-[14px] hover:bg-[#8B2323]/5"
+                >
+                  <ZeptoHighlight
+                    text={product.name}
+                    search={debouncedSearch}
+                  />
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="px-4 py-6 text-center">
+              <p className="text-sm text-gray-600">
+                No results for "{debouncedSearch}"
+              </p>
+            </div>
+          )}
+        </motion.div>
+      )}
+    </AnimatePresence>
+
+  </div>
+</div>
       </div>
 
       

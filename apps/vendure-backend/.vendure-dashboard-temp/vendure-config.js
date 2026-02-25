@@ -18,8 +18,9 @@ const serverPort = Number(process.env.PORT) || 3100;
 const PRODUCTION_FRONTEND_URLS = [
     process.env.FRONTEND_URL,
     process.env.RAILWAY_STATIC_URL,
-    'https://stalknspice.com',
-    'https://www.stalknspice.com',
+    'https://stalksnspice.com',
+    'https://www.stalksnspice.com',
+    'https://shop.zihwainsights.com',
 ].filter((url) => Boolean(url));
 const DEV_URLS = [
     'http://localhost:5176', // Dashboard port
@@ -76,12 +77,13 @@ exports.config = {
         logging: false,
         ssl: { rejectUnauthorized: false },
         extra: {
-            max: 10,
-            min: 2,
-            idleTimeoutMillis: 30000,
-            connectionTimeoutMillis: 60000,
+            max: 2,
+            min: 3,
+            idleTimeoutMillis: 60000,
+            connectionTimeoutMillis: 90000,
+            statement_timeout: '180000ms', // 3 minutes - explicit milliseconds format
         },
-        maxQueryExecutionTime: 120000,
+        maxQueryExecutionTime: 180000, // 3 minutes
     },
     paymentOptions: {
         paymentMethodHandlers: [
@@ -122,7 +124,7 @@ exports.config = {
         core_1.DefaultSchedulerPlugin.init(),
         core_1.DefaultJobQueuePlugin.init({ useDatabaseForBuffer: true }),
         core_1.DefaultSearchPlugin.init({
-            bufferUpdates: false,
+            bufferUpdates: true, // Buffer updates to reduce database load
             indexStockStatus: true,
         }),
         email_plugin_1.EmailPlugin.init({
@@ -141,7 +143,7 @@ exports.config = {
         // Vendure 3.x Dashboard (Vite-based)
         plugin_1.DashboardPlugin.init({
             route: 'dashboard',
-            appDir: node_path_1.default.join(__dirname, '../vendure-dashboard-temp'),
+            appDir: node_path_1.default.join(__dirname, '../dist'),
         }),
     ],
 };
