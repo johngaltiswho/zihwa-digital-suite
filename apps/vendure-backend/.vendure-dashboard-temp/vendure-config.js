@@ -14,18 +14,27 @@ require("dotenv/config");
 const node_path_1 = __importDefault(require("node:path"));
 const IS_DEV = process.env.APP_ENV === 'dev';
 const serverPort = Number(process.env.PORT) || 3100;
+// Production frontend URLs
+const PRODUCTION_FRONTEND_URLS = [
+    process.env.FRONTEND_URL,
+    process.env.RAILWAY_STATIC_URL,
+    'https://stalksnspice.com',
+    'https://www.stalksnspice.com',
+    'https://shop.zihwainsights.com',
+].filter((url) => Boolean(url));
+const DEV_URLS = [
+    'http://localhost:5176', // Dashboard port
+    'http://localhost:3100', // Server port
+    'http://localhost:3004', // Stalknspice storefront
+    'http://localhost:3009', // Accounting engine
+];
 exports.config = {
     apiOptions: {
         port: serverPort,
         adminApiPath: 'admin-api',
         shopApiPath: 'shop-api',
         cors: {
-            origin: [
-                'http://localhost:5176', // Dashboard port
-                'http://localhost:3100', // Server port
-                'http://localhost:3004', // Stalknspice storefront
-                'http://localhost:3009', // Accounting engine
-            ],
+            origin: IS_DEV ? DEV_URLS : PRODUCTION_FRONTEND_URLS,
             credentials: true,
             allowedHeaders: ['Content-Type', 'Authorization', 'vendure-token', 'vendure-auth-token', 'vendure-session-token'],
             exposedHeaders: ['vendure-token', 'vendure-auth-token', 'vendure-session-token'],
@@ -50,8 +59,8 @@ exports.config = {
         cookieOptions: {
             secret: process.env.COOKIE_SECRET,
             httpOnly: true,
-            sameSite: 'lax', // Important for cross-origin
-            secure: false, // Set to true in production
+            sameSite: IS_DEV ? 'lax' : 'none',
+            secure: !IS_DEV,
             path: '/',
             maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
         },
@@ -68,12 +77,13 @@ exports.config = {
         logging: false,
         ssl: { rejectUnauthorized: false },
         extra: {
-            max: 10,
-            min: 2,
-            idleTimeoutMillis: 30000,
-            connectionTimeoutMillis: 60000,
+            max: 15,
+            min: 3,
+            idleTimeoutMillis: 60000,
+            connectionTimeoutMillis: 90000,
+            statement_timeout: '180000ms', // 3 minutes - explicit milliseconds format
         },
-        maxQueryExecutionTime: 120000,
+        maxQueryExecutionTime: 180000, // 3 minutes
     },
     paymentOptions: {
         paymentMethodHandlers: [
@@ -114,7 +124,7 @@ exports.config = {
         core_1.DefaultSchedulerPlugin.init(),
         core_1.DefaultJobQueuePlugin.init({ useDatabaseForBuffer: true }),
         core_1.DefaultSearchPlugin.init({
-            bufferUpdates: false,
+            bufferUpdates: true, // Buffer updates to reduce database load
             indexStockStatus: true,
         }),
         email_plugin_1.EmailPlugin.init({
@@ -133,7 +143,7 @@ exports.config = {
         // Vendure 3.x Dashboard (Vite-based)
         plugin_1.DashboardPlugin.init({
             route: 'dashboard',
-            appDir: node_path_1.default.join(__dirname, '../vendure-dashboard-temp'),
+            appDir: node_path_1.default.join(__dirname, '../dist'),
         }),
     ],
 };

@@ -369,6 +369,7 @@ class RazorpayResolver {
 
 @VendurePlugin({
   imports: [PluginCommonModule],
+  compatibility: '^3.5.0',
   configuration: (config) => {
     return config;
   },

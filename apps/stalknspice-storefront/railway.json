@@ -5,6 +5,7 @@
     "watchPatterns": ["apps/stalknspice-storefront/**"]
   },
   "deploy": {
+    "startCommand": "cd apps/stalknspice-storefront && node ../../node_modules/.bin/next start",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }

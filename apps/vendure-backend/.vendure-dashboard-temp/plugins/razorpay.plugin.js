@@ -351,6 +351,7 @@ exports.RazorpayPlugin = RazorpayPlugin;
 exports.RazorpayPlugin = RazorpayPlugin = RazorpayPlugin_1 = __decorate([
     (0, core_1.VendurePlugin)({
         imports: [core_1.PluginCommonModule],
+        compatibility: '^3.5.0',
         configuration: (config) => {
             return config;
         },
