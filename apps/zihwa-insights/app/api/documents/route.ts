@@ -116,30 +116,40 @@ export async function POST(request: NextRequest) {
     }
 
     const data = validationResult.data
-
-    // Verify that the company exists and user has access
-    const companyAccess = await prisma.companyAccess.findFirst({
-      where: { 
-        companyId: data.companyId,
-        user: {
-          authId: user.id
-        }
-      },
-      include: {
-        company: true
+     // 1. Get the internal Database User safely
+    const dbUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { authId: user.id },
+          { id: user.id }
+        ]
       }
     })
 
-    if (!companyAccess) {
+    if (!dbUser) {
       return NextResponse.json(
-        { error: 'Company not found or access denied' },
+        { error: 'Your user account is not fully synced in the database yet.' },
+        { status: 400 }
+      )
+    }
+     // 2. Verify that the company actually exists
+    const company = await prisma.company.findUnique({
+      where: { id: data.companyId }
+    })
+
+    if (!company) {
+      return NextResponse.json(
+        { error: 'Selected company does not exist in the database.' },
         { status: 404 }
       )
     }
 
     await ensureDocumentTypes(prisma)
 
-    let requirementId = data.requirementId
+    // ==========================================
+    // THIS IS THE LINE THAT WAS MISSING/BROKEN
+    // ==========================================
+    let requirementId: string | undefined = data.requirementId;
 
     if (!requirementId && data.documentTypeId) {
       const existingRequirement = await prisma.companyDocumentRequirement.findFirst({
@@ -162,6 +172,53 @@ export async function POST(request: NextRequest) {
       }
     }
 
+
+    // // Verify that the company exists and user has access
+    // const companyAccess = await prisma.companyAccess.findFirst({
+    //   where: { 
+    //     companyId: data.companyId,
+    //     user: {
+    //       authId: user.id
+    //     }
+    //   },
+    //  select: {
+    //     userId: true, // Grab the internal DB user ID
+    //     company: true
+    //   }
+    // })
+
+    // if (!companyAccess) {
+    //   return NextResponse.json(
+    //     { error: 'Company not found or access denied' },
+    //     { status: 404 }
+    //   )
+    // }
+
+    // await ensureDocumentTypes(prisma)
+
+    // let requirementId = data.requirementId
+
+    // if (!requirementId && data.documentTypeId) {
+    //   const existingRequirement = await prisma.companyDocumentRequirement.findFirst({
+    //     where: {
+    //       companyId: data.companyId,
+    //       documentTypeId: data.documentTypeId,
+    //     },
+    //   })
+
+    //   if (existingRequirement) {
+    //     requirementId = existingRequirement.id
+    //   } else {
+    //     const createdRequirement = await prisma.companyDocumentRequirement.create({
+    //       data: {
+    //         companyId: data.companyId,
+    //         documentTypeId: data.documentTypeId,
+    //       },
+    //     })
+    //     requirementId = createdRequirement.id
+    //   }
+    // }
+
     // Create the document
     const document = await prisma.document.create({
       data: {
@@ -169,7 +226,7 @@ export async function POST(request: NextRequest) {
         description: data.description,
         category: data.category,
         documentTypeId: data.documentTypeId,
-        requirementId,
+        requirementId: requirementId,
         periodMonth: data.periodMonth,
         periodYear: data.periodYear,
         fileUrl: data.fileUrl,
@@ -177,7 +234,7 @@ export async function POST(request: NextRequest) {
         fileSize: data.fileSize,
         mimeType: data.mimeType,
         companyId: data.companyId,
-        uploadedById: user.id,
+        uploadedById: dbUser.id,
         status: DocumentComplianceStatus.SUBMITTED,
       },
       include: {

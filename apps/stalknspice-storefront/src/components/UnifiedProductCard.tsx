@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { useCart } from "@/lib/vendure/cart-context";
+import { WishlistButton } from "@/components/WishlistButton";
 import { getAssetUrl } from "@/lib/vendure/asset-utils";
 import type { Product } from "@/lib/vendure/types";
 
@@ -83,7 +84,22 @@ export function UnifiedProductCard({
   };
 
   return (
-    <div className={`${containerClasses[variant]} flex flex-col transition-shadow relative group`}>
+    <div
+  className={`${containerClasses[variant]} flex flex-col transition-shadow relative group overflow-visible`}
+>
+      {/* ── Wishlist heart button ── */}
+      <WishlistButton
+        product={product}
+        variantId={selectedVariantId}
+        size={16}
+        className="
+          absolute top-0 right-0 z-30
+          p-1.5 rounded-full
+          bg-white/90 hover:bg-white
+          shadow-sm border border-gray-100
+        "
+        tooltip
+      />
       {/* Product Link Section */}
       <Link href={`/product/${product.slug}?variant=${selectedVariantId}`} className="flex-grow flex flex-col group/link">
         <div className={imageContainerClasses[variant]}>

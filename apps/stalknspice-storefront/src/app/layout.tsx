@@ -7,6 +7,7 @@ import { AuthProvider } from "@/lib/vendure/auth-context";
 import { CartProvider } from "@/lib/vendure/cart-context";
 import { CollectionsProvider, useCollections } from "@/lib/vendure/collections-context";
 import HeaderWrapper from "@/components/HeaderWrapper";
+import { WishlistProvider } from "@/lib/vendure/wishlist-context";
 import { useMemo } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -56,7 +57,9 @@ export default function RootLayout({
         <AuthProvider>
           <CollectionsProvider>
             <CartProvider>
+              <WishlistProvider>
               <LayoutContent>{children}</LayoutContent>
+              </WishlistProvider>
             </CartProvider>
           </CollectionsProvider>
         </AuthProvider>
