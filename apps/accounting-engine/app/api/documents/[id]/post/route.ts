@@ -5,7 +5,7 @@ import {
   updateDocument,
   getActiveAccountingContext,
 } from '@repo/db'
-import { postExpense, postPurchase } from '@repo/connector-zoho-books'
+import { postExpense, postPurchase, postVendorCredit } from '@repo/connector-zoho-books'
 import { AccountingContextSchema, type ExpenseData, type PurchaseData } from '@repo/ledger-core'
 import { requireDocumentPermission } from '@/lib/authz'
 import { getCompanyZohoConnection } from '@/lib/zoho/company-connection'
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest, context: DocumentRouteContext) 
         id: string
         status: string
         companyId: string | null
-        documentType: 'EXPENSE' | 'PURCHASE' | 'INVOICE'
+        documentType: 'EXPENSE' | 'PURCHASE' | 'INVOICE' | 'CREDIT_NOTE'
         extractedData: unknown
       }
     }
@@ -174,10 +174,10 @@ export async function POST(request: NextRequest, context: DocumentRouteContext) 
         result = await postExpense(expenseData, orgId, accessToken, undefined, {
           accountId,
         })
-      } else if (doc.documentType === 'PURCHASE') {
+      } else if (doc.documentType === 'PURCHASE' || doc.documentType === 'CREDIT_NOTE') {
         if (!vendorId) {
           return NextResponse.json(
-            { success: false, error: 'vendorId is required for purchases' },
+            { success: false, error: 'vendorId is required for purchases/credit notes' },
             { status: 400 }
           )
         }
@@ -185,9 +185,15 @@ export async function POST(request: NextRequest, context: DocumentRouteContext) 
         const parsedPurchase = extracted as unknown as PurchaseData
         const purchaseData = ensurePurchaseLineItems(parsedPurchase)
 
-        result = await postPurchase(purchaseData, orgId, accessToken, undefined, {
-          vendorId,
-        })
+        if (doc.documentType === 'CREDIT_NOTE') {
+          result = await postVendorCredit(purchaseData, orgId, accessToken, undefined, {
+            vendorId,
+          })
+        } else {
+          result = await postPurchase(purchaseData, orgId, accessToken, undefined, {
+            vendorId,
+          })
+        }
       } else {
         return NextResponse.json(
           {

@@ -98,8 +98,12 @@ export async function GET(_request: NextRequest, context: TaxRouteContext) {
       },
     })
   } catch (error: any) {
+    const raw = String(error?.message || 'Failed to fetch Zoho taxes.')
+    const friendly = /not authorized|forbidden|permission|scope/i.test(raw)
+      ? 'Tax list unavailable for this Zoho connection. You can continue and choose tax mapping later.'
+      : raw
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to fetch Zoho taxes.' },
+      { success: false, error: friendly },
       { status: 500 }
     )
   }

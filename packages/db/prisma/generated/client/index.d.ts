@@ -151,7 +151,8 @@ export namespace $Enums {
   export const DocumentType: {
   EXPENSE: 'EXPENSE',
   PURCHASE: 'PURCHASE',
-  INVOICE: 'INVOICE'
+  INVOICE: 'INVOICE',
+  CREDIT_NOTE: 'CREDIT_NOTE'
 };
 
 export type DocumentType = (typeof DocumentType)[keyof typeof DocumentType]

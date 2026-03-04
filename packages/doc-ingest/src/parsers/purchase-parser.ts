@@ -18,7 +18,10 @@ import type { ParserResult } from '../types'
  * @param text - Extracted text from PDF or image
  * @returns Parsed purchase data with confidence score
  */
-export function parsePurchaseText(text: string): ParserResult<PurchaseData> {
+export function parsePurchaseText(
+  text: string,
+  options: { expectedType?: 'purchase' | 'invoice' | 'credit_note' } = {}
+): ParserResult<PurchaseData> {
   const warnings: string[] = []
 
   // Extract vendor name
@@ -28,7 +31,8 @@ export function parsePurchaseText(text: string): ParserResult<PurchaseData> {
   }
 
   // Extract bill number
-  const billNumber = extractBillNumber(text)
+  const billNumber = extractBillNumber(text, options.expectedType)
+  const referenceInvoiceNo = extractReferenceInvoiceNo(text)
 
   // Extract amount
   const amount = extractAmount(text)
@@ -64,6 +68,7 @@ export function parsePurchaseText(text: string): ParserResult<PurchaseData> {
   const purchaseData: PurchaseData = {
     vendorName: vendorName || 'Unknown Vendor',
     billNumber: billNumber || undefined,
+    referenceInvoiceNo: referenceInvoiceNo || undefined,
     amount: amount || 0,
     currency,
     date: date || new Date(),
@@ -84,6 +89,10 @@ export function parsePurchaseText(text: string): ParserResult<PurchaseData> {
  * Extract vendor name from invoice text
  */
 function extractVendorName(text: string): string | undefined {
+  if (/BRITANNIA\s+INDUSTRIES\s+LTD/i.test(text)) {
+    return 'BRITANNIA INDUSTRIES LTD'
+  }
+
   if (isTataInvoice(text)) {
     const tataVendor = extractTataVendorName(text)
     if (tataVendor) {
@@ -119,7 +128,10 @@ function extractVendorName(text: string): string | undefined {
 /**
  * Extract bill/invoice number
  */
-function extractBillNumber(text: string): string | undefined {
+function extractBillNumber(
+  text: string,
+  expectedType?: 'purchase' | 'invoice' | 'credit_note'
+): string | undefined {
   if (isTataInvoice(text)) {
     const tataBill = extractTataBillNumber(text)
     if (tataBill) {
@@ -127,7 +139,16 @@ function extractBillNumber(text: string): string | undefined {
     }
   }
 
+  // For credit notes, use GST Invoice No as the canonical credit note number.
+  if (expectedType === 'credit_note') {
+    const gstInvoiceNo = extractGstInvoiceNo(text)
+    if (gstInvoiceNo) return gstInvoiceNo
+  }
+
   const patterns = [
+    /(?:credit\s*note\s*(?:no|number|#)|cn\s*no|cr\s*note\s*(?:no|number|#))[\s:#-]*([A-Z0-9/-]{4,})/i,
+    /(?:sap\s*reference\s*no|sap\s*ref(?:erence)?\s*no)[\s:#-]*([A-Z0-9/-]+)/i,
+    /(?:gst\s*invoice\s*no|gst\s*inv(?:oice)?\s*no)[\s:#-]*([A-Z0-9/-]+)/i,
     /(?:invoice|bill|receipt)[\s#:]+([A-Z0-9-]+)/i,
     /(?:inv|bill)[\s#:]+([A-Z0-9-]+)/i,
     /#([A-Z0-9-]+)/,
@@ -136,7 +157,31 @@ function extractBillNumber(text: string): string | undefined {
   for (const pattern of patterns) {
     const match = text.match(pattern)
     if (match && match[1]) {
-      return match[1].trim()
+      const cleaned = sanitizeBillNumber(match[1].trim())
+      if (cleaned) return cleaned
+    }
+  }
+
+  return undefined
+}
+
+function extractGstInvoiceNo(text: string): string | undefined {
+  const match = text.match(/(?:gst\s*invoice\s*no|gst\s*inv(?:oice)?\s*no)[:.\s-]*([A-Z0-9/-]{4,})/i)
+  if (!match?.[1]) return undefined
+  return sanitizeBillNumber(match[1])
+}
+
+function extractReferenceInvoiceNo(text: string): string | undefined {
+  const patterns = [
+    /(?:ref\.?\s*invoice\s*no\.?|reference\s*invoice\s*no\.?)[:.\s-]*([A-Z0-9/-]{4,})/i,
+    /(?:ref\.?\s*inv(?:oice)?\s*no\.?)[:.\s-]*([A-Z0-9/-]{4,})/i,
+  ]
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern)
+    if (match?.[1]) {
+      const cleaned = sanitizeBillNumber(match[1])
+      if (cleaned) return cleaned
     }
   }
 
@@ -155,6 +200,9 @@ function extractAmount(text: string): number | undefined {
   }
 
   const patterns = [
+    /net\s+invoice\s+value[:\s]*[₹$€£]?\s*(\d+[,\d]*\.?\d*)/i,
+    /cheque\s+amount[:\s]*[₹$€£]?\s*(\d+[,\d]*\.?\d*)/i,
+    /invoice\s+amount[:\s]*[₹$€£]?\s*(\d+[,\d]*\.?\d*)/i,
     /total[:\s]*[₹$€£]?\s*(\d+[,\d]*\.?\d*)/i,
     /amount\s+due[:\s]*[₹$€£]?\s*(\d+[,\d]*\.?\d*)/i,
     /grand\s*total[:\s]*[₹$€£]?\s*(\d+[,\d]*\.?\d*)/i,
@@ -187,6 +235,7 @@ function extractDate(text: string): Date | undefined {
   }
 
   const patterns = [
+    /(?:invoice\s*dt|bill\s*dt|invoice|bill|date)[:.\s]+(\d{1,2}[.\-\/]\d{1,2}[.\-\/]\d{2,4})/i,
     /(?:invoice|bill|date)[:\s]+(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/i,
     /(?:date)[:\s]+(\d{4}[-\/]\d{1,2}[-\/]\d{1,2})/i,
     /(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/,
@@ -239,6 +288,11 @@ function extractDueDate(text: string): Date | undefined {
  * Extract line items from invoice
  */
 function extractLineItems(text: string): LineItem[] {
+  const britanniaLineItem = extractBritanniaCreditNoteLineItem(text)
+  if (britanniaLineItem) {
+    return [britanniaLineItem]
+  }
+
   const lineItems: LineItem[] = []
   const seen = new Set<string>()
   const lines = text
@@ -294,6 +348,7 @@ function extractLineItems(text: string): LineItem[] {
 
     lineItems.push({
       description,
+      hsnCode: extractHsnCode(description),
       quantity,
       rate,
       amount,
@@ -321,6 +376,7 @@ function isTataInvoice(text: string): boolean {
 function extractTataLineItems(text: string): LineItem[] {
   const descriptions = extractTataDescriptions(text)
   const amounts = extractTataTaxableValues(text)
+  const quantities = extractTataQuantities(text)
 
   const items: LineItem[] = []
   const maxCount = Math.max(descriptions.length, amounts.length)
@@ -334,10 +390,20 @@ function extractTataLineItems(text: string): LineItem[] {
     }
 
     const safeAmount = amount ?? 0
+    let quantity = quantities[i] && quantities[i]! > 0 ? quantities[i]! : 1
+    let rate = quantity > 0 ? Number((safeAmount / quantity).toFixed(2)) : safeAmount
+
+    // OCR sanity guard: micro quantities or huge per-unit rates are usually parse noise.
+    if ((quantity < 1 && safeAmount > 100) || rate > 10000) {
+      quantity = 1
+      rate = safeAmount
+    }
+
     items.push({
       description,
-      quantity: 1,
-      rate: safeAmount,
+      hsnCode: extractHsnCode(description),
+      quantity,
+      rate,
       amount: safeAmount,
     })
   }
@@ -421,6 +487,114 @@ function extractTataTaxableValues(text: string): number[] {
   }
 
   return values
+}
+
+function extractTataQuantities(text: string): number[] {
+  const quantities: number[] = []
+  const matches = text.matchAll(/\b(\d+(?:\.\d+)?)\s*(KG|EA|CV|TO)\b/gi)
+
+  for (const match of matches) {
+    if (!match[1]) continue
+    const value = parseFloat(match[1].replace(/,/g, ''))
+    if (!Number.isFinite(value) || value <= 0) continue
+    // Ignore unrealistic large OCR artifacts.
+    if (value > 100000) continue
+    quantities.push(value)
+  }
+
+  return quantities
+}
+
+function extractHsnCode(description: string): string | undefined {
+  const explicit = description.match(/HSN[:\s]?(\d{8})/i)
+  if (explicit?.[1]) return explicit[1]
+
+  const fallback = description.match(/(?:^|[^0-9])(\d{8})(?:[^0-9]|$)/)
+  return fallback?.[1]
+}
+
+function extractBritanniaCreditNoteLineItem(text: string): LineItem | undefined {
+  if (!/CREDIT NOTE FOR RETURN/i.test(text) || !/BRITANNIA/i.test(text)) {
+    return undefined
+  }
+
+  const rowLine = text
+    .split('\n')
+    .map((line) => line.trim())
+    .find((line) => /^\d+\s+\d+\(\)/.test(line))
+
+  let description = 'Credit note item'
+  let hsnCode: string | undefined
+
+  if (rowLine) {
+    const tokens = rowLine.split(/\s+/).filter(Boolean)
+    let i = 0
+    while (i < tokens.length && /^\d+$/.test(tokens[i] || '')) i += 1
+    if (i < tokens.length && /\(\)/.test(tokens[i] || '')) i += 1
+
+    const descTokens: string[] = []
+    for (; i < tokens.length; i += 1) {
+      const token = tokens[i] || ''
+      if ((token.match(/\d/g) || []).length >= 6) {
+        const hsnMatch = token.match(/(\d{8})/)
+        if (hsnMatch?.[1]) {
+          hsnCode = hsnMatch[1]
+        }
+        break
+      }
+      if (token) descTokens.push(token)
+    }
+
+    if (descTokens.length > 0) {
+      description = descTokens.join(' ').trim()
+    }
+
+    if (!hsnCode) {
+      const hsnFromRow = rowLine.match(/(?:^|[^0-9])(\d{8})(?:[^0-9]|$)/)
+      if (hsnFromRow?.[1]) hsnCode = hsnFromRow[1]
+    }
+  }
+
+  const qtyMatch = text.match(/Total\s*([0-9]+(?:\.[0-9]+)?)/i)
+  const qty = qtyMatch?.[1] ? parseFloat(qtyMatch[1]) : 1
+
+  const taxableMatch = text.match(/TAXABLE\s+INVOICE\s+VALUE[:\s]*([0-9,]+\.[0-9]+)/i)
+  const amount = taxableMatch?.[1]
+    ? parseFloat(taxableMatch[1].replace(/,/g, ''))
+    : undefined
+
+  if (!amount || !Number.isFinite(amount)) {
+    return undefined
+  }
+
+  const safeQty = qty > 0 ? qty : 1
+  const rate = Number((amount / safeQty).toFixed(2))
+
+  return {
+    description,
+    hsnCode,
+    quantity: safeQty,
+    rate,
+    amount,
+  }
+}
+
+function sanitizeBillNumber(value: string): string | undefined {
+  if (!value) return undefined
+  let cleaned = value.toUpperCase()
+    .replace(/(?:INVOICE|INV|BILL|DT|DATE|NO|NUMBER)$/g, '')
+    .replace(/[^A-Z0-9/-]/g, '')
+    .trim()
+
+  if (!cleaned) return undefined
+
+  // Prefer leading numeric core for OCR blobs like "1520111539INVOICE".
+  const numericLead = cleaned.match(/^(\d{6,})/)
+  if (numericLead?.[1]) {
+    cleaned = numericLead[1]
+  }
+
+  return cleaned
 }
 
 function findStopIndex(segment: string): number {

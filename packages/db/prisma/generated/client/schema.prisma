@@ -296,6 +296,7 @@ enum DocumentType {
   EXPENSE
   PURCHASE
   INVOICE
+  CREDIT_NOTE
 
   @@schema("accounting")
 }

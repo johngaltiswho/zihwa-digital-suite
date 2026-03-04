@@ -15,6 +15,16 @@ import type {
   ExtractionOptions,
 } from './types'
 
+function resolveExpectedType(
+  expectedType: DocumentType | undefined,
+  inferredType: 'expense' | 'purchase'
+): 'expense' | 'purchase' | 'credit_note' {
+  if (!expectedType) return inferredType
+  if (expectedType === 'invoice') return 'purchase'
+  if (expectedType === 'credit_note') return 'credit_note'
+  return expectedType
+}
+
 function asNumber(value: unknown): number {
   const num = typeof value === 'number' ? value : Number(value)
   return Number.isFinite(num) ? num : 0
@@ -74,12 +84,39 @@ function normalizePurchaseLineItems(data: any): any {
   const mismatchRatio = expectedBase > 0 ? Math.abs(lineItemsSum - expectedBase) / expectedBase : 0
   const summaryHint = isLikelySummaryInvoiceDescription(data.description)
   const tooManyItems = cleanedItems.length > 8
+  const hsnHeavyItems = cleanedItems.filter((item: any) =>
+    /hsn[:\s]?\d{4,}/i.test(String(item.description || ''))
+  ).length
+  const delta = Number((expectedBase - lineItemsSum).toFixed(2))
 
-  if (
-    mismatchRatio > 0.25 ||
-    (summaryHint && cleanedItems.length > 3) ||
-    (tooManyItems && mismatchRatio > 0.1)
-  ) {
+  // For clearly summary-style invoices, keep single consolidated line.
+  if (summaryHint && cleanedItems.length > 1) {
+    return {
+      ...data,
+      lineItems: [buildSummaryLineItem(data, expectedBase)],
+    }
+  }
+
+  // For itemized invoices (often with HSN codes), retain extracted rows and
+  // add one balancing row when parser missed some rows.
+  if (mismatchRatio > 0.08 && hsnHeavyItems >= 3 && Math.abs(delta) >= 1) {
+    const balanceDirection = delta > 0 ? 'Balance adjustment' : 'Discount/rounding adjustment'
+    return {
+      ...data,
+      lineItems: [
+        ...cleanedItems,
+        {
+          description: `${balanceDirection} (${data.billNumber || 'invoice'})`,
+          quantity: 1,
+          rate: delta,
+          amount: delta,
+        },
+      ],
+    }
+  }
+
+  // If rows look noisy and mismatch is very high, consolidate to one row.
+  if (mismatchRatio > 0.35 || (tooManyItems && mismatchRatio > 0.2)) {
     return {
       ...data,
       lineItems: [buildSummaryLineItem(data, expectedBase)],
@@ -92,20 +129,49 @@ function normalizePurchaseLineItems(data: any): any {
   }
 }
 
-function enrichPurchaseLineItemsFromText(data: any, text: string): any {
+function enrichPurchaseLineItemsFromText(
+  data: any,
+  text: string,
+  expectedType?: DocumentType
+): any {
   if (!data || typeof data !== 'object') return data
   if (!('vendorName' in data)) return data
-  if (Array.isArray(data.lineItems) && data.lineItems.length > 0) return data
 
-  const parsed = parsePurchaseText(text)
-  if (parsed.data.lineItems && parsed.data.lineItems.length > 0) {
-    return {
-      ...data,
-      lineItems: parsed.data.lineItems,
-    }
+  const parsed = parsePurchaseText(text, {
+    expectedType: expectedType === 'credit_note' ? 'credit_note' : undefined,
+  })
+  const next: any = { ...data }
+
+  if (
+    (expectedType === 'credit_note' && parsed.data.billNumber) ||
+    (!next.billNumber && parsed.data.billNumber)
+  ) {
+    next.billNumber = parsed.data.billNumber
+  }
+  if (!next.referenceInvoiceNo && parsed.data.referenceInvoiceNo) {
+    next.referenceInvoiceNo = parsed.data.referenceInvoiceNo
   }
 
-  return data
+  if (!Array.isArray(next.lineItems) || next.lineItems.length === 0) {
+    if (parsed.data.lineItems && parsed.data.lineItems.length > 0) {
+      next.lineItems = parsed.data.lineItems
+    }
+    return next
+  }
+
+  next.lineItems = next.lineItems.map((item: any) => {
+    if (!item || typeof item !== 'object') return item
+    if (item.hsnCode) return item
+    const desc = String(item.description || '')
+    const hsnMatch = desc.match(/HSN[:\s]?(\d{4,8})/i)
+    if (!hsnMatch?.[1]) return item
+    return {
+      ...item,
+      hsnCode: hsnMatch[1],
+    }
+  })
+
+  return next
 }
 
 /**
@@ -153,13 +219,16 @@ export async function extractFromDocument(
       // Parse with AI
       const parseResult = await parseWithAI(ocrResult.text, options.aiConfig)
       let data = parseResult.data as any
-      data = enrichPurchaseLineItemsFromText(data, ocrResult.text)
+      data = enrichPurchaseLineItemsFromText(data, ocrResult.text, options.expectedType)
       data = normalizePurchaseLineItems(data)
       const hasVendor = 'vendorName' in data
       const finalConfidence = Math.min(ocrResult.confidence, parseResult.confidence || 100)
 
+      const inferredType = hasVendor ? 'purchase' : 'expense'
+      const finalType = resolveExpectedType(options.expectedType, inferredType)
+
       const result: ExtractedData = {
-        type: hasVendor ? 'purchase' : 'expense',
+        type: finalType,
         data: data,
         confidence: finalConfidence,
         usage: parseResult.usage,
@@ -191,8 +260,14 @@ export async function extractFromDocument(
           `🎯 Vision API result: ${visionResult.confidence?.toFixed(1)}% confidence (fallback used)`
         )
 
+        const inferredVisionType = hasVendorVision ? 'purchase' : 'expense'
+        const finalVisionType = resolveExpectedType(
+          options.expectedType,
+          inferredVisionType
+        )
+
         return {
-          type: hasVendorVision ? 'purchase' : 'expense',
+          type: finalVisionType,
           data: visionData,
           confidence: visionResult.confidence,
           usage: mergeUsage(parseResult.usage, visionResult.usage),
@@ -217,8 +292,14 @@ export async function extractFromDocument(
 
         console.log(`🎯 Vision API result: ${visionResult.confidence?.toFixed(1)}% confidence (error fallback)`)
 
+        const inferredVisionType = hasVendorVision ? 'purchase' : 'expense'
+        const finalVisionType = resolveExpectedType(
+          options.expectedType,
+          inferredVisionType
+        )
+
         return {
-          type: hasVendorVision ? 'purchase' : 'expense',
+          type: finalVisionType,
           data: visionData,
           confidence: visionResult.confidence,
           usage: visionResult.usage,
@@ -261,8 +342,14 @@ export async function extractFromDocument(
         `🎯 Scanned PDF Vision result: ${visionResult.confidence?.toFixed(1)}% confidence`
       )
 
+      const inferredVisionType = hasVendorVision ? 'purchase' : 'expense'
+      const finalVisionType = resolveExpectedType(
+        options.expectedType,
+        inferredVisionType
+      )
+
       return {
-        type: hasVendorVision ? 'purchase' : 'expense',
+        type: finalVisionType,
         data: visionData,
         confidence: visionResult.confidence,
         usage: visionResult.usage,
@@ -283,12 +370,15 @@ export async function extractFromDocument(
   if (options.useAI && options.aiConfig) {
     const result = await parseWithAI(extractedText, options.aiConfig)
     let data = result.data as any
-    data = enrichPurchaseLineItemsFromText(data, extractedText)
+    data = enrichPurchaseLineItemsFromText(data, extractedText, options.expectedType)
     data = normalizePurchaseLineItems(data)
     const hasVendor = 'vendorName' in data
 
+    const inferredType = hasVendor ? 'purchase' : 'expense'
+    const finalType = resolveExpectedType(options.expectedType, inferredType)
+
     return {
-      type: hasVendor ? 'purchase' : 'expense',
+      type: finalType,
       data: data,
       confidence: confidence || result.confidence,
       usage: result.usage,
@@ -305,10 +395,14 @@ export async function extractFromDocument(
       data: result.data,
       confidence: confidence || result.confidence,
     }
-  } else if (documentType === 'purchase' || documentType === 'invoice') {
+  } else if (
+    documentType === 'purchase' ||
+    documentType === 'invoice' ||
+    documentType === 'credit_note'
+  ) {
     const result = parsePurchaseText(extractedText)
     return {
-      type: 'purchase',
+      type: documentType === 'credit_note' ? 'credit_note' : 'purchase',
       data: result.data,
       confidence: confidence || result.confidence,
     }
@@ -346,6 +440,8 @@ function detectDocumentType(text: string): DocumentType {
     'ship to',
   ]
 
+  const creditNoteKeywords = ['credit note', 'credit memo', 'vendor credit', 'cn no', 'cr note']
+
   // Keywords that suggest it's an expense receipt
   const expenseKeywords = [
     'receipt',
@@ -365,6 +461,14 @@ function detectDocumentType(text: string): DocumentType {
   const expenseScore = expenseKeywords.filter((keyword) =>
     lowerText.includes(keyword)
   ).length
+
+  const creditNoteScore = creditNoteKeywords.filter((keyword) =>
+    lowerText.includes(keyword)
+  ).length
+
+  if (creditNoteScore >= 1) {
+    return 'credit_note'
+  }
 
   // Determine type based on higher score
   if (purchaseScore > expenseScore && purchaseScore >= 2) {

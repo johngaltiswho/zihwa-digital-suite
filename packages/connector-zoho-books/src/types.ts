@@ -140,6 +140,26 @@ export interface ZohoBillRequest {
 }
 
 /**
+ * Internal: Zoho vendor credit (purchase credit note) request payload
+ */
+export interface ZohoVendorCreditRequest {
+  vendor_id: string
+  creditnote_number?: string
+  reference_number?: string
+  date: string
+  currency_code?: string
+  line_items: Array<{
+    account_id?: string
+    name: string
+    description?: string
+    rate: number
+    quantity: number
+    tax_id?: string
+  }>
+  notes?: string
+}
+
+/**
  * Internal: Zoho API success response
  */
 export interface ZohoApiResponse<T> {

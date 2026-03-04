@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react'
 
 type LineItem = {
   description?: string
+  hsnCode?: string
   quantity?: number
   rate?: number
   amount?: number
@@ -31,6 +32,7 @@ type ExtractedPayload = {
     currency?: string
     date?: string
     billNumber?: string
+    referenceInvoiceNo?: string
     description?: string
     taxAmount?: number
     cgstAmount?: number
@@ -141,6 +143,12 @@ export default function DocumentDetailPage() {
   const [taxes, setTaxes] = useState<TaxOption[]>([])
   const [taxesLoading, setTaxesLoading] = useState(false)
   const [taxesError, setTaxesError] = useState<string | null>(null)
+  const isPurchaseLikeDoc = useMemo(
+    () =>
+      document?.documentType === 'PURCHASE' ||
+      document?.documentType === 'CREDIT_NOTE',
+    [document?.documentType]
+  )
 
   const fetchDocument = async () => {
     if (!documentId) return
@@ -185,8 +193,7 @@ export default function DocumentDetailPage() {
   )
 
   useEffect(() => {
-    const isPurchaseDoc = document?.documentType === 'PURCHASE'
-    if (!documentId || !isPurchaseDoc || !orgId) return
+    if (!documentId || !isPurchaseLikeDoc || !orgId) return
 
     const loadVendors = async () => {
       setVendorsLoading(true)
@@ -232,11 +239,10 @@ export default function DocumentDetailPage() {
     }
 
     void loadVendors()
-  }, [documentId, document?.documentType, orgId, parsedVendorName])
+  }, [documentId, isPurchaseLikeDoc, orgId, parsedVendorName])
 
   useEffect(() => {
-    const isPurchaseDoc = document?.documentType === 'PURCHASE'
-    if (!documentId || !isPurchaseDoc || !orgId) return
+    if (!documentId || !isPurchaseLikeDoc || !orgId) return
 
     const loadTaxes = async () => {
       setTaxesLoading(true)
@@ -256,7 +262,7 @@ export default function DocumentDetailPage() {
     }
 
     void loadTaxes()
-  }, [documentId, document?.documentType, orgId])
+  }, [documentId, isPurchaseLikeDoc, orgId])
 
   const updateField = (field: keyof ExtractedPayload['data'], value: string | number) => {
     setFormData((prev) => {
@@ -276,7 +282,9 @@ export default function DocumentDetailPage() {
       if (!prev) return prev
       const lineItems = [...(prev.data.lineItems || [])]
       const parsedValue =
-        field === 'description' || field === 'taxId' ? value : Number(value)
+        field === 'description' || field === 'taxId' || field === 'hsnCode'
+          ? value
+          : Number(value)
       lineItems[index] = {
         ...lineItems[index],
         [field]: parsedValue,
@@ -295,7 +303,7 @@ export default function DocumentDetailPage() {
     setFormData((prev) => {
       if (!prev) return prev
       const lineItems = [...(prev.data.lineItems || [])]
-      lineItems.push({ description: '', quantity: 1, rate: 0, amount: 0 })
+      lineItems.push({ description: '', hsnCode: '', quantity: 1, rate: 0, amount: 0 })
       return {
         ...prev,
         data: { ...prev.data, lineItems },
@@ -356,8 +364,11 @@ export default function DocumentDetailPage() {
       return
     }
 
-    if (document?.documentType === 'PURCHASE' && !vendorId) {
-      setPostResult({ success: false, message: 'Vendor ID is required for purchases.' })
+    if (isPurchaseLikeDoc && !vendorId) {
+      setPostResult({
+        success: false,
+        message: 'Vendor ID is required for purchase bills/credit notes.',
+      })
       return
     }
 
@@ -415,7 +426,8 @@ export default function DocumentDetailPage() {
     )
   }
 
-  const isPurchase = document.documentType === 'PURCHASE'
+  const isPurchase = isPurchaseLikeDoc
+  const isCreditNote = document.documentType === 'CREDIT_NOTE'
   const lineItems = formData?.data?.lineItems || []
   const confidence = confidenceMeta(formData?.confidence)
   const usage = formData?.usage
@@ -432,27 +444,27 @@ export default function DocumentDetailPage() {
   const taxableAmount = totalAmount > 0 ? Math.max(totalAmount - gstAmount, 0) : 0
 
   return (
-    <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8 text-gray-900">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8 text-gray-900">
+      <div className="max-w-[1500px] mx-auto space-y-5">
         <Link href="/documents" className="text-sm text-sky-700 hover:underline">
           ← Back to documents
         </Link>
 
-        <div className="space-y-2">
+        <div className="space-y-1">
           <p className="text-sm font-semibold text-sky-700">Step 3 · Approve</p>
-          <h1 className="text-3xl font-semibold text-gray-900">Approve & Post</h1>
-          <p className="text-gray-600">
+          <h1 className="text-2xl font-semibold text-gray-900">Approve & Post</h1>
+          <p className="text-sm text-gray-600">
             The AI accountant already filled in the entry. Adjust anything that looks off, then approve with one confident click.
           </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.9fr)_minmax(420px,1.1fr)]">
           <div className="space-y-6">
-            <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm space-y-4">
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
-                  <p className="text-sm text-gray-500">File</p>
-                  <p className="font-semibold text-gray-900">{document.fileName}</p>
+                  <p className="text-xs uppercase tracking-wide text-gray-500">File</p>
+                  <p className="text-lg font-semibold text-gray-900">{document.fileName}</p>
                 </div>
                 <span
                   className={`text-xs font-semibold px-2 py-1 rounded-full border ${STATUS_STYLES[document.status] || 'bg-gray-100 text-gray-600 border-gray-200'}`}
@@ -460,7 +472,7 @@ export default function DocumentDetailPage() {
                   {document.status}
                 </span>
               </div>
-              <div className="grid gap-3 text-sm text-gray-600 md:grid-cols-2">
+              <div className="grid gap-3 text-sm text-gray-600 md:grid-cols-3">
                 <div>
                   <p className="font-medium text-gray-500">Created</p>
                   <p>{new Date(document.createdAt).toLocaleString()}</p>
@@ -517,14 +529,18 @@ export default function DocumentDetailPage() {
               </a>
             </div>
 
-            <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
                     AI suggestion
                   </p>
                   <h2 className="text-lg font-semibold text-gray-900">
-                    {isPurchase ? 'Will post as Purchase Bill' : 'Will post as Expense'}
+                    {isPurchase
+                      ? isCreditNote
+                        ? 'Will post as Vendor Credit Note'
+                        : 'Will post as Purchase Bill'
+                      : 'Will post as Expense'}
                   </h2>
                 </div>
                 <button
@@ -616,39 +632,6 @@ export default function DocumentDetailPage() {
                     </div>
                   </div>
 
-                  <div className="grid gap-4 md:grid-cols-3">
-                    <div>
-                      <label className="block text-gray-700 font-medium mb-1">CGST</label>
-                      <input
-                        type="number"
-                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-gray-900 focus:border-gray-300 focus:ring-2 focus:ring-gray-200"
-                        value={formData.data?.cgstAmount ?? ''}
-                        onChange={(event) => updateField('cgstAmount', Number(event.target.value))}
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-gray-700 font-medium mb-1">SGST</label>
-                      <input
-                        type="number"
-                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-gray-900 focus:border-gray-300 focus:ring-2 focus:ring-gray-200"
-                        value={formData.data?.sgstAmount ?? ''}
-                        onChange={(event) => updateField('sgstAmount', Number(event.target.value))}
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-gray-700 font-medium mb-1">IGST</label>
-                      <input
-                        type="number"
-                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-gray-900 focus:border-gray-300 focus:ring-2 focus:ring-gray-200"
-                        value={formData.data?.igstAmount ?? ''}
-                        onChange={(event) => updateField('igstAmount', Number(event.target.value))}
-                        placeholder="0.00"
-                      />
-                    </div>
-                  </div>
-
                   <div className="grid gap-4 md:grid-cols-2">
                     <div>
                       <label className="block text-gray-700 font-medium mb-1">Date</label>
@@ -661,7 +644,11 @@ export default function DocumentDetailPage() {
                     </div>
                     <div>
                       <label className="block text-gray-700 font-medium mb-1">
-                        {isPurchase ? 'Bill number' : 'Reference'}
+                        {isPurchase
+                          ? isCreditNote
+                            ? 'Credit note number'
+                            : 'Bill number'
+                          : 'Reference'}
                       </label>
                       <input
                         className="w-full rounded-lg border border-gray-200 px-3 py-2 text-gray-900 focus:border-gray-300 focus:ring-2 focus:ring-gray-200"
@@ -670,6 +657,21 @@ export default function DocumentDetailPage() {
                       />
                     </div>
                   </div>
+
+                  {isCreditNote && (
+                    <div>
+                      <label className="block text-gray-700 font-medium mb-1">
+                        Ref Invoice No (adjustment target)
+                      </label>
+                      <input
+                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-gray-900 focus:border-gray-300 focus:ring-2 focus:ring-gray-200"
+                        value={formData.data?.referenceInvoiceNo || ''}
+                        onChange={(event) =>
+                          updateField('referenceInvoiceNo', event.target.value)
+                        }
+                      />
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-gray-700 font-medium mb-1">Description</label>
@@ -700,12 +702,13 @@ export default function DocumentDetailPage() {
                           <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                             <tr>
                               <th className="px-3 py-2 text-left font-semibold">Item details</th>
+                              <th className="px-3 py-2 text-left font-semibold">HSN</th>
                               <th className="px-3 py-2 text-left font-semibold">Qty</th>
                               <th className="px-3 py-2 text-left font-semibold">Rate</th>
-                              <th className="px-3 py-2 text-left font-semibold">Amount</th>
                               {isPurchase && (
                                 <th className="px-3 py-2 text-left font-semibold">Tax</th>
                               )}
+                              <th className="px-3 py-2 text-left font-semibold">Amount</th>
                               <th className="px-3 py-2 text-right font-semibold">Action</th>
                             </tr>
                           </thead>
@@ -719,6 +722,16 @@ export default function DocumentDetailPage() {
                                     onChange={(event) =>
                                       updateLineItem(index, 'description', event.target.value)
                                     }
+                                  />
+                                </td>
+                                <td className="px-3 py-2 min-w-[96px]">
+                                  <input
+                                    className="w-full rounded border border-gray-200 px-2 py-1 text-gray-900 focus:border-blue-300 focus:ring-1 focus:ring-blue-100"
+                                    value={item.hsnCode || ''}
+                                    onChange={(event) =>
+                                      updateLineItem(index, 'hsnCode', event.target.value)
+                                    }
+                                    placeholder="HSN"
                                   />
                                 </td>
                                 <td className="px-3 py-2 min-w-[96px]">
@@ -737,16 +750,6 @@ export default function DocumentDetailPage() {
                                     className="w-full rounded border border-gray-200 px-2 py-1 text-gray-900 focus:border-blue-300 focus:ring-1 focus:ring-blue-100"
                                     value={item.rate ?? ''}
                                     onChange={(event) => updateLineItem(index, 'rate', event.target.value)}
-                                  />
-                                </td>
-                                <td className="px-3 py-2 min-w-[120px]">
-                                  <input
-                                    type="number"
-                                    className="w-full rounded border border-gray-200 px-2 py-1 text-gray-900 focus:border-blue-300 focus:ring-1 focus:ring-blue-100"
-                                    value={item.amount ?? ''}
-                                    onChange={(event) =>
-                                      updateLineItem(index, 'amount', event.target.value)
-                                    }
                                   />
                                 </td>
                                 {isPurchase && (
@@ -773,6 +776,16 @@ export default function DocumentDetailPage() {
                                     </select>
                                   </td>
                                 )}
+                                <td className="px-3 py-2 min-w-[120px]">
+                                  <input
+                                    type="number"
+                                    className="w-full rounded border border-gray-200 px-2 py-1 text-gray-900 focus:border-blue-300 focus:ring-1 focus:ring-blue-100"
+                                    value={item.amount ?? ''}
+                                    onChange={(event) =>
+                                      updateLineItem(index, 'amount', event.target.value)
+                                    }
+                                  />
+                                </td>
                                 <td className="px-3 py-2 text-right">
                                   <button
                                     type="button"
@@ -789,7 +802,25 @@ export default function DocumentDetailPage() {
                       </div>
                     )}
                     {isPurchase && taxesError && (
-                      <p className="mt-2 text-xs text-amber-700">{taxesError}</p>
+                      <p className="mt-2 text-xs text-slate-500">{taxesError}</p>
+                    )}
+
+                    {isPurchase && (
+                      <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                        <p className="font-semibold text-slate-800">GST verification</p>
+                        <p>Taxable subtotal: {taxableAmount.toFixed(2)}</p>
+                        <p>GST total: {gstAmount.toFixed(2)}</p>
+                        <p>
+                          CGST: {cgstAmount.toFixed(2)} | SGST: {sgstAmount.toFixed(2)} | IGST:{' '}
+                          {igstAmount.toFixed(2)}
+                        </p>
+                        <p>Split GST total: {splitGstTotal.toFixed(2)}</p>
+                        <p>Invoice total: {totalAmount.toFixed(2)}</p>
+                        <p className="mt-1 text-slate-500">
+                          Note: Zoho Books bill API applies tax via line-level tax IDs (`tax_id`)
+                          rather than direct CGST/SGST/IGST amount fields.
+                        </p>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -801,8 +832,8 @@ export default function DocumentDetailPage() {
             </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="space-y-6 lg:sticky lg:top-4 self-start">
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
               <h2 className="text-lg font-semibold text-gray-900">Original document</h2>
               <p className="text-xs text-gray-500 mb-3">
                 Keep the preview open while you confirm.
@@ -811,7 +842,7 @@ export default function DocumentDetailPage() {
                 <object
                   data={document.fileUrl}
                   type="application/pdf"
-                  className="w-full h-[420px] border border-gray-200 rounded"
+                  className="w-full h-[760px] border border-gray-200 rounded"
                 >
                   <p className="text-sm text-gray-500">
                     PDF preview unavailable.{' '}
@@ -830,12 +861,12 @@ export default function DocumentDetailPage() {
                 <img
                   src={document.fileUrl}
                   alt={document.fileName}
-                  className="w-full max-h-[420px] object-contain border border-gray-200 rounded"
+                  className="w-full max-h-[760px] object-contain border border-gray-200 rounded"
                 />
               )}
             </div>
 
-            <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm space-y-4">
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm space-y-4">
               <h2 className="text-lg font-semibold text-gray-900">Post to Zoho Books</h2>
               <p className="text-sm text-gray-600">
                 We’ll handle narration, taxes and attachments. You only choose where it lands.
@@ -915,19 +946,6 @@ export default function DocumentDetailPage() {
                   </div>
                 )}
 
-                {isPurchase && (
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
-                    <p className="font-semibold text-slate-800">GST verification</p>
-                    <p>Taxable subtotal: {taxableAmount.toFixed(2)}</p>
-                    <p>GST total: {gstAmount.toFixed(2)}</p>
-                    <p>CGST: {cgstAmount.toFixed(2)} | SGST: {sgstAmount.toFixed(2)} | IGST: {igstAmount.toFixed(2)}</p>
-                    <p>Split GST total: {splitGstTotal.toFixed(2)}</p>
-                    <p>Invoice total: {totalAmount.toFixed(2)}</p>
-                    <p className="mt-1 text-slate-500">
-                      Note: Zoho Books bill API applies tax via line-level tax IDs (`tax_id`) rather than direct CGST/SGST/IGST amount fields.
-                    </p>
-                  </div>
-                )}
               </div>
 
               {postResult && (

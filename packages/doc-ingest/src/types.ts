@@ -5,7 +5,7 @@ import type { ExpenseData, PurchaseData } from '@repo/ledger-core'
 /**
  * Document types supported by the ingestion engine
  */
-export type DocumentType = 'expense' | 'purchase' | 'invoice'
+export type DocumentType = 'expense' | 'purchase' | 'invoice' | 'credit_note'
 
 /**
  * File types supported for extraction
@@ -24,6 +24,12 @@ export type ExtractedData =
     }
   | {
       type: 'purchase'
+      data: PurchaseData
+      confidence?: number
+      usage?: ExtractionUsage
+    }
+  | {
+      type: 'credit_note'
       data: PurchaseData
       confidence?: number
       usage?: ExtractionUsage

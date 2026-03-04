@@ -13,6 +13,12 @@ const supabase = createClient(
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 const ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg']
+type UploadDocumentType =
+  | 'auto'
+  | 'expense'
+  | 'purchase'
+  | 'invoice'
+  | 'credit_note'
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,6 +28,15 @@ export async function POST(request: NextRequest) {
     const activeScope = await getActiveScope()
     const formData = await request.formData()
     const file = formData.get('file') as File
+    const selectedTypeRaw = ((formData.get('documentType') as string | null) || 'auto').toLowerCase()
+    const selectedType: UploadDocumentType =
+      selectedTypeRaw === 'expense' ||
+      selectedTypeRaw === 'purchase' ||
+      selectedTypeRaw === 'invoice' ||
+      selectedTypeRaw === 'credit_note' ||
+      selectedTypeRaw === 'auto'
+        ? (selectedTypeRaw as UploadDocumentType)
+        : 'auto'
 
     if (!file) {
       return NextResponse.json({ success: false, error: 'No file provided' }, { status: 400 })
@@ -101,7 +116,14 @@ export async function POST(request: NextRequest) {
       fileName: file.name,
       fileUrl: publicUrl,
       fileType: file.type,
-      documentType: 'EXPENSE',
+      documentType:
+        selectedType === 'purchase'
+          ? 'PURCHASE'
+          : selectedType === 'credit_note'
+            ? 'CREDIT_NOTE'
+          : selectedType === 'invoice'
+            ? 'INVOICE'
+            : 'EXPENSE',
       status: 'UPLOADED',
       organizationId: organizationId || undefined,
       companyId: companyId || undefined,
@@ -114,6 +136,7 @@ export async function POST(request: NextRequest) {
       const documentType = file.type === 'application/pdf' ? 'pdf' : 'image'
 
       const extractedData = await extractFromDocument(buffer, documentType, {
+        expectedType: selectedType === 'auto' ? undefined : selectedType,
         useAI: true,
         aiConfig: {
           provider: 'openai',
@@ -125,7 +148,11 @@ export async function POST(request: NextRequest) {
 
       await updateDocument(documentId, {
         status: 'EXTRACTED',
-        documentType: extractedData.type.toUpperCase() as 'EXPENSE' | 'PURCHASE',
+        documentType: extractedData.type.toUpperCase() as
+          | 'EXPENSE'
+          | 'PURCHASE'
+          | 'INVOICE'
+          | 'CREDIT_NOTE',
         extractedData,
       })
 

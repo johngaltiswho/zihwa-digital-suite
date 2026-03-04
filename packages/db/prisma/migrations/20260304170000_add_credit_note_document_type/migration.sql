@@ -1,0 +1,1 @@
+ALTER TYPE "accounting"."DocumentType" ADD VALUE IF NOT EXISTS 'CREDIT_NOTE';

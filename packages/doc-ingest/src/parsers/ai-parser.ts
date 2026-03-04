@@ -138,7 +138,7 @@ async function parseWithGemini(
 function buildParsingPrompt(text: string): string {
   return `Parse the following invoice/receipt text and extract structured data.
 
-Determine if this is an EXPENSE (receipt) or PURCHASE (invoice/bill), then extract the relevant fields.
+Determine if this is an EXPENSE (receipt), PURCHASE (invoice/bill), or CREDIT_NOTE, then extract the relevant fields.
 
 For EXPENSE (receipts):
 - merchant: string (store/restaurant name)
@@ -150,18 +150,19 @@ For EXPENSE (receipts):
 
 For PURCHASE (invoices/bills):
 - vendorName: string (supplier/vendor name)
-- billNumber: string (invoice number - look for "Invoice No", "Bill No", NOT "e-Way Bill", optional)
+- billNumber: string (invoice/credit note number - look for "Invoice No", "Bill No", "Credit Note No", "SAP Reference No", NOT "e-Way Bill", optional)
+- referenceInvoiceNo: string (look for "Ref Invoice No", optional, important for credit/debit adjustments)
 - amount: number (GRAND TOTAL including all taxes - the final amount to be paid)
 - currency: string (3-letter code like INR, USD)
 - date: string (ISO format YYYY-MM-DD)
 - dueDate: string (ISO format, optional)
-- lineItems: array of {description, quantity, rate, amount} (optional)
+- lineItems: array of {description, hsnCode, quantity, rate, amount} (optional, hsnCode should be 8-digit when available)
 - taxAmount: number (total tax amount - CGST + SGST + IGST, optional)
 - description: string (optional)
 
 Return ONLY valid JSON in this format:
 {
-  "type": "expense" | "purchase",
+  "type": "expense" | "purchase" | "credit_note",
   "data": { ... extracted fields ... },
   "confidence": 0-100
 }

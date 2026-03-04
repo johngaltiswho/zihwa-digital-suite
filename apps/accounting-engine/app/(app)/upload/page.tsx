@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 type UploadStatus = 'pending' | 'uploading' | 'processing' | 'completed' | 'failed'
+type UploadDocumentType = 'auto' | 'expense' | 'purchase' | 'invoice' | 'credit_note'
 
 type UploadItem = {
   id: string
@@ -69,6 +70,8 @@ export default function UploadPage() {
   const [organizationId, setOrganizationId] = useState('')
   const [companyId, setCompanyId] = useState('')
   const [scopeHint, setScopeHint] = useState<string | null>(null)
+  const [selectedDocumentType, setSelectedDocumentType] =
+    useState<UploadDocumentType>('auto')
 
   const fetchDocuments = useCallback(async () => {
     try {
@@ -212,6 +215,7 @@ export default function UploadPage() {
     try {
       const formData = new FormData()
       formData.append('file', file)
+      formData.append('documentType', selectedDocumentType)
       if (orgId.trim()) formData.append('orgId', orgId.trim())
       if (organizationId.trim()) formData.append('organizationId', organizationId.trim())
       if (companyId.trim()) formData.append('companyId', companyId.trim())
@@ -321,6 +325,22 @@ export default function UploadPage() {
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Document type</label>
+                <select
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 bg-white focus:border-gray-300 focus:ring-2 focus:ring-gray-200"
+                  value={selectedDocumentType}
+                  onChange={(event) =>
+                    setSelectedDocumentType(event.target.value as UploadDocumentType)
+                  }
+                >
+                  <option value="auto">Auto-detect (recommended)</option>
+                  <option value="purchase">Purchase Bill</option>
+                  <option value="expense">Expense</option>
+                  <option value="invoice">Sales Invoice</option>
+                  <option value="credit_note">Credit Note</option>
+                </select>
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Zoho Org ID</label>
                 <input
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-gray-300 focus:ring-2 focus:ring-gray-200"
@@ -348,7 +368,7 @@ export default function UploadPage() {
                 />
               </div>
               <div className="text-xs text-gray-500 flex items-end">
-                Optional. Leave empty to auto-detect a connected Zoho org.
+                Type helps extraction. Leave Org ID empty to auto-detect a connected Zoho org.
               </div>
             </div>
             {scopeHint && (

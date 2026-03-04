@@ -2,6 +2,7 @@
 
 export interface LineItem {
   description: string
+  hsnCode?: string
   quantity: number
   rate: number
   amount: number
@@ -23,6 +24,7 @@ export interface ExpenseData {
 export interface PurchaseData {
   vendorName: string
   billNumber?: string
+  referenceInvoiceNo?: string
   amount: number
   currency: string
   date: Date

@@ -509,7 +509,8 @@ exports.IntegrationStatus = exports.$Enums.IntegrationStatus = {
 exports.DocumentType = exports.$Enums.DocumentType = {
   EXPENSE: 'EXPENSE',
   PURCHASE: 'PURCHASE',
-  INVOICE: 'INVOICE'
+  INVOICE: 'INVOICE',
+  CREDIT_NOTE: 'CREDIT_NOTE'
 };
 
 exports.ProcessingStatus = exports.$Enums.ProcessingStatus = {

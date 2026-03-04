@@ -3,6 +3,7 @@ export { ZohoBooksClient } from './client'
 export { ZohoConnectorError } from './errors'
 export { postExpense } from './expenses'
 export { postPurchase } from './purchases'
+export { postVendorCredit } from './credit-notes'
 export type {
   ZohoOrgConfig,
   ZohoTokenSet,
