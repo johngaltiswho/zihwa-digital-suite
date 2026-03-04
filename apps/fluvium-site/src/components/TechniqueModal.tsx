@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { type Technique, formatDuration, getDifficultyColor } from '@/lib/api';
 import YouTubePlayer from './YouTubePlayer';
 
@@ -57,7 +56,7 @@ export default function TechniqueModal({ technique, isOpen, onClose }: Technique
                 <h1 className="text-3xl font-light text-white mb-4">{technique.title}</h1>
                 <div className="flex items-center space-x-4 text-sm">
                   <span className={`px-3 py-1 rounded-full text-xs font-light ${getDifficultyColor(technique.metadata?.difficulty_level || 'beginner')}`}>
-                    {technique.metadata?.difficulty_level?.charAt(0).toUpperCase() + technique.metadata?.difficulty_level?.slice(1)}
+                    {(technique.metadata?.difficulty_level || 'beginner').charAt(0).toUpperCase() + (technique.metadata?.difficulty_level || 'beginner').slice(1)}
                   </span>
                   <span className="text-gray-400">{formatDuration(technique.metadata?.duration_minutes || 0)}</span>
                 </div>
@@ -113,7 +112,7 @@ export default function TechniqueModal({ technique, isOpen, onClose }: Technique
             {/* Next Techniques */}
             {technique.metadata?.next_techniques && technique.metadata.next_techniques.length > 0 && (
               <div>
-                <h3 className="text-xl font-light text-white mb-4">What's Next</h3>
+                <h3 className="text-xl font-light text-white mb-4">What&apos;s Next</h3>
                 <div className="flex flex-wrap gap-2">
                   {technique.metadata.next_techniques.map((next, index) => (
                     <span key={index} className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-sm font-light">

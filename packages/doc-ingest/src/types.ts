@@ -20,12 +20,26 @@ export type ExtractedData =
       type: 'expense'
       data: ExpenseData
       confidence?: number
+      usage?: ExtractionUsage
     }
   | {
       type: 'purchase'
       data: PurchaseData
       confidence?: number
+      usage?: ExtractionUsage
     }
+
+export interface ExtractionUsage {
+  provider: 'openai' | 'gemini' | 'unknown'
+  model?: string
+  inputTokens?: number
+  outputTokens?: number
+  totalTokens?: number
+  usdCost?: number
+  inrCost?: number
+  usdToInrRate?: number
+  pricingNote?: string
+}
 
 /**
  * Parser result with optional confidence score
@@ -34,6 +48,7 @@ export interface ParserResult<T> {
   data: T
   confidence?: number
   warnings?: string[]
+  usage?: ExtractionUsage
 }
 
 /**

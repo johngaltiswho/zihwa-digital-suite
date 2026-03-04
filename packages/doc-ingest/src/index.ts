@@ -6,12 +6,107 @@ import { parseExpenseText } from './parsers/expense-parser'
 import { parsePurchaseText } from './parsers/purchase-parser'
 import { parseWithAI } from './parsers/ai-parser'
 import { parseWithVision } from './parsers/vision-parser'
+import { convertFirstPagePdfToPng } from './pdf-to-image'
+import { mergeUsage } from './pricing'
 import type {
   ExtractedData,
   FileType,
   DocumentType,
   ExtractionOptions,
 } from './types'
+
+function asNumber(value: unknown): number {
+  const num = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(num) ? num : 0
+}
+
+function isLikelySummaryInvoiceDescription(value: unknown): boolean {
+  if (typeof value !== 'string') return false
+  const text = value.trim().toLowerCase()
+  if (!text) return false
+
+  return /(summary|consolidated|statement|monthly|period|dsr|ttl|je|opening|closing)/.test(
+    text
+  )
+}
+
+function buildSummaryLineItem(data: any, amount: number) {
+  const description =
+    (typeof data.description === 'string' && data.description.trim()) ||
+    (typeof data.billNumber === 'string' && data.billNumber.trim()
+      ? `Invoice ${data.billNumber.trim()}`
+      : '') ||
+    'Invoice item'
+
+  return {
+    description,
+    quantity: 1,
+    rate: amount,
+    amount,
+  }
+}
+
+function normalizePurchaseLineItems(data: any): any {
+  if (!data || typeof data !== 'object' || !('vendorName' in data)) return data
+  if (!Array.isArray(data.lineItems) || data.lineItems.length === 0) return data
+
+  const amount = asNumber(data.amount)
+  const taxAmount = asNumber(data.taxAmount)
+  const taxableSubtotal = amount > 0 ? Math.max(amount - taxAmount, 0) : 0
+  const expectedBase = taxableSubtotal > 0 ? taxableSubtotal : amount
+  if (expectedBase <= 0) return data
+
+  const cleanedItems = data.lineItems
+    .filter((item: any) => item && typeof item === 'object')
+    .map((item: any) => ({
+      ...item,
+      description:
+        typeof item.description === 'string' ? item.description.trim() : 'Invoice item',
+      quantity: asNumber(item.quantity) || 1,
+      rate: asNumber(item.rate),
+      amount: asNumber(item.amount),
+    }))
+    .filter((item: any) => item.amount > 0)
+
+  if (cleanedItems.length === 0) return data
+
+  const lineItemsSum = cleanedItems.reduce((sum: number, item: any) => sum + asNumber(item.amount), 0)
+  const mismatchRatio = expectedBase > 0 ? Math.abs(lineItemsSum - expectedBase) / expectedBase : 0
+  const summaryHint = isLikelySummaryInvoiceDescription(data.description)
+  const tooManyItems = cleanedItems.length > 8
+
+  if (
+    mismatchRatio > 0.25 ||
+    (summaryHint && cleanedItems.length > 3) ||
+    (tooManyItems && mismatchRatio > 0.1)
+  ) {
+    return {
+      ...data,
+      lineItems: [buildSummaryLineItem(data, expectedBase)],
+    }
+  }
+
+  return {
+    ...data,
+    lineItems: cleanedItems,
+  }
+}
+
+function enrichPurchaseLineItemsFromText(data: any, text: string): any {
+  if (!data || typeof data !== 'object') return data
+  if (!('vendorName' in data)) return data
+  if (Array.isArray(data.lineItems) && data.lineItems.length > 0) return data
+
+  const parsed = parsePurchaseText(text)
+  if (parsed.data.lineItems && parsed.data.lineItems.length > 0) {
+    return {
+      ...data,
+      lineItems: parsed.data.lineItems,
+    }
+  }
+
+  return data
+}
 
 /**
  * Main function to extract data from a document (PDF or image)
@@ -57,7 +152,9 @@ export async function extractFromDocument(
 
       // Parse with AI
       const parseResult = await parseWithAI(ocrResult.text, options.aiConfig)
-      const data = parseResult.data as any
+      let data = parseResult.data as any
+      data = enrichPurchaseLineItemsFromText(data, ocrResult.text)
+      data = normalizePurchaseLineItems(data)
       const hasVendor = 'vendorName' in data
       const finalConfidence = Math.min(ocrResult.confidence, parseResult.confidence || 100)
 
@@ -65,6 +162,7 @@ export async function extractFromDocument(
         type: hasVendor ? 'purchase' : 'expense',
         data: data,
         confidence: finalConfidence,
+        usage: parseResult.usage,
       }
 
       console.log(`✅ OCR + Text AI result: ${finalConfidence.toFixed(1)}% confidence`)
@@ -85,7 +183,8 @@ export async function extractFromDocument(
           model: options.aiConfig.model,
         })
 
-        const visionData = visionResult.data as any
+        let visionData = visionResult.data as any
+        visionData = normalizePurchaseLineItems(visionData)
         const hasVendorVision = 'vendorName' in visionData
 
         console.log(
@@ -96,6 +195,7 @@ export async function extractFromDocument(
           type: hasVendorVision ? 'purchase' : 'expense',
           data: visionData,
           confidence: visionResult.confidence,
+          usage: mergeUsage(parseResult.usage, visionResult.usage),
         }
       }
 
@@ -111,7 +211,8 @@ export async function extractFromDocument(
           model: options.aiConfig.model,
         })
 
-        const visionData = visionResult.data as any
+        let visionData = visionResult.data as any
+        visionData = normalizePurchaseLineItems(visionData)
         const hasVendorVision = 'vendorName' in visionData
 
         console.log(`🎯 Vision API result: ${visionResult.confidence?.toFixed(1)}% confidence (error fallback)`)
@@ -120,6 +221,7 @@ export async function extractFromDocument(
           type: hasVendorVision ? 'purchase' : 'expense',
           data: visionData,
           confidence: visionResult.confidence,
+          usage: visionResult.usage,
         }
       }
 
@@ -133,6 +235,39 @@ export async function extractFromDocument(
 
   if (fileType === 'pdf') {
     extractedText = await extractTextFromPDF(buffer)
+    // Scanned/image-only PDFs often return near-empty text.
+    // Fall back to Vision by converting page 1 to PNG when enabled.
+    if (
+      options.useAI &&
+      options.aiConfig &&
+      options.aiConfig.provider === 'openai' &&
+      options.enableVisionFallback !== false &&
+      extractedText.trim().length < 80
+    ) {
+      console.log('📄 Low PDF text detected, attempting scanned-PDF Vision fallback...')
+
+      const pageImage = await convertFirstPagePdfToPng(buffer)
+      const visionResult = await parseWithVision(pageImage, {
+        provider: 'openai',
+        apiKey: options.aiConfig.apiKey,
+        model: options.aiConfig.model,
+      })
+
+      let visionData = visionResult.data as any
+      visionData = normalizePurchaseLineItems(visionData)
+      const hasVendorVision = 'vendorName' in visionData
+
+      console.log(
+        `🎯 Scanned PDF Vision result: ${visionResult.confidence?.toFixed(1)}% confidence`
+      )
+
+      return {
+        type: hasVendorVision ? 'purchase' : 'expense',
+        data: visionData,
+        confidence: visionResult.confidence,
+        usage: visionResult.usage,
+      }
+    }
   } else if (fileType === 'image') {
     const result = await extractTextWithConfidence(
       buffer,
@@ -147,13 +282,16 @@ export async function extractFromDocument(
   // Use AI parsing if configured
   if (options.useAI && options.aiConfig) {
     const result = await parseWithAI(extractedText, options.aiConfig)
-    const data = result.data as any
+    let data = result.data as any
+    data = enrichPurchaseLineItemsFromText(data, extractedText)
+    data = normalizePurchaseLineItems(data)
     const hasVendor = 'vendorName' in data
 
     return {
       type: hasVendor ? 'purchase' : 'expense',
       data: data,
       confidence: confidence || result.confidence,
+      usage: result.usage,
     }
   }
 

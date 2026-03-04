@@ -3,26 +3,43 @@
 import { Auth } from '@supabase/auth-ui-react'
 import { ThemeSupa } from '@supabase/auth-ui-shared'
 import { useSupabase } from '../../../components/providers/SupabaseProvider'
-import { useEffect } from 'react'
+import { Suspense, useEffect, useMemo, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
-export default function LoginPage() {
+function LoginContent() {
   const supabase = useSupabase()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const didRedirectRef = useRef(false)
+  const redirectTo = useMemo(
+    () => searchParams.get('redirectTo') || '/upload',
+    [searchParams]
+  )
 
   useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        const redirectTo = searchParams.get('redirectTo') || '/upload'
+    let isMounted = true
+
+    void supabase.auth.getSession().then(({ data }) => {
+      if (isMounted && data.session && !didRedirectRef.current) {
+        didRedirectRef.current = true
         router.replace(redirectTo)
       }
     })
 
-    return () => subscription.unsubscribe()
-  }, [router, searchParams, supabase])
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session && !didRedirectRef.current && event === 'SIGNED_IN') {
+        didRedirectRef.current = true
+        router.replace(redirectTo)
+      }
+    })
+
+    return () => {
+      isMounted = false
+      subscription.unsubscribe()
+    }
+  }, [redirectTo, router, supabase])
 
   const viewParam = searchParams.get('view')
   const initialView = viewParam === 'sign_up' ? 'sign_up' : 'sign_in'
@@ -48,5 +65,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-50" />}>
+      <LoginContent />
+    </Suspense>
   )
 }

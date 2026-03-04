@@ -20,6 +20,14 @@ export type {
   PostingPreferences,
 } from './accounting-context'
 
+export type { DraftPayload, DraftValidation } from './draft-schema'
+
+export type {
+  OrgRole as RBACOrgRole,
+  CompanyRole as RBACCompanyRole,
+  Permission,
+} from './rbac'
+
 export { DocumentType, VoucherType, PostingStatus } from './types'
 
 // Export schemas
@@ -43,6 +51,10 @@ export {
   PostingPreferencesSchema,
   AllocationSettingsSchema,
 } from './accounting-context'
+
+export { DraftPayloadSchema, DraftValidationSchema, DraftLineItemSchema } from './draft-schema'
+
+export { hasCompanyPermission, orgRoleToCompanyPower } from './rbac'
 
 // Export utilities
 export {

@@ -18,7 +18,23 @@ export async function GET(request: NextRequest) {
     const code = searchParams.get('code')
     const accountsServer = searchParams.get('accounts-server')
     const location = searchParams.get('location')
-    const state = searchParams.get('state') // orgId if reconnecting
+    const state = searchParams.get('state')
+    let stateOrgId: string | undefined
+    let stateReturnTo: string | undefined
+
+    // Backward compatible:
+    // 1) legacy plain orgId in state
+    // 2) base64url JSON: { orgId, returnTo }
+    if (state) {
+      try {
+        const decoded = Buffer.from(state, 'base64url').toString('utf8')
+        const parsed = JSON.parse(decoded) as { orgId?: string; returnTo?: string }
+        if (parsed.orgId) stateOrgId = parsed.orgId
+        if (parsed.returnTo && parsed.returnTo.startsWith('/')) stateReturnTo = parsed.returnTo
+      } catch {
+        stateOrgId = state
+      }
+    }
 
     // Validate required parameters
     if (!code) {
@@ -47,15 +63,22 @@ export async function GET(request: NextRequest) {
     console.log('Exchanging authorization code for tokens...')
     const tokenResponse = await exchangeAndStoreTokens(
       code,
-      state || 'default-org', // Use state as orgId, or 'default-org' if not provided
+      stateOrgId || 'default-org',
       config
     )
 
     console.log('Tokens stored successfully:', {
-      orgId: state || 'default-org',
+      orgId: stateOrgId || 'default-org',
       apiDomain: tokenResponse.apiDomain,
       expiresIn: tokenResponse.expiresIn,
     })
+
+    if (stateReturnTo) {
+      const redirectUrl = new URL(stateReturnTo, request.nextUrl.origin)
+      redirectUrl.searchParams.set('zohoAuth', 'success')
+      redirectUrl.searchParams.set('orgId', stateOrgId || 'default-org')
+      return NextResponse.redirect(redirectUrl)
+    }
 
     // Return success page
     return new NextResponse(
@@ -117,13 +140,13 @@ export async function GET(request: NextRequest) {
             <p>Your Zoho Books account has been connected to the Accounting Engine.</p>
             <dl class="details">
               <dt>Organization ID:</dt>
-              <dd>${state || 'default-org'}</dd>
+              <dd>${stateOrgId || 'default-org'}</dd>
               <dt>API Domain:</dt>
               <dd>${tokenResponse.apiDomain}</dd>
               <dt>Token Expires:</dt>
               <dd>${tokenResponse.expiresIn} seconds</dd>
             </dl>
-            <a href="/">Back to Dashboard</a>
+            <a href="/upload">Go to Workspace</a>
           </div>
         </body>
       </html>
@@ -191,7 +214,7 @@ export async function GET(request: NextRequest) {
             <h1>✗ Connection Failed</h1>
             <p>Failed to connect your Zoho Books account.</p>
             <div class="error">${errorMessage}</div>
-            <p style="margin-top: 1.5rem;"><a href="/api/zoho/authorize">Try Again</a></p>
+            <p style="margin-top: 1.5rem;"><a href="/upload">Back to workspace</a></p>
           </div>
         </body>
       </html>

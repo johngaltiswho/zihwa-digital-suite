@@ -42,6 +42,8 @@ export const GstSettingsSchema = z.object({
 export const RiskSettingsSchema = z.object({
   highValueAmount: z.number().nonnegative().optional(),
   manualReviewAmount: z.number().nonnegative().optional(),
+  tolerancePercent: z.number().min(0).max(100).default(0),
+  duplicateDetectionPolicy: z.enum(['STRICT', 'RELAXED', 'DISABLED']).default('STRICT'),
   blockedVendors: z.array(z.string()).default([]),
   holdKeywords: z.array(z.string()).default([]),
 })
@@ -50,6 +52,10 @@ export const PostingPreferencesSchema = z.object({
   allowAutoPost: z.boolean().default(false),
   autoPostConfidence: z.number().min(0).max(100).default(90),
   manualReviewConfidence: z.number().min(0).max(100).default(70),
+  defaultExpenseAccountId: z.string().optional(),
+  roundingPolicy: z.enum(['NONE', 'NEAREST_RUPEE', 'NEAREST_TEN']).default('NONE'),
+  attachmentPolicy: z.enum(['OPTIONAL', 'REQUIRED']).default('OPTIONAL'),
+  autoVendorCreate: z.boolean().default(false),
   maxAutoPostAmount: z.number().nonnegative().optional(),
 })
 

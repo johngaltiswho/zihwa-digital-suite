@@ -1,4 +1,4 @@
-import type { Company } from '@prisma/client'
+import type { Company } from '../prisma/generated/client'
 import { prisma } from './client'
 
 export type CreateCompanyInput = {
@@ -38,6 +38,32 @@ export async function getCompanyBySlug(organizationId: string, slug: string) {
 export async function listCompanies(organizationId: string) {
   return prisma.company.findMany({
     where: { organizationId },
+    orderBy: { createdAt: 'desc' },
+  })
+}
+
+export async function listCompaniesForUserInOrg(
+  organizationId: string,
+  userId: string
+) {
+  return prisma.company.findMany({
+    where: {
+      organizationId,
+      OR: [
+        {
+          memberships: {
+            some: { userId },
+          },
+        },
+        {
+          organization: {
+            memberships: {
+              some: { userId },
+            },
+          },
+        },
+      ],
+    },
     orderBy: { createdAt: 'desc' },
   })
 }

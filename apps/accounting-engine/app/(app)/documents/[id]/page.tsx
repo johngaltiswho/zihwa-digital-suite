@@ -9,11 +9,21 @@ type LineItem = {
   quantity?: number
   rate?: number
   amount?: number
+  taxId?: string
 }
 
 type ExtractedPayload = {
   type: string
   confidence?: number
+  usage?: {
+    inputTokens?: number
+    outputTokens?: number
+    totalTokens?: number
+    usdCost?: number
+    inrCost?: number
+    model?: string
+    pricingNote?: string
+  }
   data: {
     merchant?: string
     vendorName?: string
@@ -23,6 +33,9 @@ type ExtractedPayload = {
     billNumber?: string
     description?: string
     taxAmount?: number
+    cgstAmount?: number
+    sgstAmount?: number
+    igstAmount?: number
     lineItems?: LineItem[]
   }
 }
@@ -42,6 +55,19 @@ type DocumentDetail = {
   createdAt: string
   processedAt?: string | null
   error?: string | null
+}
+
+type VendorOption = {
+  id: string
+  name: string
+  gstin?: string | null
+}
+
+type TaxOption = {
+  id: string
+  name: string
+  percentage?: number | null
+  type?: string | null
 }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -108,6 +134,13 @@ export default function DocumentDetailPage() {
   const [orgId, setOrgId] = useState('')
   const [accountId, setAccountId] = useState('')
   const [vendorId, setVendorId] = useState('')
+  const [vendors, setVendors] = useState<VendorOption[]>([])
+  const [vendorsLoading, setVendorsLoading] = useState(false)
+  const [vendorMatchMessage, setVendorMatchMessage] = useState<string | null>(null)
+  const [vendorSuggestionScore, setVendorSuggestionScore] = useState<number | null>(null)
+  const [taxes, setTaxes] = useState<TaxOption[]>([])
+  const [taxesLoading, setTaxesLoading] = useState(false)
+  const [taxesError, setTaxesError] = useState<string | null>(null)
 
   const fetchDocument = async () => {
     if (!documentId) return
@@ -146,6 +179,85 @@ export default function DocumentDetailPage() {
     fetchDocument()
   }, [documentId])
 
+  const parsedVendorName = useMemo(
+    () => formData?.data?.vendorName?.trim() || '',
+    [formData]
+  )
+
+  useEffect(() => {
+    const isPurchaseDoc = document?.documentType === 'PURCHASE'
+    if (!documentId || !isPurchaseDoc || !orgId) return
+
+    const loadVendors = async () => {
+      setVendorsLoading(true)
+      setVendorMatchMessage(null)
+      try {
+        const query = new URLSearchParams({
+          orgId,
+          vendorName: parsedVendorName,
+        })
+        const response = await fetch(`/api/documents/${documentId}/vendors?${query.toString()}`)
+        const data = await response.json()
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Failed to load Zoho vendors')
+        }
+
+        const options = (data.data.vendors || []) as VendorOption[]
+        setVendors(options)
+
+        if (data.data.suggestedVendorId) {
+          setVendorSuggestionScore(data.data.suggestedScore ?? null)
+          setVendorMatchMessage(
+            `Matched "${parsedVendorName || 'parsed vendor'}" to "${data.data.suggestedVendorName}" (${data.data.suggestedScore}% confidence).`
+          )
+          setVendorId((prev) => prev || String(data.data.suggestedVendorId))
+        } else if (parsedVendorName) {
+          setVendorSuggestionScore(null)
+          setVendorMatchMessage(
+            `No strong vendor match found for "${parsedVendorName}". Please pick from dropdown.`
+          )
+        } else {
+          setVendorSuggestionScore(null)
+          setVendorMatchMessage('Parsed vendor name is missing. Please choose vendor manually.')
+        }
+      } catch (err) {
+        setVendorSuggestionScore(null)
+        setVendorMatchMessage(
+          err instanceof Error ? err.message : 'Failed to load vendor list.'
+        )
+      } finally {
+        setVendorsLoading(false)
+      }
+    }
+
+    void loadVendors()
+  }, [documentId, document?.documentType, orgId, parsedVendorName])
+
+  useEffect(() => {
+    const isPurchaseDoc = document?.documentType === 'PURCHASE'
+    if (!documentId || !isPurchaseDoc || !orgId) return
+
+    const loadTaxes = async () => {
+      setTaxesLoading(true)
+      setTaxesError(null)
+      try {
+        const response = await fetch(`/api/documents/${documentId}/taxes`)
+        const data = await response.json()
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Failed to load tax list')
+        }
+        setTaxes((data.data.taxes || []) as TaxOption[])
+      } catch (err) {
+        setTaxesError(err instanceof Error ? err.message : 'Failed to load tax list')
+      } finally {
+        setTaxesLoading(false)
+      }
+    }
+
+    void loadTaxes()
+  }, [documentId, document?.documentType, orgId])
+
   const updateField = (field: keyof ExtractedPayload['data'], value: string | number) => {
     setFormData((prev) => {
       if (!prev) return prev
@@ -163,7 +275,8 @@ export default function DocumentDetailPage() {
     setFormData((prev) => {
       if (!prev) return prev
       const lineItems = [...(prev.data.lineItems || [])]
-      const parsedValue = field === 'description' ? value : Number(value)
+      const parsedValue =
+        field === 'description' || field === 'taxId' ? value : Number(value)
       lineItems[index] = {
         ...lineItems[index],
         [field]: parsedValue,
@@ -261,7 +374,13 @@ export default function DocumentDetailPage() {
         },
         body: JSON.stringify(body),
       })
-      const data = await response.json()
+      const raw = await response.text()
+      let data: any = null
+      try {
+        data = raw ? JSON.parse(raw) : null
+      } catch {
+        data = { error: raw || null }
+      }
       if (!response.ok || !data.success) {
         throw new Error(data.error || 'Failed to post document')
       }
@@ -299,6 +418,18 @@ export default function DocumentDetailPage() {
   const isPurchase = document.documentType === 'PURCHASE'
   const lineItems = formData?.data?.lineItems || []
   const confidence = confidenceMeta(formData?.confidence)
+  const usage = formData?.usage
+  const lineItemsTotal = lineItems.reduce(
+    (sum, item) => sum + (Number(item.amount) || 0),
+    0
+  )
+  const totalAmount = Number(formData?.data?.amount || 0)
+  const gstAmount = Number(formData?.data?.taxAmount || 0)
+  const cgstAmount = Number(formData?.data?.cgstAmount || 0)
+  const sgstAmount = Number(formData?.data?.sgstAmount || 0)
+  const igstAmount = Number(formData?.data?.igstAmount || 0)
+  const splitGstTotal = cgstAmount + sgstAmount + igstAmount
+  const taxableAmount = totalAmount > 0 ? Math.max(totalAmount - gstAmount, 0) : 0
 
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8 text-gray-900">
@@ -349,6 +480,17 @@ export default function DocumentDetailPage() {
                   </span>
                 </div>
                 <div>
+                  <p className="font-medium text-gray-500">AI tokens</p>
+                  <p>
+                    {(usage?.totalTokens ??
+                      ((usage?.inputTokens || 0) + (usage?.outputTokens || 0))) || '—'}
+                  </p>
+                </div>
+                <div>
+                  <p className="font-medium text-gray-500">AI cost (INR)</p>
+                  <p>{usage?.inrCost !== undefined ? `₹${usage.inrCost.toFixed(4)}` : '—'}</p>
+                </div>
+                <div>
                   <p className="font-medium text-gray-500">Zoho Org ID</p>
                   <p>{document.zohoOrgId || '—'}</p>
                 </div>
@@ -394,6 +536,13 @@ export default function DocumentDetailPage() {
                 </button>
               </div>
               <p className="text-sm text-gray-500 mt-1">{confidence.message}</p>
+              {usage && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Model: {usage.model || '—'} · Input: {usage.inputTokens || 0} · Output:{' '}
+                  {usage.outputTokens || 0} · Cost:{' '}
+                  {usage.inrCost !== undefined ? `₹${usage.inrCost.toFixed(4)}` : 'N/A'}
+                </p>
+              )}
 
               {saveMessage && (
                 <p className={`text-sm mt-3 ${saveMessage.includes('success') ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -436,6 +585,66 @@ export default function DocumentDetailPage() {
                         className="w-full rounded-lg border border-gray-200 px-3 py-2 text-gray-900 focus:border-gray-300 focus:ring-2 focus:ring-gray-200"
                         value={formData.data?.currency || ''}
                         onChange={(event) => updateField('currency', event.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="block text-gray-700 font-medium mb-1">GST / Tax amount</label>
+                      <input
+                        type="number"
+                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-gray-900 focus:border-gray-300 focus:ring-2 focus:ring-gray-200"
+                        value={formData.data?.taxAmount ?? ''}
+                        onChange={(event) => updateField('taxAmount', Number(event.target.value))}
+                        placeholder="Total GST amount"
+                      />
+                    </div>
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                      <p>
+                        Computed subtotal (amount - GST):{' '}
+                        <span className="font-semibold text-slate-800">{taxableAmount.toFixed(2)}</span>
+                      </p>
+                      <p>
+                        Split GST total (CGST+SGST+IGST):{' '}
+                        <span className="font-semibold text-slate-800">{splitGstTotal.toFixed(2)}</span>
+                      </p>
+                      <p>
+                        Line items total:{' '}
+                        <span className="font-semibold text-slate-800">{lineItemsTotal.toFixed(2)}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <div>
+                      <label className="block text-gray-700 font-medium mb-1">CGST</label>
+                      <input
+                        type="number"
+                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-gray-900 focus:border-gray-300 focus:ring-2 focus:ring-gray-200"
+                        value={formData.data?.cgstAmount ?? ''}
+                        onChange={(event) => updateField('cgstAmount', Number(event.target.value))}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-700 font-medium mb-1">SGST</label>
+                      <input
+                        type="number"
+                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-gray-900 focus:border-gray-300 focus:ring-2 focus:ring-gray-200"
+                        value={formData.data?.sgstAmount ?? ''}
+                        onChange={(event) => updateField('sgstAmount', Number(event.target.value))}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-700 font-medium mb-1">IGST</label>
+                      <input
+                        type="number"
+                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-gray-900 focus:border-gray-300 focus:ring-2 focus:ring-gray-200"
+                        value={formData.data?.igstAmount ?? ''}
+                        onChange={(event) => updateField('igstAmount', Number(event.target.value))}
+                        placeholder="0.00"
                       />
                     </div>
                   </div>
@@ -486,59 +695,101 @@ export default function DocumentDetailPage() {
                     {lineItems.length === 0 ? (
                       <p className="text-xs text-gray-500">No line items detected.</p>
                     ) : (
-                      <div className="space-y-3">
-                        {lineItems.map((item, index) => (
-                          <div
-                            key={index}
-                            className="rounded-xl border border-gray-100 bg-gray-50 p-3 grid gap-3 text-xs md:grid-cols-2"
-                          >
-                            <div className="md:col-span-2">
-                              <label className="block text-gray-600 mb-1">Description</label>
-                              <input
-                                className="w-full rounded border border-gray-200 px-2 py-1 text-gray-900 focus:border-gray-300 focus:ring-1 focus:ring-gray-200"
-                                value={item.description || ''}
-                                onChange={(event) => updateLineItem(index, 'description', event.target.value)}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-gray-600 mb-1">Quantity</label>
-                              <input
-                                type="number"
-                                className="w-full rounded border border-gray-200 px-2 py-1 text-gray-900 focus:border-gray-300 focus:ring-1 focus:ring-gray-200"
-                                value={item.quantity ?? ''}
-                                onChange={(event) => updateLineItem(index, 'quantity', event.target.value)}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-gray-600 mb-1">Rate</label>
-                              <input
-                                type="number"
-                                className="w-full rounded border border-gray-200 px-2 py-1 text-gray-900 focus:border-gray-300 focus:ring-1 focus:ring-gray-200"
-                                value={item.rate ?? ''}
-                                onChange={(event) => updateLineItem(index, 'rate', event.target.value)}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-gray-600 mb-1">Amount</label>
-                              <input
-                                type="number"
-                                className="w-full rounded border border-gray-200 px-2 py-1 text-gray-900 focus:border-gray-300 focus:ring-1 focus:ring-gray-200"
-                                value={item.amount ?? ''}
-                                onChange={(event) => updateLineItem(index, 'amount', event.target.value)}
-                              />
-                            </div>
-                            <div className="flex items-center justify-end">
-                              <button
-                                type="button"
-                                onClick={() => removeLineItem(index)}
-                                className="text-rose-600 hover:underline"
-                              >
-                                Remove
-                              </button>
-                            </div>
-                          </div>
-                        ))}
+                      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+                        <table className="min-w-full text-sm">
+                          <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                            <tr>
+                              <th className="px-3 py-2 text-left font-semibold">Item details</th>
+                              <th className="px-3 py-2 text-left font-semibold">Qty</th>
+                              <th className="px-3 py-2 text-left font-semibold">Rate</th>
+                              <th className="px-3 py-2 text-left font-semibold">Amount</th>
+                              {isPurchase && (
+                                <th className="px-3 py-2 text-left font-semibold">Tax</th>
+                              )}
+                              <th className="px-3 py-2 text-right font-semibold">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {lineItems.map((item, index) => (
+                              <tr key={index} className="border-t border-gray-100 align-top">
+                                <td className="px-3 py-2 min-w-[260px]">
+                                  <input
+                                    className="w-full rounded border border-gray-200 px-2 py-1 text-gray-900 focus:border-blue-300 focus:ring-1 focus:ring-blue-100"
+                                    value={item.description || ''}
+                                    onChange={(event) =>
+                                      updateLineItem(index, 'description', event.target.value)
+                                    }
+                                  />
+                                </td>
+                                <td className="px-3 py-2 min-w-[96px]">
+                                  <input
+                                    type="number"
+                                    className="w-full rounded border border-gray-200 px-2 py-1 text-gray-900 focus:border-blue-300 focus:ring-1 focus:ring-blue-100"
+                                    value={item.quantity ?? ''}
+                                    onChange={(event) =>
+                                      updateLineItem(index, 'quantity', event.target.value)
+                                    }
+                                  />
+                                </td>
+                                <td className="px-3 py-2 min-w-[120px]">
+                                  <input
+                                    type="number"
+                                    className="w-full rounded border border-gray-200 px-2 py-1 text-gray-900 focus:border-blue-300 focus:ring-1 focus:ring-blue-100"
+                                    value={item.rate ?? ''}
+                                    onChange={(event) => updateLineItem(index, 'rate', event.target.value)}
+                                  />
+                                </td>
+                                <td className="px-3 py-2 min-w-[120px]">
+                                  <input
+                                    type="number"
+                                    className="w-full rounded border border-gray-200 px-2 py-1 text-gray-900 focus:border-blue-300 focus:ring-1 focus:ring-blue-100"
+                                    value={item.amount ?? ''}
+                                    onChange={(event) =>
+                                      updateLineItem(index, 'amount', event.target.value)
+                                    }
+                                  />
+                                </td>
+                                {isPurchase && (
+                                  <td className="px-3 py-2 min-w-[220px]">
+                                    <select
+                                      className="w-full rounded border border-gray-200 bg-white px-2 py-1 text-gray-900 focus:border-blue-300 focus:ring-1 focus:ring-blue-100"
+                                      value={item.taxId || ''}
+                                      onChange={(event) =>
+                                        updateLineItem(index, 'taxId', event.target.value)
+                                      }
+                                      disabled={taxesLoading}
+                                    >
+                                      <option value="">
+                                        {taxesLoading ? 'Loading taxes…' : 'Select tax'}
+                                      </option>
+                                      {taxes.map((tax) => (
+                                        <option key={tax.id} value={tax.id}>
+                                          {tax.name}
+                                          {typeof tax.percentage === 'number'
+                                            ? ` (${tax.percentage}%)`
+                                            : ''}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </td>
+                                )}
+                                <td className="px-3 py-2 text-right">
+                                  <button
+                                    type="button"
+                                    onClick={() => removeLineItem(index)}
+                                    className="text-rose-600 hover:underline"
+                                  >
+                                    Remove
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
+                    )}
+                    {isPurchase && taxesError && (
+                      <p className="mt-2 text-xs text-amber-700">{taxesError}</p>
                     )}
                   </div>
                 </div>
@@ -614,13 +865,67 @@ export default function DocumentDetailPage() {
 
                 {isPurchase && (
                   <div>
-                    <label className="block text-gray-700 font-medium mb-1">Vendor ID</label>
-                    <input
-                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-gray-900 focus:border-gray-300 focus:ring-2 focus:ring-gray-200"
-                      value={vendorId}
-                      onChange={(event) => setVendorId(event.target.value)}
-                      placeholder="Zoho vendor reference"
-                    />
+                    <label className="block text-gray-700 font-medium mb-1">
+                      Vendor ID (choose from Zoho vendors)
+                    </label>
+                    {vendors.length > 0 ? (
+                      <select
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-900 focus:border-gray-300 focus:ring-2 focus:ring-gray-200"
+                        value={vendorId}
+                        onChange={(event) => setVendorId(event.target.value)}
+                        disabled={vendorsLoading}
+                      >
+                        <option value="">
+                          {vendorsLoading ? 'Loading vendors…' : 'Select vendor'}
+                        </option>
+                        {vendors.map((vendor) => (
+                          <option key={vendor.id} value={vendor.id}>
+                            {vendor.name} ({vendor.id})
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-900 focus:border-gray-300 focus:ring-2 focus:ring-gray-200"
+                        value={vendorId}
+                        onChange={(event) => setVendorId(event.target.value)}
+                        placeholder={
+                          vendorsLoading
+                            ? 'Loading vendors…'
+                            : 'Enter Zoho vendor ID manually'
+                        }
+                      />
+                    )}
+                    {vendorMatchMessage && (
+                      <p
+                        className={`mt-2 text-xs ${
+                          vendorSuggestionScore && vendorSuggestionScore >= 75
+                            ? 'text-emerald-700'
+                            : 'text-amber-700'
+                        }`}
+                      >
+                        {vendorMatchMessage}
+                      </p>
+                    )}
+                    {vendors.length === 0 && !vendorsLoading && (
+                      <p className="mt-2 text-xs text-slate-500">
+                        Vendor list unavailable. You can still post by entering vendor ID manually.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {isPurchase && (
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                    <p className="font-semibold text-slate-800">GST verification</p>
+                    <p>Taxable subtotal: {taxableAmount.toFixed(2)}</p>
+                    <p>GST total: {gstAmount.toFixed(2)}</p>
+                    <p>CGST: {cgstAmount.toFixed(2)} | SGST: {sgstAmount.toFixed(2)} | IGST: {igstAmount.toFixed(2)}</p>
+                    <p>Split GST total: {splitGstTotal.toFixed(2)}</p>
+                    <p>Invoice total: {totalAmount.toFixed(2)}</p>
+                    <p className="mt-1 text-slate-500">
+                      Note: Zoho Books bill API applies tax via line-level tax IDs (`tax_id`) rather than direct CGST/SGST/IGST amount fields.
+                    </p>
                   </div>
                 )}
               </div>

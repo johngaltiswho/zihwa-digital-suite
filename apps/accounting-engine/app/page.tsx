@@ -72,13 +72,13 @@ export default function MarketingHome() {
             </div>
             <div className="flex flex-col gap-3">
               <Link
-                href="/login"
+                href="/upload"
                 className="rounded-lg bg-slate-900 px-5 py-3 text-center text-sm font-semibold text-white hover:bg-slate-800"
               >
                 Go to the workspace
               </Link>
               <Link
-                href="/login"
+                href="/upload"
                 className="text-center text-sm font-semibold text-slate-700 hover:underline"
               >
                 Already onboarded? Sign in

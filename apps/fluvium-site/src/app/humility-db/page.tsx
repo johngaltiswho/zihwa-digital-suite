@@ -1,6 +1,3 @@
-import Image from 'next/image';
-import Link from 'next/link';
-import AuthButton from '@/components/AuthButton';
 import HumilityDBClient from '@/components/HumilityDBClient';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -8,7 +5,6 @@ import Footer from '@/components/Footer';
 export default async function HumilityDB() {
   const customer = null; // TODO: Replace with Vendure customer authentication
   const isLoaded = true; // For now, just set this to true
-  const activeTab = 'dashboard'; // Default tab
   
   const tabs = [
     { id: 'dashboard', name: 'Dashboard', icon: '◯' },
