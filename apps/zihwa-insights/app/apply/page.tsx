@@ -80,7 +80,7 @@ function ApplyForm() {
       } else {
         alert(`Submission Failed: ${data.error || "Unknown Error"}`);
       }
-    } catch (err) {
+    } catch {
       alert("Network error: Could not connect to the server.");
     } finally {
       setLoading(false);

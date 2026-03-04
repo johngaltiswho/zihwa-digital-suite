@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { DocumentCategory, DocumentComplianceStatus, Prisma } from '@prisma/client'
 import { z } from 'zod'
 import { ensureDocumentTypes } from '@/lib/document-type-seed'
-import { getRouteAuth } from '@/lib/auth'
+import { getRouteAuth, getCompanyWhereFilter } from '@/lib/auth'
 
 // Validation schema for document data
 const documentSchema = z.object({
@@ -23,24 +23,32 @@ const documentSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const { user } = await getRouteAuth()
-
-    if (!user) {
+    const { user, dbUser } = await getRouteAuth()
+    if (!user || !dbUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)
     const companyId = searchParams.get('companyId')
     const category = searchParams.get('category')
+     const scopeFilter = await getCompanyWhereFilter(dbUser)
 
     const whereClause: Prisma.DocumentWhereInput = {
       isActive: true,
+       ...scopeFilter,
     }
 
-    if (companyId) {
+   if (companyId) {
+      // If scopeFilter restricts companies, companyId must be in that list
+      if (scopeFilter.companyId) {
+        const allowedIds = (scopeFilter.companyId as { in: string[] }).in
+        if (!allowedIds.includes(companyId)) {
+          // Requested company is outside their scope — return empty
+          return NextResponse.json([])
+        }
+      }
       whereClause.companyId = companyId
     }
-
     if (category) {
       const allowedCategories: DocumentCategory[] = [
         'KYC',
@@ -98,9 +106,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { user } = await getRouteAuth()
-
-    if (!user) {
+    const { user, dbUser } = await getRouteAuth()
+    if (!user || !dbUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -116,22 +123,7 @@ export async function POST(request: NextRequest) {
     }
 
     const data = validationResult.data
-     // 1. Get the internal Database User safely
-    const dbUser = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { authId: user.id },
-          { id: user.id }
-        ]
-      }
-    })
-
-    if (!dbUser) {
-      return NextResponse.json(
-        { error: 'Your user account is not fully synced in the database yet.' },
-        { status: 400 }
-      )
-    }
+  
      // 2. Verify that the company actually exists
     const company = await prisma.company.findUnique({
       where: { id: data.companyId }
@@ -146,9 +138,6 @@ export async function POST(request: NextRequest) {
 
     await ensureDocumentTypes(prisma)
 
-    // ==========================================
-    // THIS IS THE LINE THAT WAS MISSING/BROKEN
-    // ==========================================
     let requirementId: string | undefined = data.requirementId;
 
     if (!requirementId && data.documentTypeId) {
@@ -173,52 +162,7 @@ export async function POST(request: NextRequest) {
     }
 
 
-    // // Verify that the company exists and user has access
-    // const companyAccess = await prisma.companyAccess.findFirst({
-    //   where: { 
-    //     companyId: data.companyId,
-    //     user: {
-    //       authId: user.id
-    //     }
-    //   },
-    //  select: {
-    //     userId: true, // Grab the internal DB user ID
-    //     company: true
-    //   }
-    // })
-
-    // if (!companyAccess) {
-    //   return NextResponse.json(
-    //     { error: 'Company not found or access denied' },
-    //     { status: 404 }
-    //   )
-    // }
-
-    // await ensureDocumentTypes(prisma)
-
-    // let requirementId = data.requirementId
-
-    // if (!requirementId && data.documentTypeId) {
-    //   const existingRequirement = await prisma.companyDocumentRequirement.findFirst({
-    //     where: {
-    //       companyId: data.companyId,
-    //       documentTypeId: data.documentTypeId,
-    //     },
-    //   })
-
-    //   if (existingRequirement) {
-    //     requirementId = existingRequirement.id
-    //   } else {
-    //     const createdRequirement = await prisma.companyDocumentRequirement.create({
-    //       data: {
-    //         companyId: data.companyId,
-    //         documentTypeId: data.documentTypeId,
-    //       },
-    //     })
-    //     requirementId = createdRequirement.id
-    //   }
-    // }
-
+    
     // Create the document
     const document = await prisma.document.create({
       data: {

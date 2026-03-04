@@ -1,11 +1,20 @@
 import { NextResponse } from 'next/server'
 import { EmployeeStatus, Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
+import { getRouteAuth } from '@/lib/auth'
+import { getCompanyWhereFilter } from '@/lib/auth'
 
 // GET /api/employees - list employees with lightweight relations
 export async function GET() {
   try {
+    const { user, dbUser } = await getRouteAuth()
+    if (!user || !dbUser) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const scopeFilter = await getCompanyWhereFilter(dbUser)
     const employees = await prisma.employee.findMany({
+      where: { ...scopeFilter },
       orderBy: { createdAt: 'desc' },
       include: {
         company: {
@@ -65,16 +74,12 @@ export async function GET() {
 
     if (error instanceof Prisma.PrismaClientKnownRequestError && (error.code === 'P2021' || error.code === 'P2022')) {
       try {
+        const { dbUser } = await getRouteAuth()
+        const scopeFilter = await getCompanyWhereFilter(dbUser)
         const fallbackEmployees = await prisma.employee.findMany({
+          where: { ...scopeFilter },
           orderBy: { createdAt: 'desc' },
-          include: {
-            company: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
+          include: { company: { select: { id: true, name: true } } },
         })
 
         const fallbackFormatted = fallbackEmployees.map((employee) => ({
@@ -125,6 +130,10 @@ export async function GET() {
 // POST /api/employees - add a new employee
 export async function POST(request: Request) {
   try {
+    const { user } = await getRouteAuth()
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
     const body = await request.json()
     const {
       employeeId,
@@ -147,10 +156,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const existing = await prisma.employee.findFirst({
-      where: { companyId, employeeId },
-    })
-
+    const existing = await prisma.employee.findFirst({ where: { companyId, employeeId } })
     if (existing) {
       return NextResponse.json(
         { success: false, error: 'Employee ID already exists for this company' },
@@ -196,6 +202,10 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
+    const { user } = await getRouteAuth()
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
     const body = await request.json()
     const {
       id,
@@ -254,6 +264,10 @@ export async function PATCH(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    const { user } = await getRouteAuth()
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
     const body = await request.json()
     const { id } = body
 

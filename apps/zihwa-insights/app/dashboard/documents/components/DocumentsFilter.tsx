@@ -2,7 +2,7 @@
 
 import { Search, Building2 } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 
 interface Company {
@@ -17,7 +17,7 @@ interface DocumentsFilterProps {
 export default function DocumentsFilter({ companies }: DocumentsFilterProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [searchTerm, setSearchTerm] = useState('')
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '')
   const [companyOptions, setCompanyOptions] = useState<Company[]>(companies)
   const selectedCompanyId = searchParams.get('company') || ''
 
@@ -46,6 +46,35 @@ export default function DocumentsFilter({ companies }: DocumentsFilterProps) {
       fetchCompanies()
     }
   }, [companies.length])
+  // Debounced push to URL so we don't fire on every keystroke
+  const pushSearch = useCallback(
+    (term: string, companyId: string) => {
+      const params = new URLSearchParams(searchParams.toString())
+      if (term) {
+        params.set('search', term)
+      } else {
+        params.delete('search')
+      }
+      if (companyId) {
+        params.set('company', companyId)
+      } else {
+        params.delete('company')
+      }
+      const query = params.toString()
+      router.push(query ? `/dashboard/documents?${query}` : '/dashboard/documents')
+    },
+    [router, searchParams]
+  )
+
+  // Debounce: wait 400ms after user stops typing before pushing to URL
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      pushSearch(searchTerm, selectedCompanyId)
+    }, 400)
+    return () => clearTimeout(timer)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm])
+
 
   const handleCompanyChange = (companyId: string) => {
     const params = new URLSearchParams(searchParams.toString())
@@ -54,6 +83,10 @@ export default function DocumentsFilter({ companies }: DocumentsFilterProps) {
     } else {
       params.delete('company')
     }
+    // Preserve existing search term when switching company
+    if (searchTerm) {
+      params.set('search', searchTerm)
+    }
     const query = params.toString()
     router.push(query ? `/dashboard/documents?${query}` : '/dashboard/documents')
   }
@@ -61,13 +94,13 @@ export default function DocumentsFilter({ companies }: DocumentsFilterProps) {
   return (
     <div className="flex flex-wrap items-center gap-4">
       <div className="relative">
-        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+        <Search className="w-4 h-4 text-gray-900 absolute left-3 top-1/2 transform -translate-y-1/2" />
         <input
           type="text"
           placeholder="Search documents..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 pr-4 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-gray-300 focus:ring-2 focus:ring-gray-200"
+          className="pl-10 pr-4 py-2 border border-gray-200 rounded-md text-sm text-gray-900 focus:outline-none focus:border-gray-300 focus:ring-2 focus:ring-gray-200"
         />
       </div>
 

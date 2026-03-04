@@ -4,10 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { 
   Plus, 
   FileText, 
-  Search, 
-  Filter as FilterIcon, 
+  Search,  
   UserPlus, 
-  Download,
   MoreVertical,
   Loader2,
   X,
@@ -118,13 +116,13 @@ const HiringPage = () => {
         fetchData();
         setActiveMenuId(null);
       }
-    } catch (err) {
+    } catch {
       alert("Failed to delete");
     }
   };
 
   // --- FUNCTIONALITY: HIRE (ONBOARD AS EMPLOYEE) ---
-  const handleHire = async (candidate: any) => {
+  const handleHire = async (candidate: Candidate) => {
     if (!window.confirm(`Start onboarding ${candidate.name} as an active employee?`)) return;
     
     setIsHiringId(candidate.id);
@@ -146,7 +144,7 @@ const HiringPage = () => {
       });
 
       if (res.ok) {
-        await handleStatusUpdate(candidate.id, 'OFFERED');
+        await handleStatusUpdate(candidate.id, 'SELECTED');
         alert("Onboarding successful! Check the Employees tab.");
       } else {
         const errorData = await res.json();
@@ -168,7 +166,7 @@ const HiringPage = () => {
       const fileName = `${Date.now()}_${cleanName}.${fileExt}`;
       const filePath = `resumes/${fileName}`;
 
-      const { data, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('documents')
         .upload(filePath, selectedFile);
 
@@ -213,24 +211,8 @@ const HiringPage = () => {
       setIsSubmitting(false);
     }
   };
-// Inside HiringPage component, before the return (...)
-const copyPublicApplyLink = (source: string) => {
-  // We use the first company ID available in your state
-  const companyId = companies[0]?.id;
-  
-  if (!companyId) {
-    alert("Error: No company found to generate a link.");
-    return;
-  }
 
-  const baseUrl = window.location.origin; 
-  const applyUrl = `${baseUrl}/apply?c=${companyId}&source=${source}`;
-  
-  navigator.clipboard.writeText(applyUrl).then(() => {
-    alert(`Success! ${source} application link copied to clipboard.`);
-  });
-};
-  const filteredCandidates = candidates.filter((c: any) => {
+  const filteredCandidates = candidates.filter((c: Candidate) => {
     const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           c.designation?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'ALL' || c.status === statusFilter;
@@ -240,7 +222,7 @@ const copyPublicApplyLink = (source: string) => {
   if (isLoading) return <div className="p-20 flex justify-center"><Loader2 className="animate-spin text-slate-400" /></div>;
 
   return (
-    <div className="space-y-6">
+    <div className="-mt-5 space-y-4">
       {/* Header Section */}
       <div className="flex justify-between items-center">
         <div>
@@ -248,22 +230,6 @@ const copyPublicApplyLink = (source: string) => {
           <p className="text-sm text-gray-500 font-medium">Recruitment lifecycle management.</p>
         </div>
         <div className="flex items-center gap-3">
-    {/* NEW: Link Generator Buttons
-    <div className="hidden md:flex bg-white border border-gray-200 rounded-lg p-1 shadow-sm items-center">
-      <button 
-        onClick={() => copyPublicApplyLink('LinkedIn')}
-        className="px-3 py-1.5 text-[11px] font-bold text-blue-600 hover:bg-blue-50 rounded-md transition-colors flex items-center gap-1"
-      >
-        <Plus className="w-3 h-3" /> LinkedIn
-      </button>
-      <div className="w-[1px] h-4 bg-gray-100 mx-1" />
-      <button 
-        onClick={() => copyPublicApplyLink('WhatsApp')}
-        className="px-3 py-1.5 text-[11px] font-bold text-green-600 hover:bg-green-50 rounded-md transition-colors flex items-center gap-1"
-      >
-        <Plus className="w-3 h-3" /> WhatsApp
-      </button>
-    </div> */}
         <Button onClick={() => setIsModalOpen(true)} className="bg-[#0f172a] text-white flex items-center gap-2 h-11 px-6 rounded-lg font-bold">
           <Plus className="w-4 h-4" /> Add Candidate
         </Button>
@@ -283,8 +249,10 @@ const copyPublicApplyLink = (source: string) => {
         >
           <option value="ALL">All Status</option>
           <option value="SCREENING">Screening</option>
-          <option value="INTERVIEWING">Interviewing</option>
-          <option value="OFFERED">Offered</option>
+          <option value="INTERVIEW">Interview</option>
+          <option value="SELECTED">Selected</option>
+          <option value="REJECTED">Rejected</option>
+          <option value="ON_HOLD">On Hold</option>
         </select>
       </div>
 
@@ -293,67 +261,69 @@ const copyPublicApplyLink = (source: string) => {
         <table className="w-full text-left min-w-[1100px]">
           <thead className="bg-gray-50/50 border-b border-gray-100 font-bold">
             <tr>
-              <th className="px-6 py-4 text-[12px] text-gray-500 uppercase">Candidate Name</th>
-              <th className="px-6 py-4 text-[12px] text-gray-500 uppercase">Contact</th>
-              <th className="px-6 py-4 text-[12px] text-gray-500 uppercase">Applied To</th> 
-              <th className="px-6 py-4 text-[12px] text-gray-500 uppercase">Designation</th>
-              <th className="px-6 py-4 text-[12px] text-gray-500 uppercase">Qualification</th>
-              <th className="px-6 py-4 text-[12px] text-gray-500 uppercase">Exp (Yrs)</th>
-              <th className="px-6 py-4 text-[12px] text-gray-500 uppercase">Current CTC</th>
-              <th className="px-6 py-4 text-[12px] text-gray-500 uppercase">Source</th>
-              <th className="px-6 py-4 text-[12px] text-gray-500 uppercase">Status</th>
-              <th className="px-6 py-4 text-[12px] text-gray-500 uppercase text-center">Resume/CSV</th>
-              <th className="px-6 py-4 text-[12px] text-gray-500 uppercase text-right">Actions</th>
+              <th className="px-4 py-2 text-[12px] text-gray-500 uppercase">Candidate Name</th>
+              <th className="px-4 py-2 text-[12px] text-gray-500 uppercase">Contact</th>
+              <th className="px-4 py-2 text-[12px] text-gray-500 uppercase">Applied To</th> 
+              <th className="px-4 py-2 text-[12px] text-gray-500 uppercase">Designation</th>
+              <th className="px-4 py-2 text-[12px] text-gray-500 uppercase">Qualification</th>
+              <th className="px-4 py-2 text-[12px] text-gray-500 uppercase">Exp (Yrs)</th>
+              <th className="px-4 py-2 text-[12px] text-gray-500 uppercase">Current CTC</th>
+              <th className="px-4 py-2 text-[12px] text-gray-500 uppercase">Source</th>
+              <th className="px-4 py-2 text-[12px] text-gray-500 uppercase">Status</th>
+              <th className="px-4 py-2 text-[12px] text-gray-500 uppercase text-center">Resume/CSV</th>
+              <th className="px-4 py-2 text-[12px] text-gray-500 uppercase text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50 text-[13px]">
-            {filteredCandidates.map((c: any) => (
+            {filteredCandidates.map((c: Candidate) => (
               <tr key={c.id} className="hover:bg-gray-50/50 transition-colors">
-                <td className="px-6 py-5">
+                <td className="px-5 py-3">
                   <div className="font-semibold text-gray-900">{c.name}</div>
                   <div className="text-gray-400 font-normal">{c.email}</div>
                 </td>
                 
                 {/* NEW: Contact Column */}
-      <td className="px-6 py-5">
+      <td className="px-5 py-3">
         <div className="text-slate-700 font-medium">{c.phone || 'N/A'}</div>
       </td>
       {/* NEW: Company Column */}
-      <td className="px-6 py-5">
+      <td className="px-5 py-3">
         <div className="flex items-center gap-2">
           <span className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded text-[11px] font-bold border border-indigo-100">
             {c.company?.name || 'Unknown Company'}
           </span>
         </div>
       </td>
-                <td className="px-6 py-5 text-gray-700 font-medium">{c.designation || 'N/A'}</td>
-                <td className="px-6 py-5">
+                <td className="px-5 py-3 text-gray-700 font-medium">{c.designation || 'N/A'}</td>
+                <td className="px-5 py-3">
                     <div className="flex items-center gap-1.5 text-gray-600">
                         <GraduationCap className="w-3.5 h-3.5 text-indigo-400" /> {c.qualification || 'N/A'}
                     </div>
                 </td>
-                <td className="px-6 py-5 text-gray-600">{c.experience}</td>
-                <td className="px-6 py-5 font-bold text-gray-900">
+                <td className="px-5 py-3 text-gray-600">{c.experience}</td>
+                <td className="px-5 py-3 font-bold text-gray-900">
                     <div className="flex items-center gap-1"><IndianRupee className="w-3 h-3 text-green-600" /> {c.currentCTC || '0'}</div>
                 </td>
-                <td className="px-6 py-5">
+                <td className="px-5 py-3">
                 <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 uppercase tracking-wider">
                 {c.source || 'Admin'} 
                 </span>
                 </td>
-                <td className="px-6 py-5">
+                <td className="px-5 py-3">
                   {/* FUNCTIONAL STATUS SELECT */}
                   <select 
                     value={c.status}
                     onChange={(e) => handleStatusUpdate(c.id, e.target.value)}
                     className="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-1 rounded-full outline-none border-none cursor-pointer hover:bg-blue-100"
                   >
-                    <option value="SCREENING">SCREENING</option>
-                    <option value="INTERVIEWING">INTERVIEWING</option>
-                    <option value="OFFERED">OFFERED</option>
+                   <option value="SCREENING">SCREENING</option>
+<option value="INTERVIEW">INTERVIEW</option>
+<option value="SELECTED">SELECTED</option>
+<option value="REJECTED">REJECTED</option>
+<option value="ON_HOLD">ON HOLD</option>
                   </select>
                 </td>
-                <td className="px-6 py-5 text-center">
+                <td className="px-5 py-3 text-center">
                   {/* FUNCTIONAL VIEW CV BUTTON */}
                   <button 
                     disabled={!c.resumeUrl}
@@ -363,7 +333,7 @@ const copyPublicApplyLink = (source: string) => {
                     <FileText className="w-4 h-4" /> View CV
                   </button>
                 </td>
-                <td className="px-6 py-5 text-right relative">
+                <td className="px-5 py-3 text-right relative">
                   <div className="flex justify-end gap-2">
                     {/* FUNCTIONAL HIRE BUTTON */}
                     <Button 
@@ -423,7 +393,7 @@ const copyPublicApplyLink = (source: string) => {
                   <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Company</label>
                   <select className="w-full h-11 px-3 rounded-lg border border-gray-100 text-sm outline-none bg-white shadow-sm cursor-pointer" required value={formData.companyId} onChange={e => setFormData({...formData, companyId: e.target.value})}>
                     <option value="" disabled>Select a company</option>
-                    {companies.map((comp: any) => <option key={comp.id} value={comp.id}>{comp.name}</option>)}
+                    {companies.map((comp: Company) => <option key={comp.id} value={comp.id}>{comp.name}</option>)}
                   </select>
                </div>
                <div className="space-y-2">

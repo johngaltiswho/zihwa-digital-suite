@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'An unexpected error occurred'
+}
 export async function GET() {
   try {
     const candidates = await prisma.candidate.findMany({
@@ -12,8 +14,8 @@ export async function GET() {
       }
     })
     return NextResponse.json({ success: true, data: candidates })
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+  } catch (error:unknown) {
+    return NextResponse.json({ success: false, error: getErrorMessage(error) }, { status: 500 })
   }
 }
 
@@ -38,8 +40,8 @@ export async function POST(request: Request) {
       }
     })
     return NextResponse.json({ success: true, data: candidate })
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    return NextResponse.json({ success: false, error: getErrorMessage(error) }, { status: 500 })
   }
 }
 
@@ -59,8 +61,8 @@ export async function PATCH(request: Request) {
     })
     
     return NextResponse.json({ success: true, data: updatedCandidate })
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    return NextResponse.json({ success: false, error: getErrorMessage(error) }, { status: 500 })
   }
 }
 
@@ -75,7 +77,7 @@ export async function DELETE(request: Request) {
     })
     
     return NextResponse.json({ success: true, message: "Candidate deleted" })
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    return NextResponse.json({ success: false, error: getErrorMessage(error) }, { status: 500 })
   }
 }

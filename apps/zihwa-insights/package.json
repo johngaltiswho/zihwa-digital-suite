@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3007",
+    "dev": "next dev --port 3003",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -25,6 +25,7 @@
     "next": "^15.3.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-hot-toast": "^2.6.0",
     "xlsx": "^0.18.5",
     "zod": "^4.1.12"
   },

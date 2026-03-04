@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import CompanyForm from './components/CompanyForm'
 import { Plus, Building2, Users, Calendar, FileText, MoreHorizontal } from 'lucide-react'
-import { getServerAuth } from '@/lib/auth'
+import { getServerAuth, getCompanyWhereFilter } from '@/lib/auth'
 
 interface SearchParams {
   action?: string
@@ -21,19 +21,19 @@ type CompanyWithCounts = Awaited<ReturnType<typeof prisma.company.findMany>>[num
 }
 
 export default async function CompaniesPage({ searchParams }: PageProps) {
-  const { user } = await getServerAuth()
-
+  const { user, dbUser } = await getServerAuth()
   if (!user) {
     redirect('/sign-in')
   }
 
   const params = await searchParams
   const showAddForm = params.action === 'add'
-
+  const scopeFilter = await getCompanyWhereFilter(dbUser, 'id')
   // Get companies for the current user
   let companies: CompanyWithCounts[] = []
   try {
     companies = await prisma.company.findMany({
+      where: { ...scopeFilter },
       orderBy: { createdAt: 'desc' },
       include: {
         _count: {
@@ -75,19 +75,22 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className=" space-y-4">
+      <div className="flex items-center -px-12 -mt-5 justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold text-gray-900">Companies</h1>
           <p className="text-gray-500 text-sm">{companies.length} {companies.length === 1 ? 'company' : 'companies'}</p>
         </div>
-        <a
-          href="/dashboard/companies?action=add"
-          className="inline-flex items-center gap-2 px-3 py-2 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          New
-        </a>
+        {/* Only ADMIN/CONSULTANT can add companies */}
+        {dbUser?.role !== 'ACCOUNTANT' && (
+          <a
+            href="/dashboard/companies?action=add"
+            className="inline-flex items-center gap-2 px-3 py-2 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            New
+          </a>
+        )}
       </div>
 
       {companies.length === 0 ? (
@@ -95,13 +98,15 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
           <Building2 className="w-8 h-8 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No companies yet</h3>
           <p className="text-gray-500 mb-6 text-sm">Get started by adding your first client company</p>
-          <a
-            href="/dashboard/companies?action=add"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add company
-          </a>
+          {dbUser?.role !== 'ACCOUNTANT' && (
+            <a
+              href="/dashboard/companies?action=add"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add company
+            </a>
+          )}
         </div>
       ) : (
         <div className="space-y-3">
@@ -140,9 +145,11 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
                   </div>
                 </div>
                 
-                <button className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-200 transition-all">
-                  <MoreHorizontal className="w-4 h-4 text-gray-500" />
-                </button>
+                {dbUser?.role !== 'ACCOUNTANT' && (
+                  <button className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-200 transition-all">
+                    <MoreHorizontal className="w-4 h-4 text-gray-500" />
+                  </button>
+                )}
               </div>
             </div>
           ))}

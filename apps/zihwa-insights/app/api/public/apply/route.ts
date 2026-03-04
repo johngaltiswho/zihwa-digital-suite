@@ -22,7 +22,7 @@ export async function GET(request: Request) {
       select: { name: true },
     });
     return NextResponse.json({ name: company?.name || "Our Team" });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ name: "Our Team" });
   }
 }
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     }
 
     const fileName = fileUtils.generateFileName(file.name);
-    const { data: uploadData, error: uploadError } = await supabasePublic.storage
+    const { error: uploadError } = await supabasePublic.storage
       .from('documents')
       .upload(fileName, file);
 
@@ -72,7 +72,8 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }  catch (error: unknown) {                                       // Fix 3: 'any' → 'unknown'
+    const message = error instanceof Error ? error.message : 'An unknown error occurred';
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }

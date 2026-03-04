@@ -56,7 +56,7 @@ const documentNameOptions = [
   'Employment Agreement',
   'Non-Disclosure Agreement (NDA)',
   'Vendor Contract',
-  'Other' // This triggers the manual input
+  'Other' 
 ]
 
 const createRow = (overrides?: Partial<UploadRow>): UploadRow => ({
@@ -186,7 +186,7 @@ export default function DocumentUpload({ companies, defaultCompanyId }: Document
           
           try {
             parsedError = JSON.parse(errorText);
-          } catch (e) {
+          } catch  {
             console.error("Could not parse JSON. Raw server response:", errorText);
           }
 

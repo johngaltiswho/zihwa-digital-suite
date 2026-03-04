@@ -38,7 +38,7 @@ export default async function Dashboard() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="-mt-5 space-y-4">
       {/* Header */}
       <div className="space-y-2">
         <h1 className="text-2xl font-semibold text-gray-900">Home</h1>

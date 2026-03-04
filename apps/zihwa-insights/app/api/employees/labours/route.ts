@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
-import { Prisma } from '@prisma/client'
+
 import { prisma } from '@/lib/prisma'
+import { getRouteAuth, getCompanyWhereFilter } from '@/lib/auth'
 
 /**
  * GET: List all labours
@@ -8,7 +9,15 @@ import { prisma } from '@/lib/prisma'
  */
 export async function GET() {
   try {
+    const { user, dbUser } = await getRouteAuth()
+    if (!user || !dbUser) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const scopeFilter = await getCompanyWhereFilter(dbUser)
+    
     const labours = await prisma.labour.findMany({
+      where: { ...scopeFilter },
       orderBy: { labourId: 'asc' }, 
       include: {
         company: {
@@ -29,8 +38,8 @@ export async function GET() {
       fullName: `${labour.firstName} ${labour.lastName}`.trim(),
       designation: labour.designation,
       status: labour.status,
-      phone: labour.phone,       // <--- ADD THIS
-      dob: labour.dob,           // <--- ADD THIS
+      phone: labour.phone,      
+      dob: labour.dob,           
       netSalary: labour.netSalary,
       grossSalary: labour.grossSalary,
       company: labour.company,
@@ -52,6 +61,10 @@ export async function GET() {
  */
 export async function POST(request: Request) {
   try {
+     const { user } = await getRouteAuth()
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
     const body = await request.json()
     const {
       labourId,
@@ -110,6 +123,10 @@ export async function POST(request: Request) {
 }
 export async function PATCH(request: Request) {
   try {
+     const { user } = await getRouteAuth()
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
     const body = await request.json()
     const { id, firstName, lastName, designation, phone, dob, netSalary, status } = body
 
@@ -139,6 +156,10 @@ export async function PATCH(request: Request) {
  */
 export async function DELETE(request: Request) {
   try {
+    const { user } = await getRouteAuth()
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
     const { id } = await request.json()
     if (!id) {
       return NextResponse.json({ success: false, error: 'ID is required' }, { status: 400 })

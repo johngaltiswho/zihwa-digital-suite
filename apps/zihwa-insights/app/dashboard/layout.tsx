@@ -1,13 +1,28 @@
 'use client'
 
 import { useState } from 'react'
-import { Building2, Calendar, FileText, Users, Home, CreditCard, ChevronLeft, ChevronRight,UserPlus } from 'lucide-react'
+import { Building2, Calendar, FileText, Users, Home, ChevronLeft, ChevronRight,UserPlus } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useSupabase } from '@/components/providers/SupabaseProvider'
 import { useEffect, useState as useUserState } from 'react'
 import { User } from '@supabase/supabase-js'
-
+const NAV_ITEMS = [
+  { href: '/dashboard',               label: 'Home',              icon: Home,      roles: ['ADMIN', 'CONSULTANT', 'ACCOUNTANT', 'HR'] },
+  { href: '/dashboard/companies',     label: 'Companies',         icon: Building2, roles: ['ADMIN', 'CONSULTANT', 'ACCOUNTANT', 'HR'] },
+  { href: '/dashboard/deadlines',     label: 'Deadlines',         icon: Calendar,  roles: ['ADMIN', 'CONSULTANT', 'ACCOUNTANT', 'HR'] },
+  { href: '/dashboard/documents',     label: 'Documents',         icon: FileText,  roles: ['ADMIN', 'CONSULTANT', 'ACCOUNTANT', 'HR'] },
+  { href: '/dashboard/employees',     label: 'Employees',         icon: Users,     roles: ['ADMIN', 'CONSULTANT', 'ACCOUNTANT', 'HR'] },
+  { href: '/dashboard/users',         label: 'Users',             icon: Users,     roles: ['ADMIN', 'HR'] },
+  { href: '/dashboard/hiring',        label: 'Hiring Candidates', icon: UserPlus,  roles: ['ADMIN', 'HR'] },
+  // { href: '/dashboard/vendor-payments', label: 'Vendor Payments', icon: CreditCard, roles: ['ADMIN', 'CONSULTANT', 'ACCOUNTANT'] },
+]
+// // Read a cookie value by name (client-side)
+// function getCookie(name: string): string | null {
+//   if (typeof document === 'undefined') return null
+//   const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'))
+//   return match ? decodeURIComponent(match[2]) : null
+// }
 export default function DashboardLayout({
   children,
 }: {
@@ -15,23 +30,64 @@ export default function DashboardLayout({
 }) {
   const [collapsed, setCollapsed] = useState(false)
   const [user, setUser] = useUserState<User | null>(null)
+  const [userRole, setUserRole] = useState<string | null>(null)
   const router = useRouter()
   const supabase = useSupabase()
-
+  
+  // Fetch role from API — single source of truth, no cookie dependency
+  const fetchRole = async () => {
+    try {
+      const res = await fetch('/api/users/user')
+      if (res.ok) {
+        const data = await res.json()
+        if (data.role) setUserRole(data.role)
+      }
+    } catch {
+      // silently fail
+    }
+  }
   useEffect(() => {
-    const getUser = async () => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash
+      const params = new URLSearchParams(hash.replace('#', ''))
+      const type = params.get('type')
+      const accessToken = params.get('access_token')
+      const refreshToken = params.get('refresh_token')
+
+      if (type === 'invite' && accessToken && refreshToken) {
+        // Clear hash so it doesn't loop
+        window.history.replaceState(null, '', window.location.pathname)
+        // Send to sign-in with the tokens so user can set password
+        router.push(
+          `/sign-in#access_token=${accessToken}&refresh_token=${refreshToken}&type=invite`
+        )
+        return
+      }
+    }
+    const init = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       setUser(user)
+      if (user) await fetchRole()
     }
-    
-    getUser()
 
+    init()
+
+    // Only update user object on auth change, don't re-fetch role
+    // (avoids flickering from onAuthStateChange firing with stale state)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user || null)
+      const newUser = session?.user || null
+      setUser(newUser)
+      // Only fetch role on actual sign-in events, not on every state change
+      if (event === 'SIGNED_IN' && newUser) {
+        fetchRole()
+      }
+      if (event === 'SIGNED_OUT') {
+        setUserRole(null)
+      }
     })
 
     return () => subscription.unsubscribe()
-  }, [supabase, setUser])
+  }, [supabase, router, setUser])
 
   const fullName =
     (user?.user_metadata?.full_name as string | undefined) ||
@@ -41,21 +97,21 @@ export default function DashboardLayout({
 
   const email = user?.email ?? ''
 
+  
   const handleSignOut = async () => {
+    // Clear role cookie on sign out
+    document.cookie = 'x-user-role=; path=/; max-age=0'
+    document.cookie = 'x-company-scope=; path=/; max-age=0'
     await supabase.auth.signOut()
     router.push('/sign-in')
   }
+  
 
-  const navItems = [
-    { href: '/dashboard', label: 'Home', icon: Home },
-    { href: '/dashboard/companies', label: 'Companies', icon: Building2 },
-    { href: '/dashboard/deadlines', label: 'Deadlines', icon: Calendar },
-    { href: '/dashboard/documents', label: 'Documents', icon: FileText },
-    { href: '/dashboard/employees', label: 'Employees', icon: Users },
-    { href: '/dashboard/users', label: 'Users', icon: Users },
-    { href: '/dashboard/hiring', label: 'Hiring Candidates', icon: UserPlus },
-    { href: '/dashboard/vendor-payments', label: 'Vendor Payments', icon: CreditCard },
-  ]
+ 
+// Filter nav items by the user's role
+  const visibleNavItems = NAV_ITEMS.filter(item =>
+    !userRole || item.roles.includes(userRole)
+  )
 
   return (
     <div className="min-h-screen bg-white">
@@ -82,7 +138,7 @@ export default function DashboardLayout({
           </div>
 
           <nav className="px-3 space-y-1">
-            {navItems.map(({ href, label, icon: Icon }) => (
+          {visibleNavItems.map(({ href, label, icon: Icon }) => (
               <Link
                 key={href}
                 href={href}
@@ -95,6 +151,16 @@ export default function DashboardLayout({
               </Link>
             ))}
           </nav>
+          {/* Role badge at bottom of sidebar */}
+          {!collapsed && userRole && (
+            <div className="absolute bottom-6 left-0 right-0 px-4">
+              <div className="rounded-md bg-gray-100 px-3 py-2 text-center">
+                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  {userRole}
+                </span>
+              </div>
+            </div>
+          )}
 
         </aside>
 

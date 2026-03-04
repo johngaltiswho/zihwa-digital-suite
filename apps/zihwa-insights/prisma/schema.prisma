@@ -1597,12 +1597,15 @@ enum UserRole {
   ADMIN
   CONSULTANT
   ACCOUNTANT
+  HR
 }
 
 enum CompanyRole {
   ADMIN
   EDITOR
   VIEWER
+  ACCOUNTANT
+  HR
 }
 
 enum ComplianceType {
