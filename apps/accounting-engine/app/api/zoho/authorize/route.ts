@@ -12,6 +12,10 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const orgId = searchParams.get('orgId')
+    const returnToParam = searchParams.get('returnTo')
+    const returnTo = returnToParam && returnToParam.startsWith('/')
+      ? returnToParam
+      : undefined
 
     // Get Zoho OAuth config from environment
     const config = {
@@ -34,9 +38,15 @@ export async function GET(request: NextRequest) {
       'ZohoBooks.fullaccess.all',
     ])
 
-    // Store orgId in state parameter if provided (for reconnecting)
-    const urlWithState = orgId
-      ? `${authUrl}&state=${encodeURIComponent(orgId)}`
+    // Store orgId + optional safe return path in state parameter
+    const statePayload = orgId || returnTo
+      ? JSON.stringify({ orgId: orgId ?? 'default-org', returnTo })
+      : undefined
+    const encodedState = statePayload
+      ? Buffer.from(statePayload, 'utf8').toString('base64url')
+      : undefined
+    const urlWithState = encodedState
+      ? `${authUrl}&state=${encodeURIComponent(encodedState)}`
       : authUrl
 
     // Redirect to Zoho authorization page

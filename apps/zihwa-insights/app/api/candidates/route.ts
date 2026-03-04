@@ -5,7 +5,11 @@ export async function GET() {
   try {
     const candidates = await prisma.candidate.findMany({
       orderBy: { createdAt: 'desc' },
-      include: { company: { select: { id: true, name: true } } }
+      include: { 
+        company: { 
+          select: { id: true, name: true } 
+        } 
+      }
     })
     return NextResponse.json({ success: true, data: candidates })
   } catch (error: any) {
@@ -26,7 +30,10 @@ export async function POST(request: Request) {
         qualification: body.qualification || null,
         currentCTC: body.currentCTC || null,
         companyId: body.companyId,
-        resumeUrl: body.resumeUrl, // ENSURE THIS IS SAVED
+        resumeUrl: body.resumeUrl,
+        // Manual additions from dashboard get 'Admin' source
+        // Applications from /apply page get their specific source via the public API
+        source: body.source || "Admin", 
         status: "SCREENING"
       }
     })
@@ -36,11 +43,15 @@ export async function POST(request: Request) {
   }
 }
 
-// --- NEW PATCH METHOD FOR STATUS UPDATES ---
+// --- PATCH METHOD FOR STATUS UPDATES ---
 export async function PATCH(request: Request) {
   try {
     const body = await request.json()
     const { id, status } = body
+
+    if (!id || !status) {
+      return NextResponse.json({ success: false, error: "Missing ID or Status" }, { status: 400 })
+    }
 
     const updatedCandidate = await prisma.candidate.update({
       where: { id },
@@ -48,6 +59,22 @@ export async function PATCH(request: Request) {
     })
     
     return NextResponse.json({ success: true, data: updatedCandidate })
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+  }
+}
+
+// --- DELETE METHOD ---
+export async function DELETE(request: Request) {
+  try {
+    const body = await request.json()
+    const { id } = body
+
+    await prisma.candidate.delete({
+      where: { id }
+    })
+    
+    return NextResponse.json({ success: true, message: "Candidate deleted" })
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 })
   }

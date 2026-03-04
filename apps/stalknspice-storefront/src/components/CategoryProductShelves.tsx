@@ -33,7 +33,7 @@ export function CategoryProductShelves({ shelves, loading, error, onRetry }: Cat
         {[...Array(3)].map((_, sectionIndex) => (
           <div key={sectionIndex} className="bg-white border border-gray-100 rounded-2xl p-4 md:p-5">
             <div className="h-8 w-64 bg-gray-100 rounded mb-4" />
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-4 md:grid-cols-4 lg:grid-cols-6 gap-4">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="h-72 bg-gray-50 rounded-2xl animate-pulse border border-gray-100" />
               ))}
@@ -91,7 +91,7 @@ export function CategoryProductShelves({ shelves, loading, error, onRetry }: Cat
               {shelf.products.map((product) => (
                 <div
                   key={product.id}
-                  className="snap-start shrink-0 w-[48%] sm:w-[34%] md:w-[28%] lg:w-[22%] xl:w-[18%]"
+                  className="snap-start shrink-0 w-[32%] sm:w-[34%] md:w-[28%] lg:w-[22%] xl:w-[18%]"
                 >
                   <UnifiedProductCard product={product} variant="premium" showMRP={false} />
                 </div>
@@ -102,7 +102,7 @@ export function CategoryProductShelves({ shelves, loading, error, onRetry }: Cat
               type="button"
               aria-label={`Scroll ${shelf.collectionName} left`}
               onClick={() => scrollShelf(shelf.collectionId, "left")}
-              className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white border border-gray-200 shadow items-center justify-center hover:bg-red-50 hover:border-red-200 text-[#8B2323]"
+              className="hidden md:flex absolute z-20 left-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white border border-gray-200 shadow items-center justify-center hover:bg-red-50 hover:border-red-200 text-[#8B2323]"
             >
               <ChevronLeft size={18} />
             </button>
@@ -110,7 +110,7 @@ export function CategoryProductShelves({ shelves, loading, error, onRetry }: Cat
               type="button"
               aria-label={`Scroll ${shelf.collectionName} right`}
               onClick={() => scrollShelf(shelf.collectionId, "right")}
-              className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white border border-gray-200 shadow items-center justify-center hover:bg-red-50 hover:border-red-200 text-[#8B2323]"
+              className="hidden md:flex absolute z-20 right-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white border border-gray-200 shadow items-center justify-center hover:bg-red-50 hover:border-red-200 text-[#8B2323]"
             >
               <ChevronRight size={18} />
             </button>

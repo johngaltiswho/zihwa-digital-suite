@@ -240,37 +240,64 @@ function extractDueDate(text: string): Date | undefined {
  */
 function extractLineItems(text: string): LineItem[] {
   const lineItems: LineItem[] = []
-
-  // This is a simplified extraction - real-world would be more complex
-  // Look for patterns like "Description Qty Rate Amount"
-  const lines = text.split('\n')
+  const seen = new Set<string>()
+  const lines = text
+    .split('\n')
+    .map((line) => line.replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
 
   for (const line of lines) {
-    // Try to match line item pattern: "Item/Description Qty Rate Amount"
-    const match = line.match(
-      /([^0-9]+)\s+(\d+)\s+[₹$€£]?\s*(\d+[,\d]*\.?\d*)\s+[₹$€£]?\s*(\d+[,\d]*\.?\d*)/
-    )
-
-    if (match && match[1] && match[2] && match[3] && match[4]) {
-      const description = match[1].trim()
-      const quantity = parseInt(match[2], 10)
-      const rate = parseFloat(match[3].replace(/,/g, ''))
-      const amount = parseFloat(match[4].replace(/,/g, ''))
-
-      if (
-        description &&
-        !isNaN(quantity) &&
-        !isNaN(rate) &&
-        !isNaN(amount)
-      ) {
-        lineItems.push({
-          description,
-          quantity,
-          rate,
-          amount,
-        })
-      }
+    if (
+      /^(total|subtotal|grand total|invoice total|taxable|cgst|sgst|igst|round off|amount in words)/i.test(
+        line
+      )
+    ) {
+      continue
     }
+
+    // Common OCR table shape:
+    // "<serial?> <description> <qty> <uom?> <rate> <amount>"
+    const match = line.match(
+      /^(?:\d+\s+)?(.+?)\s+(\d+(?:\.\d+)?)\s*(?:[A-Za-z]{2,5})?\s+(\d{1,3}(?:,\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)\s+(\d{1,3}(?:,\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)$/
+    )
+    if (!match || !match[1] || !match[2] || !match[3] || !match[4]) {
+      continue
+    }
+
+    const description = match[1].replace(/\s+/g, ' ').trim()
+    const quantity = parseFloat(match[2].replace(/,/g, ''))
+    const rate = parseFloat(match[3].replace(/,/g, ''))
+    const amount = parseFloat(match[4].replace(/,/g, ''))
+
+    if (
+      !description ||
+      !Number.isFinite(quantity) ||
+      !Number.isFinite(rate) ||
+      !Number.isFinite(amount)
+    ) {
+      continue
+    }
+
+    // Guard against obvious non-item rows.
+    if (
+      description.length < 3 ||
+      /invoice|bill|date|reference|gstin|hsn code|terms/i.test(description)
+    ) {
+      continue
+    }
+
+    const key = `${description.toLowerCase()}|${quantity}|${rate}|${amount}`
+    if (seen.has(key)) {
+      continue
+    }
+    seen.add(key)
+
+    lineItems.push({
+      description,
+      quantity,
+      rate,
+      amount,
+    })
   }
 
   if (lineItems.length > 0) {
@@ -324,7 +351,7 @@ function extractTataDescriptions(text: string): string[] {
   const seen = new Set<string>()
 
   for (let i = 0; i < lines.length; i += 1) {
-    const line = lines[i]
+    const line = lines[i] ?? ''
     if (!/^\d{15,}/.test(line)) {
       continue
     }
@@ -332,8 +359,8 @@ function extractTataDescriptions(text: string): string[] {
     let combined = line
     let j = i + 1
     let appended = 0
-    while (j < lines.length && !/^\d{15,}/.test(lines[j]) && appended < 2) {
-      const next = lines[j]
+    while (j < lines.length && !/^\d{15,}/.test(lines[j] ?? '') && appended < 2) {
+      const next = lines[j] ?? ''
       if (
         /^(Quantity|UOM|Rate|Discount|Taxable|Invoice|Date|Our Reference|ShipTo|Shipped)/i.test(
           next,

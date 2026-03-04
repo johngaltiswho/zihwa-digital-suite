@@ -124,11 +124,24 @@ export function CategorySidebar({
   };
 
   return (
-    <aside className="w-80 border-r border-gray-100 min-h-screen sticky top-[73px] hidden md:block overflow-y-auto scrollbar-hide bg-[#fafafa]">
-      <div className="p-5 border-b bg-white flex items-center justify-between">
+    <aside
+      className="
+        w-80 border-r border-gray-100 hidden md:block bg-[#fafafa]
+        sticky top-[73px]
+        h-[calc(100vh-73px)]
+        overflow-y-auto
+
+        [&::-webkit-scrollbar]:w-1.5
+        [&::-webkit-scrollbar-track]:bg-transparent
+        [&::-webkit-scrollbar-thumb]:bg-gray-200
+        [&::-webkit-scrollbar-thumb]:rounded-full
+        hover:[&::-webkit-scrollbar-thumb]:bg-gray-300
+      "
+    >
+      <div className="p-4 border-b bg-white flex items-center justify-between">
         <div className="flex items-center gap-2">
           <LayoutGrid size={18} className="text-gray-900" />
-          <h2 className="text-medium font-black uppercase tracking-[0.1em] text-gray-900 leading-none">CATEGORIES</h2>
+          <h2 className="text-medium font-black uppercase tracking-[0em] text-gray-900 leading-none">CATEGORIES</h2>
         </div>
         <button
           type="button"
@@ -199,7 +212,7 @@ export function CategorySidebar({
                                     e.stopPropagation();
                                     handleCollectionClick(category.slug);
                                   }}
-                                  className={`w-full text-left text-[13px] font-bold py-2 px-3 rounded-md transition-all ${
+                                  className={`w-full text-left text-[13px] font-bold py-1.5 px-3 rounded-md transition-all ${
                                     isActive ? "text-[#8B2323] bg-red-50 border-l-2 border-[#8B2323]" : "text-gray-500 hover:text-[#8B2323] hover:bg-gray-50"
                                   }`}
                                 >
@@ -227,7 +240,7 @@ export function CategorySidebar({
                                     e.stopPropagation();
                                     handleCollectionClick(brand.slug);
                                   }}
-                                  className={`w-full text-left text-[13px] font-bold py-2 px-3 rounded-md transition-all ${
+                                  className={`w-full text-left text-[13px] font-bold py-1.5 px-3 rounded-md transition-all ${
                                     isActive ? "text-[#8B2323] bg-red-50 border-l-2 border-[#8B2323]" : "text-gray-500 hover:text-[#8B2323] hover:bg-gray-50"
                                   }`}
                                 >

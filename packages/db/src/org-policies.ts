@@ -1,4 +1,4 @@
-import type { OrgPolicy } from '@prisma/client'
+import type { OrgPolicy } from '../prisma/generated/client'
 import { prisma } from './client'
 
 export type UpsertOrgPolicyInput = {
@@ -15,7 +15,7 @@ export async function createOrgPolicy(
     data: {
       organizationId: input.organizationId,
       policyType: input.policyType ?? 'defaults',
-      data: input.data,
+      data: input.data as any,
       createdBy: input.createdBy,
     },
   })

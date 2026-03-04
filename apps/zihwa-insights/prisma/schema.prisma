@@ -89,8 +89,11 @@ model ComplianceDeadline {
   priority    Priority         @default(MEDIUM)
   frequency   Frequency?       // For recurring deadlines
   companyId   String
+
+  notes     String?
   createdById String
   assignedToId String?
+  fileUrl     String?
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
   completedAt DateTime?
@@ -285,7 +288,8 @@ model Candidate {
   experience      String?         // Years of Experience
   qualification   String?         // Added
   currentCTC      String?         // Added (String allows for "5 LPA" or "4.5 Lakhs")
-  status          String          @default("SCREENING")
+  status          CandidateStatus @default(SCREENING) // Use the Enum here
+  source          String          @default("direct")  // Added: LinkedIn, WhatsApp, etc.
   resumeUrl       String?
   appliedDate     DateTime        @default(now())
   companyId       String
@@ -316,7 +320,21 @@ model Labour {
   @@unique([companyId, labourId]) 
   @@map("labours")
 }
+
 // Enums
+enum ComplianceStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  OVERDUE
+}
+
+enum CompliancePriority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
 enum UserRole {
   ADMIN
   CONSULTANT

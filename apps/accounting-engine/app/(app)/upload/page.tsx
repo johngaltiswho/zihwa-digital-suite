@@ -21,6 +21,7 @@ type DocumentEntry = {
   fileType: string
   documentType: string
   status: string
+  error?: string | null
   createdAt: string
   processedAt?: string | null
   zohoOrgId?: string | null
@@ -67,6 +68,7 @@ export default function UploadPage() {
   const [orgId, setOrgId] = useState('')
   const [organizationId, setOrganizationId] = useState('')
   const [companyId, setCompanyId] = useState('')
+  const [scopeHint, setScopeHint] = useState<string | null>(null)
 
   const fetchDocuments = useCallback(async () => {
     try {
@@ -95,6 +97,43 @@ export default function UploadPage() {
   }, [fetchDocuments])
 
   useEffect(() => {
+    const loadActiveScope = async () => {
+      try {
+        const scopeRes = await fetch('/api/scope')
+        const scopeJson = await scopeRes.json()
+        if (!scopeRes.ok || !scopeJson.success) return
+
+        const activeOrgId = scopeJson.data.organizationId ?? ''
+        const activeCompanyId = scopeJson.data.companyId ?? ''
+
+        if (activeOrgId) setOrganizationId((prev) => prev || activeOrgId)
+        if (activeCompanyId) {
+          setCompanyId((prev) => prev || activeCompanyId)
+          setScopeHint('Using selected company from your workspace scope.')
+
+          const integrationRes = await fetch(
+            `/api/companies/${activeCompanyId}/integrations/zoho`
+          )
+          const integrationJson = await integrationRes.json()
+          if (
+            integrationRes.ok &&
+            integrationJson.success &&
+            integrationJson.data?.externalOrgId
+          ) {
+            setOrgId((prev) => prev || integrationJson.data.externalOrgId)
+          }
+        } else {
+          setScopeHint('No active company selected. Choose one from the top-right switcher.')
+        }
+      } catch {
+        setScopeHint('Unable to load active scope.')
+      }
+    }
+
+    void loadActiveScope()
+  }, [])
+
+  useEffect(() => {
     setUploadQueue((prev) => {
       let hasChanges = false
       const next = prev.map((item) => {
@@ -107,12 +146,16 @@ export default function UploadPage() {
           item.status !== 'completed'
         ) {
           hasChanges = true
-          return { ...item, status: 'completed' }
+          return { ...item, status: 'completed' as UploadStatus }
         }
 
         if (doc.status === 'FAILED' && item.status !== 'failed') {
           hasChanges = true
-          return { ...item, status: 'failed', error: doc.error || 'Processing failed' }
+          return {
+            ...item,
+            status: 'failed' as UploadStatus,
+            error: doc.error || 'Processing failed',
+          }
         }
 
         return item
@@ -308,6 +351,9 @@ export default function UploadPage() {
                 Optional. Leave empty to auto-detect a connected Zoho org.
               </div>
             </div>
+            {scopeHint && (
+              <p className="mt-3 text-xs text-slate-500">{scopeHint}</p>
+            )}
 
             {selectedFiles.length > 0 && (
               <div className="mt-6">

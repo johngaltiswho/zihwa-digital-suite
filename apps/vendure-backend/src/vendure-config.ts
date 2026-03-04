@@ -34,6 +34,7 @@ const DEV_URLS = [
   'http://localhost:3100',  // Server port
   'http://localhost:3004',  // Stalknspice storefront
   'http://localhost:3009',  // Accounting engine
+  'http://localhost:3006',  // Fluvium site (Humility DB)
 ];
 
 export const config: VendureConfig = {
@@ -88,7 +89,7 @@ export const config: VendureConfig = {
   logging: false,
   ssl: { rejectUnauthorized: false },
   extra: {
-    max: 15,
+    max: 2,
     min: 3,
     idleTimeoutMillis: 60000,
     connectionTimeoutMillis: 90000,

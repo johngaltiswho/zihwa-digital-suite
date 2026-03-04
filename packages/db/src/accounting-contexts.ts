@@ -1,4 +1,4 @@
-import type { AccountingContext, ContextStatus } from '@prisma/client'
+import type { AccountingContext, ContextStatus } from '../prisma/generated/client'
 import { prisma } from './client'
 
 export type CreateAccountingContextInput = {
@@ -15,7 +15,7 @@ export async function createAccountingContext(
   return prisma.accountingContext.create({
     data: {
       companyId: input.companyId,
-      context: input.context,
+      context: input.context as any,
       createdBy: input.createdBy,
       notes: input.notes ?? null,
       status: input.status ?? 'DRAFT',

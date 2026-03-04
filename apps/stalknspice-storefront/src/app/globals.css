@@ -194,6 +194,7 @@ h1, h2, h3, h4, h5, h6 {
   @apply text-xl text-gray-600 max-w-2xl mx-auto;
 }
 
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
@@ -204,7 +205,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #ea580c;
+  background: #c2b9b9;   /* ← ORANGE */
   border-radius: 4px;
 }
 

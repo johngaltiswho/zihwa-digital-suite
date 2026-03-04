@@ -21,6 +21,13 @@ type DocumentRow = {
   extractedData?: {
     type: string
     confidence?: number
+    usage?: {
+      inputTokens?: number
+      outputTokens?: number
+      totalTokens?: number
+      inrCost?: number
+      usdCost?: number
+    }
     data?: {
       amount?: number
       currency?: string
@@ -67,6 +74,7 @@ export default function DocumentsPage() {
   const [orgFilter, setOrgFilter] = useState('')
   const [organizationFilter, setOrganizationFilter] = useState('')
   const [companyFilter, setCompanyFilter] = useState('')
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const fetchDocuments = async () => {
     try {
@@ -104,6 +112,30 @@ export default function DocumentsPage() {
     setLoading(true)
     fetchDocuments()
   }, [statusFilter, orgFilter, organizationFilter, companyFilter])
+
+  const handleDelete = async (doc: DocumentRow) => {
+    if (doc.status === 'POSTED') return
+    const confirmed = window.confirm(
+      `Delete ${doc.fileName}? This will remove the uploaded file and extracted data.`
+    )
+    if (!confirmed) return
+
+    setDeletingId(doc.id)
+    try {
+      const response = await fetch(`/api/documents/${doc.id}`, {
+        method: 'DELETE',
+      })
+      const data = await response.json()
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to delete document')
+      }
+      await fetchDocuments()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete document')
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   const filteredDocuments = useMemo(() => {
     if (!searchTerm.trim()) return documents
@@ -262,6 +294,20 @@ export default function DocumentsPage() {
                                 ? `Bill #${doc.extractedData?.data?.billNumber}`
                                 : 'Bill number missing'}
                             </p>
+                            {doc.extractedData?.usage && (
+                              <p className="text-xs text-gray-500">
+                                Cost:{' '}
+                                {doc.extractedData.usage.inrCost !== undefined
+                                  ? `₹${doc.extractedData.usage.inrCost.toFixed(4)}`
+                                  : doc.extractedData.usage.usdCost !== undefined
+                                    ? `$${doc.extractedData.usage.usdCost.toFixed(6)}`
+                                    : 'N/A'}{' '}
+                                · Tokens:{' '}
+                                {doc.extractedData.usage.totalTokens ??
+                                  (doc.extractedData.usage.inputTokens || 0) +
+                                    (doc.extractedData.usage.outputTokens || 0)}
+                              </p>
+                            )}
                           </div>
                         </td>
                         <td className="py-4 px-4 text-xs text-gray-600">
@@ -298,12 +344,23 @@ export default function DocumentsPage() {
                           )}
                         </td>
                         <td className="py-4 px-4">
-                          <Link
-                            href={`/documents/${doc.id}`}
-                            className="font-semibold text-sky-700 hover:underline"
-                          >
-                            Review
-                          </Link>
+                          <div className="flex items-center gap-3">
+                            <Link
+                              href={`/documents/${doc.id}`}
+                              className="font-semibold text-sky-700 hover:underline"
+                            >
+                              Review
+                            </Link>
+                            {doc.status !== 'POSTED' && (
+                              <button
+                                onClick={() => handleDelete(doc)}
+                                disabled={deletingId === doc.id}
+                                className="text-xs font-semibold text-rose-700 hover:underline disabled:opacity-50"
+                              >
+                                {deletingId === doc.id ? 'Deleting…' : 'Delete'}
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     )

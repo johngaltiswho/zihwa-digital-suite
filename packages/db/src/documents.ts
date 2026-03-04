@@ -1,7 +1,7 @@
 // Document tracking helpers
 
 import { prisma } from './client'
-import type { DocumentType, ProcessingStatus } from '@prisma/client'
+import type { DocumentType, ProcessingStatus } from '../prisma/generated/client'
 
 export interface CreateDocumentInput {
   fileName: string
@@ -33,7 +33,7 @@ export async function createDocument(
 ): Promise<string> {
   const document = await prisma.processedDocument.create({
     data: {
-      ...input,
+      ...(input as any),
       status: input.status || 'UPLOADED',
     },
     select: { id: true },
@@ -52,7 +52,7 @@ export async function updateDocument(
   await prisma.processedDocument.update({
     where: { id },
     data: {
-      ...input,
+      ...(input as any),
       updatedAt: new Date(),
     },
   })

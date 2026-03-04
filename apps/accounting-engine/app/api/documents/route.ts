@@ -1,27 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@repo/db'
-import type { ProcessingStatus } from '@prisma/client'
+import { getActiveScope } from '@/lib/active-scope'
+import { requireCompanyPermission, requireOrgAccess, requireUser } from '@/lib/authz'
+
+type ProcessingStatus = 'UPLOADED' | 'PROCESSING' | 'EXTRACTED' | 'POSTED' | 'FAILED'
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requireUser()
+    if (!('user' in auth)) return auth.error
+
+    const scope = await getActiveScope()
     const { searchParams } = new URL(request.url)
 
-    // Parse query parameters
     const status = searchParams.get('status') as ProcessingStatus | null
     const orgId = searchParams.get('orgId')
-    const organizationId = searchParams.get('organizationId')
-    const companyId = searchParams.get('companyId')
     const limit = parseInt(searchParams.get('limit') || '20', 10)
     const offset = parseInt(searchParams.get('offset') || '0', 10)
 
-    // Build where clause
-    const where: any = {}
+    const where: Record<string, unknown> = {}
+
+    if (scope.companyId) {
+      const companyAuth = await requireCompanyPermission(scope.companyId, 'company.read')
+      if (!('user' in companyAuth)) return companyAuth.error
+      where.companyId = scope.companyId
+    } else if (scope.organizationId) {
+      const orgAuth = await requireOrgAccess(scope.organizationId)
+      if (!('user' in orgAuth)) return orgAuth.error
+      where.organizationId = scope.organizationId
+    } else {
+      return NextResponse.json(
+        { success: false, error: 'Select an active organization/company first.' },
+        { status: 400 }
+      )
+    }
+
     if (status) where.status = status
     if (orgId) where.zohoOrgId = orgId
-    if (organizationId) where.organizationId = organizationId
-    if (companyId) where.companyId = companyId
 
-    // Fetch documents with filters
     const [documents, total] = await Promise.all([
       prisma.processedDocument.findMany({
         where,

@@ -1,4 +1,4 @@
-import type { OrgRole, Organization } from '@prisma/client'
+import type { OrgRole, Organization } from '../prisma/generated/client'
 import { prisma } from './client'
 
 export type CreateOrganizationInput = {
@@ -34,6 +34,30 @@ export async function getOrganizationBySlug(slug: string) {
 export async function listOrganizations() {
   return prisma.organization.findMany({
     orderBy: { createdAt: 'desc' },
+  })
+}
+
+export async function listOrganizationsForUser(userId: string) {
+  return prisma.organization.findMany({
+    where: {
+      memberships: {
+        some: {
+          userId,
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  })
+}
+
+export async function getOrgMembership(organizationId: string, userId: string) {
+  return prisma.orgMembership.findUnique({
+    where: {
+      organizationId_userId: {
+        organizationId,
+        userId,
+      },
+    },
   })
 }
 

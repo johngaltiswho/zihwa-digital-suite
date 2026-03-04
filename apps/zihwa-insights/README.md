@@ -34,3 +34,34 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+/**
+ * PUBLIC APPLICATION LINKS FOR ZIHWA INSIGHTS
+ * Base URL: http://localhost:3007/apply
+ * 
+ * --- 1. AACP Infrastructure Systems Pvt Ltd. ---
+ * LinkedIn: http://localhost:3007/apply?c=cmi2wcgia0000m8mvfye854j7&source=LinkedIn
+ * WhatsApp: http://localhost:3007/apply?c=cmi2wcgia0000m8mvfye854j7&source=WhatsApp
+ * 
+ * --- 2. Zihwa Foods Pvt Ltd ---
+ * LinkedIn: http://localhost:3007/apply?c=cmi2wcp4t0001m8mvz0fjy9m1&source=LinkedIn
+ * WhatsApp: http://localhost:3007/apply?c=cmi2wcp4t0001m8mvz0fjy9m1&source=WhatsApp
+ * 
+ * --- 3. Zihwa Insights (OPC) Pvt Ltd ---
+ * LinkedIn: http://localhost:3007/apply?c=cmi2wdxhy0002m8mvffhwxv52&source=LinkedIn
+ * WhatsApp: http://localhost:3007/apply?c=cmi2wdxhy0002m8mvffhwxv52&source=WhatsApp
+ * 
+ * --- 4. Stalks N Spice ---
+ * LinkedIn: http://localhost:3007/apply?c=cmi2wf0mh0003m8mv2msy4rt8&source=LinkedIn
+ * WhatsApp: http://localhost:3007/apply?c=cmi2wf0mh0003m8mv2msy4rt8&source=WhatsApp
+ * 
+ * --- 5. Pars Optima Enterprises LLP ---
+ * LinkedIn: http://localhost:3007/apply?c=cmi2wfc480004m8mvjq48dc5h&source=LinkedIn
+ * WhatsApp: http://localhost:3007/apply?c=cmi2wfc480004m8mvjq48dc5h&source=WhatsApp
+ * 
+ * --- 6. Fluvium ---
+ * LinkedIn: http://localhost:3007/apply?c=cmi2wftmo0005m8mvrzk61acf&source=LinkedIn
+ * WhatsApp: http://localhost:3007/apply?c=cmi2wftmo0005m8mvrzk61acf&source=WhatsApp
+ * 
+ * NOTE: When you deploy to production, replace "http://localhost:3007" 
+ * with your real domain (e.g., https://zihwa.com)
+ */

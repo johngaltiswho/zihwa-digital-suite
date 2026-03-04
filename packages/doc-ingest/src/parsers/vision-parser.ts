@@ -1,6 +1,7 @@
 // Vision-based parser using OpenAI Vision API
 import type { ExpenseData, PurchaseData } from '@repo/ledger-core'
 import type { ParserResult } from '../types'
+import { buildOpenAIUsage } from '../pricing'
 
 export interface VisionParserConfig {
   provider: 'openai'
@@ -26,6 +27,7 @@ async function parseWithOpenAIVision(
   imageBuffer: Buffer,
   config: VisionParserConfig
 ): Promise<ParserResult<ExpenseData | PurchaseData>> {
+  const model = config.model || 'gpt-4o-mini'
   const base64Image = imageBuffer.toString('base64')
 
   try {
@@ -36,7 +38,7 @@ async function parseWithOpenAIVision(
         'Authorization': `Bearer ${config.apiKey}`,
       },
       body: JSON.stringify({
-        model: config.model || 'gpt-4o-mini',
+        model,
         messages: [
           {
             role: 'system',
@@ -69,8 +71,9 @@ async function parseWithOpenAIVision(
 
     const data = await response.json()
     const parsedData = JSON.parse(data.choices[0].message.content)
+    const usage = buildOpenAIUsage(data.usage, model)
 
-    return convertVisionResponseToResult(parsedData)
+    return convertVisionResponseToResult(parsedData, usage)
   } catch (error) {
     throw new Error(
       `Failed to parse with OpenAI Vision: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -113,7 +116,8 @@ IMPORTANT: Return ONLY the JSON object, no markdown, no explanation.`
 }
 
 function convertVisionResponseToResult(
-  aiResponse: any
+  aiResponse: any,
+  usage?: ParserResult<ExpenseData | PurchaseData>['usage']
 ): ParserResult<ExpenseData | PurchaseData> {
   if (!aiResponse.type || !aiResponse.data) {
     throw new Error('Invalid AI response format')
@@ -127,9 +131,17 @@ function convertVisionResponseToResult(
     aiResponse.data.dueDate = new Date(aiResponse.data.dueDate)
   }
 
+  const confidenceRaw =
+    typeof aiResponse.confidence === 'number' ? aiResponse.confidence : undefined
+  const confidence =
+    confidenceRaw !== undefined
+      ? Math.max(0, Math.min(100, confidenceRaw))
+      : 70
+
   return {
     data: aiResponse.data,
-    confidence: aiResponse.data.confidence || 95,
+    confidence,
     warnings: [],
+    usage,
   }
 }

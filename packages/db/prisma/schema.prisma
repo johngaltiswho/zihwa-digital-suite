@@ -1,13 +1,14 @@
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["multiSchema"]
+  output          = "./generated/client"
 }
 
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_DATABASE_URL")
-  schemas   = ["accounting"]
+  schemas   = ["accounting", "humility_db"]
 }
 
 model Organization {
@@ -25,6 +26,8 @@ model Organization {
   policies        OrgPolicy[]
   documents       ProcessedDocument[]
   learningSignals LearningSignal[]
+  drafts          AccountingDraft[]
+  copilotThreads  CopilotThread[]
 
   @@map("organizations")
   @@schema("accounting")
@@ -79,6 +82,9 @@ model Company {
   documents          ProcessedDocument[]
   learningSignals    LearningSignal[]
   oauthTokens        OAuthToken[]
+  memberships        CompanyMembership[]
+  drafts             AccountingDraft[]
+  copilotThreads     CopilotThread[]
 
   @@unique([organizationId, slug])
   @@map("companies")
@@ -129,6 +135,8 @@ model LearningSignal {
   companyId      String?
   document       ProcessedDocument? @relation(fields: [documentId], references: [id])
   documentId     String?
+  draft          AccountingDraft?   @relation(fields: [draftId], references: [id])
+  draftId        String?
   eventType      String
   payload        Json
   createdBy      String?
@@ -179,10 +187,108 @@ model ProcessedDocument {
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   learningSignals LearningSignal[]
+  drafts          AccountingDraft[]
 
   @@index([organizationId])
   @@index([companyId])
   @@map("processed_documents")
+  @@schema("accounting")
+}
+
+model CompanyMembership {
+  id             String      @id @default(cuid())
+  company        Company     @relation(fields: [companyId], references: [id])
+  companyId      String
+  userId         String
+  role           CompanyRole @default(VIEWER)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@unique([companyId, userId])
+  @@index([userId])
+  @@map("company_memberships")
+  @@schema("accounting")
+}
+
+model AccountingDraft {
+  id             String      @id @default(cuid())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  company        Company     @relation(fields: [companyId], references: [id])
+  companyId      String
+  document       ProcessedDocument? @relation(fields: [documentId], references: [id])
+  documentId     String?
+  createdBy      String
+  status         DraftStatus @default(DRAFT)
+  source         DraftSource @default(MANUAL)
+  payload        Json
+  validation     Json?
+  approvalMeta   Json?
+  zohoResult     Json?
+  submittedAt    DateTime?
+  approvedAt     DateTime?
+  postedAt       DateTime?
+  rejectedAt     DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  learningSignals LearningSignal[]
+  copilotMessages CopilotMessage[]
+
+  @@index([organizationId, companyId, status])
+  @@map("accounting_drafts")
+  @@schema("accounting")
+}
+
+model CopilotThread {
+  id             String   @id @default(cuid())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  company        Company  @relation(fields: [companyId], references: [id])
+  companyId      String
+  createdBy      String
+  title          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  messages       CopilotMessage[]
+
+  @@index([organizationId, companyId, createdBy])
+  @@map("copilot_threads")
+  @@schema("accounting")
+}
+
+model CopilotMessage {
+  id        String            @id @default(cuid())
+  thread    CopilotThread     @relation(fields: [threadId], references: [id])
+  threadId  String
+  role      CopilotMessageRole
+  content   String
+  metadata  Json?
+  draft     AccountingDraft?  @relation(fields: [draftId], references: [id])
+  draftId   String?
+  createdAt DateTime          @default(now())
+
+  toolCalls CopilotToolCall[]
+
+  @@index([threadId, createdAt])
+  @@map("copilot_messages")
+  @@schema("accounting")
+}
+
+model CopilotToolCall {
+  id        String         @id @default(cuid())
+  message   CopilotMessage @relation(fields: [messageId], references: [id])
+  messageId String
+  toolName  String
+  input     Json?
+  output    Json?
+  status    ToolCallStatus @default(SUCCESS)
+  error     String?
+  createdAt DateTime       @default(now())
+
+  @@index([messageId])
+  @@map("copilot_tool_calls")
   @@schema("accounting")
 }
 
@@ -235,4 +341,397 @@ enum ContextStatus {
   ARCHIVED
 
   @@schema("accounting")
+}
+
+enum CompanyRole {
+  VIEWER
+  PREPARER
+  APPROVER
+  ADMIN
+
+  @@schema("accounting")
+}
+
+enum DraftStatus {
+  DRAFT
+  VALIDATED
+  SUBMITTED
+  APPROVED
+  POSTED
+  REJECTED
+  FAILED
+
+  @@schema("accounting")
+}
+
+enum DraftSource {
+  MANUAL
+  DOCUMENT
+  COPILOT
+
+  @@schema("accounting")
+}
+
+enum CopilotMessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+
+  @@schema("accounting")
+}
+
+enum ToolCallStatus {
+  SUCCESS
+  FAILED
+
+  @@schema("accounting")
+}
+
+// ==========================================
+// HUMILITY DB SCHEMA
+// BJJ Learning Platform with Video Analysis & Copilot
+// ==========================================
+
+model Student {
+  id                String   @id @default(cuid())
+  vendureCustomerId String   @unique
+  email             String   @unique
+  firstName         String?
+  lastName          String?
+  beltRank          BeltRank @default(WHITE)
+  stripeCustomerId  String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  subscriptions     Subscription[]
+  videoUploads      VideoUpload[]
+  progress          TechniqueProgress[]
+  copilotThreads    BJJCopilotThread[]
+  trainingPlans     TrainingPlan[]
+  reflections       Reflection[]
+
+  @@map("students")
+  @@schema("humility_db")
+}
+
+model Subscription {
+  id                String             @id @default(cuid())
+  student           Student            @relation(fields: [studentId], references: [id])
+  studentId         String
+  vendureOrderId    String?
+  tier              SubscriptionTier
+  status            SubscriptionStatus
+  startDate         DateTime
+  endDate           DateTime?
+  autoRenew         Boolean            @default(true)
+  metadata          Json?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([studentId, status])
+  @@map("subscriptions")
+  @@schema("humility_db")
+}
+
+model Technique {
+  id                String             @id @default(cuid())
+  title             String
+  slug              String             @unique
+  description       String
+  category          TechniqueCategory
+  position          Position
+  difficultyLevel   DifficultyLevel
+  youtubeUrl        String?
+  youtubeId         String?
+  durationMinutes   Int?
+  instructorNotes   String?
+  keyPoints         Json
+  prerequisites     Json?
+  nextTechniques    Json?
+  thumbnailUrl      String?
+  isPublished       Boolean            @default(false)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  progress          TechniqueProgress[]
+  trainingPlanItems TrainingPlanItem[]
+
+  @@index([category, difficultyLevel])
+  @@map("techniques")
+  @@schema("humility_db")
+}
+
+model VideoUpload {
+  id                    String                @id @default(cuid())
+  student               Student               @relation(fields: [studentId], references: [id])
+  studentId             String
+  fileName              String
+  fileUrl               String
+  fileSize              Int
+  mimeType              String
+  uploadedAt            DateTime              @default(now())
+  status                VideoProcessingStatus
+  processingStartedAt   DateTime?
+  processingCompletedAt DateTime?
+
+  analyses              VideoAnalysis[]
+
+  @@index([studentId, status])
+  @@map("video_uploads")
+  @@schema("humility_db")
+}
+
+model VideoAnalysis {
+  id               String       @id @default(cuid())
+  video            VideoUpload  @relation(fields: [videoId], references: [id])
+  videoId          String
+  frameNumber      Int
+  timestamp        Float
+  frameUrl         String
+  analysisType     AnalysisType @default(TECHNIQUE_FORM)
+  formScore        Int?
+  positioningScore Int?
+  feedback         String
+  strengths        Json
+  improvements     Json
+  metadata         Json?
+  createdAt        DateTime     @default(now())
+
+  copilotMessages  BJJCopilotMessage[]
+
+  @@index([videoId])
+  @@map("video_analyses")
+  @@schema("humility_db")
+}
+
+model TechniqueProgress {
+  id               String         @id @default(cuid())
+  student          Student        @relation(fields: [studentId], references: [id])
+  studentId        String
+  technique        Technique      @relation(fields: [techniqueId], references: [id])
+  techniqueId      String
+  status           ProgressStatus
+  proficiencyLevel Int            @default(0)
+  practiceCount    Int            @default(0)
+  lastPracticedAt  DateTime?
+  notes            String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@unique([studentId, techniqueId])
+  @@index([studentId, status])
+  @@map("technique_progress")
+  @@schema("humility_db")
+}
+
+model BJJCopilotThread {
+  id         String              @id @default(cuid())
+  student    Student             @relation(fields: [studentId], references: [id])
+  studentId  String
+  title      String?
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  messages   BJJCopilotMessage[]
+
+  @@index([studentId, updatedAt])
+  @@map("bjj_copilot_threads")
+  @@schema("humility_db")
+}
+
+model BJJCopilotMessage {
+  id              String                @id @default(cuid())
+  thread          BJJCopilotThread      @relation(fields: [threadId], references: [id])
+  threadId        String
+  role            CopilotMessageRole
+  content         String
+  metadata        Json?
+  videoAnalysis   VideoAnalysis?        @relation(fields: [videoAnalysisId], references: [id])
+  videoAnalysisId String?
+  trainingPlan    TrainingPlan?         @relation(fields: [trainingPlanId], references: [id])
+  trainingPlanId  String?
+  createdAt       DateTime              @default(now())
+
+  toolCalls       BJJCopilotToolCall[]
+
+  @@index([threadId, createdAt])
+  @@map("bjj_copilot_messages")
+  @@schema("humility_db")
+}
+
+model BJJCopilotToolCall {
+  id        String                @id @default(cuid())
+  message   BJJCopilotMessage     @relation(fields: [messageId], references: [id])
+  messageId String
+  toolName  String
+  input     Json?
+  output    Json?
+  status    ToolCallStatus
+  error     String?
+  createdAt DateTime              @default(now())
+
+  @@index([messageId])
+  @@map("bjj_copilot_tool_calls")
+  @@schema("humility_db")
+}
+
+model TrainingPlan {
+  id              String             @id @default(cuid())
+  student         Student            @relation(fields: [studentId], references: [id])
+  studentId       String
+  title           String
+  description     String?
+  goalBeltRank    BeltRank?
+  startDate       DateTime
+  endDate         DateTime?
+  status          PlanStatus         @default(ACTIVE)
+  createdBy       String             @default("copilot")
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  items           TrainingPlanItem[]
+  copilotMessages BJJCopilotMessage[]
+
+  @@index([studentId, status])
+  @@map("training_plans")
+  @@schema("humility_db")
+}
+
+model TrainingPlanItem {
+  id             String       @id @default(cuid())
+  plan           TrainingPlan @relation(fields: [planId], references: [id])
+  planId         String
+  technique      Technique    @relation(fields: [techniqueId], references: [id])
+  techniqueId    String
+  orderIndex     Int
+  targetReps     Int?
+  targetDuration Int?
+  completed      Boolean      @default(false)
+  completedAt    DateTime?
+  notes          String?
+
+  @@index([planId, orderIndex])
+  @@map("training_plan_items")
+  @@schema("humility_db")
+}
+
+model Reflection {
+  id             String         @id @default(cuid())
+  student        Student        @relation(fields: [studentId], references: [id])
+  studentId      String
+  promptCategory PromptCategory
+  promptQuestion String
+  response       String
+  tags           Json?
+  isPrivate      Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([studentId, createdAt])
+  @@map("reflections")
+  @@schema("humility_db")
+}
+
+// Enums for Humility DB
+
+enum BeltRank {
+  WHITE
+  BLUE
+  PURPLE
+  BROWN
+  BLACK
+
+  @@schema("humility_db")
+}
+
+enum SubscriptionTier {
+  FREE
+  BASIC
+  PREMIUM
+
+  @@schema("humility_db")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  PENDING
+
+  @@schema("humility_db")
+}
+
+enum TechniqueCategory {
+  GUARD
+  PASSING
+  SUBMISSIONS
+  ESCAPES
+  TRANSITIONS
+  TAKEDOWNS
+
+  @@schema("humility_db")
+}
+
+enum Position {
+  CLOSED_GUARD
+  OPEN_GUARD
+  HALF_GUARD
+  SIDE_CONTROL
+  MOUNT
+  BACK
+  STANDING
+
+  @@schema("humility_db")
+}
+
+enum DifficultyLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+
+  @@schema("humility_db")
+}
+
+enum VideoProcessingStatus {
+  UPLOADED
+  PROCESSING
+  COMPLETED
+  FAILED
+
+  @@schema("humility_db")
+}
+
+enum AnalysisType {
+  TECHNIQUE_FORM
+  POSITIONING
+  MOVEMENT_FLOW
+
+  @@schema("humility_db")
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  LEARNING
+  PRACTICING
+  PROFICIENT
+  MASTERED
+
+  @@schema("humility_db")
+}
+
+enum PlanStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+
+  @@schema("humility_db")
+}
+
+enum PromptCategory {
+  DAILY_PRACTICE
+  TRAINING_INSIGHTS
+  LEADERSHIP
+  FLOW_STATE
+
+  @@schema("humility_db")
 }

@@ -55,17 +55,17 @@ export default function HumilityDBClient({ customer, tabs }: HumilityDBClientPro
       {/* Content Area */}
       <div className={`transition-all duration-1000 delay-400 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         {activeTab === 'dashboard' && <DashboardTab customer={customer} />}
-        {activeTab === 'techniques' && <TechniquesTab customer={customer} />}
-        {activeTab === 'flow' && <FlowTab customer={customer} />}
+        {activeTab === 'techniques' && <TechniquesTab />}
+        {activeTab === 'flow' && <FlowTab />}
         {activeTab === 'reflection' && <ReflectionTab customer={customer} />}
-        {activeTab === 'mindset' && <MindsetTab customer={customer} />}
+        {activeTab === 'mindset' && <MindsetTab />}
       </div>
     </>
   );
 }
 
 // Dashboard Tab Component
-function DashboardTab({ customer }: { customer: HttpTypes.StoreCustomer | null }) {
+function DashboardTab({ customer }: { customer: Customer | null }) {
   const [todaysTechniques, setTodaysTechniques] = useState<Technique[]>([]);
   const [selectedTechnique, setSelectedTechnique] = useState<Technique | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -76,7 +76,7 @@ function DashboardTab({ customer }: { customer: HttpTypes.StoreCustomer | null }
         const data = await apiService.getTechniques({ limit: 3 });
         setTodaysTechniques(data.techniques || []);
       } catch (error) {
-        console.error('Error fetching today\'s techniques:', error);
+        console.error('Error fetching today&apos;s techniques:', error);
       }
     };
 
@@ -108,7 +108,7 @@ function DashboardTab({ customer }: { customer: HttpTypes.StoreCustomer | null }
       return `${firstName[0]}${lastName[0]}`;
     }
     if (firstName) return firstName[0];
-    if (customer.email) return customer.email[0].toUpperCase();
+    if (customer.email && customer.email.length > 0) return customer.email[0]?.toUpperCase() || 'W';
     return 'W';
   };
 
@@ -156,9 +156,9 @@ function DashboardTab({ customer }: { customer: HttpTypes.StoreCustomer | null }
 
       {/* Today's Practice */}
       <div className="bg-gradient-to-br from-gray-800/30 to-gray-900/30 backdrop-blur-sm border border-gray-700/30 rounded-2xl p-8">
-        <h2 className="text-3xl font-light text-white mb-6">Today's Practice</h2>
+        <h2 className="text-3xl font-light text-white mb-6">Today&apos;s Practice</h2>
         <div className="space-y-4">
-          {todaysTechniques.map((technique, index) => (
+          {todaysTechniques.map((technique) => (
             <div 
               key={technique.id}
               className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg hover:bg-gray-700/50 transition-colors duration-300 cursor-pointer"
@@ -181,7 +181,7 @@ function DashboardTab({ customer }: { customer: HttpTypes.StoreCustomer | null }
 
           {todaysTechniques.length === 0 && (
             <div className="text-center py-8">
-              <p className="text-gray-400 font-light">Loading today's practice...</p>
+              <p className="text-gray-400 font-light">Loading today&apos;s practice&hellip;</p>
             </div>
           )}
         </div>
@@ -239,7 +239,7 @@ function DashboardTab({ customer }: { customer: HttpTypes.StoreCustomer | null }
 }
 
 // Techniques Tab Component
-function TechniquesTab({ customer }: { customer: HttpTypes.StoreCustomer | null }) {
+function TechniquesTab() {
   const [techniques, setTechniques] = useState<Technique[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDifficulty, setSelectedDifficulty] = useState<'beginner' | 'intermediate' | 'advanced' | 'all'>('all');
@@ -335,7 +335,7 @@ function TechniquesTab({ customer }: { customer: HttpTypes.StoreCustomer | null 
                 <div className="flex items-start justify-between mb-4">
                   <h3 className="text-white font-light text-lg">{technique.title}</h3>
                   <span className={`px-3 py-1 rounded-full text-xs font-light ${getDifficultyColor(technique.metadata?.difficulty_level || 'beginner')}`}>
-                    {technique.metadata?.difficulty_level?.charAt(0).toUpperCase() + technique.metadata?.difficulty_level?.slice(1)}
+                    {(technique.metadata?.difficulty_level || 'beginner').charAt(0).toUpperCase() + (technique.metadata?.difficulty_level || 'beginner').slice(1)}
                   </span>
                 </div>
                 <p className="text-gray-400 text-sm mb-3 line-clamp-2">{technique.description}</p>
@@ -425,8 +425,8 @@ function TechniquesTab({ customer }: { customer: HttpTypes.StoreCustomer | null 
   );
 }
 
-// Flow Tab Component  
-function FlowTab({ customer }: { customer: HttpTypes.StoreCustomer | null }) {
+// Flow Tab Component
+function FlowTab() {
   const [flowSessions, setFlowSessions] = useState<FlowSession[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -452,7 +452,7 @@ function FlowTab({ customer }: { customer: HttpTypes.StoreCustomer | null }) {
       <div className="bg-gradient-to-br from-gray-800/30 to-gray-900/30 backdrop-blur-sm border border-gray-700/30 rounded-2xl p-8">
         <h2 className="text-3xl font-light text-white mb-6">Flow State Training</h2>
         <p className="text-gray-300 font-light leading-relaxed mb-6">
-          Flow state is the warrior's secret weapon—that place where time slows, ego dissolves, and your 
+          Flow state is the warrior&apos;s secret weapon—that place where time slows, ego dissolves, and your
           authentic power emerges. These sessions guide you to access and sustain this state both on and off the mats.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -509,7 +509,7 @@ function FlowTab({ customer }: { customer: HttpTypes.StoreCustomer | null }) {
       {/* Current Session */}
       {flowSessions.length > 0 && flowSessions[0] && (
         <div className="bg-gradient-to-br from-gray-800/30 to-gray-900/30 backdrop-blur-sm border border-gray-700/30 rounded-2xl p-8">
-          <h2 className="text-3xl font-light text-white mb-6">Today's Flow Session</h2>
+          <h2 className="text-3xl font-light text-white mb-6">Today&apos;s Flow Session</h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
             <div>
               <h3 className="text-2xl font-light text-cyan-400 mb-4">{flowSessions[0].title}</h3>
@@ -554,7 +554,7 @@ function FlowTab({ customer }: { customer: HttpTypes.StoreCustomer | null }) {
 }
 
 // Reflection Tab Component
-function ReflectionTab({ customer }: { customer: HttpTypes.StoreCustomer | null }) {
+function ReflectionTab({ customer }: { customer: Customer | null }) {
   const prompts = [
     {
       category: 'Daily Practice',
@@ -585,23 +585,23 @@ function ReflectionTab({ customer }: { customer: HttpTypes.StoreCustomer | null 
         <h2 className="text-3xl font-light text-white mb-6">The Practice of Reflection</h2>
         <p className="text-gray-300 font-light leading-relaxed mb-6">
           True growth happens not just in the doing, but in the reflecting. These prompts guide you deeper than 
-          technique—into the warrior's inner landscape where real transformation occurs.
+          technique—into the warrior&apos;s inner landscape where real transformation occurs.
         </p>
         <blockquote className="border-l-4 border-cyan-400 pl-6 italic text-gray-300 font-light">
-          "The unexamined life is not worth living for a human being." — Socrates
+          &quot;The unexamined life is not worth living for a human being.&quot; — Socrates
         </blockquote>
       </div>
 
       {/* Today's Prompt */}
       <div className="bg-gradient-to-br from-gray-800/30 to-gray-900/30 backdrop-blur-sm border border-gray-700/30 rounded-2xl p-8">
-        <h2 className="text-3xl font-light text-white mb-6">Today's Reflection</h2>
+        <h2 className="text-3xl font-light text-white mb-6">Today&apos;s Reflection</h2>
         <div className="bg-gray-800/50 rounded-lg p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <span className="text-cyan-400 text-sm font-light">Self-Awareness • Daily Practice</span>
             <span className="text-gray-400 text-sm">5 min</span>
           </div>
           <h3 className="text-xl font-light text-white mb-4">
-            What moment today challenged your ego, and how did you respond?
+            What moment today challenged your ego&#44; and how did you respond?
           </h3>
           <p className="text-gray-400 font-light text-sm mb-4">
             Consider both your immediate reaction and your deeper response. What did this moment teach you about your patterns?
@@ -611,7 +611,7 @@ function ReflectionTab({ customer }: { customer: HttpTypes.StoreCustomer | null 
           <>
             <textarea
               className="w-full h-32 bg-gray-800/50 border border-gray-700/50 rounded-lg px-4 py-3 text-white font-light focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/50 transition-all duration-300 resize-vertical"
-              placeholder="Your reflection..."
+              placeholder="Your reflection&hellip;"
             />
             <div className="flex items-center justify-between mt-4">
               <span className="text-gray-400 text-sm">Last saved: Just now</span>
@@ -660,7 +660,7 @@ function ReflectionTab({ customer }: { customer: HttpTypes.StoreCustomer | null 
                 <span className="text-gray-400 text-xs">Technical Growth</span>
               </div>
               <p className="text-gray-300 font-light text-sm">
-                "Today I finally understood the timing of the triangle choke. It's not about force—it's about creating the space and then filling it..."
+                &quot;Today I finally understood the timing of the triangle choke. It&apos;s not about force—it&apos;s about creating the space and then filling it&hellip;&quot;
               </p>
             </div>
             <div className="bg-gray-800/50 rounded-lg p-4">
@@ -669,7 +669,7 @@ function ReflectionTab({ customer }: { customer: HttpTypes.StoreCustomer | null 
                 <span className="text-gray-400 text-xs">Self-Awareness</span>
               </div>
               <p className="text-gray-300 font-light text-sm">
-                "Noticed I was forcing positions today instead of flowing. Reminder: the path of least resistance often leads to the greatest results..."
+                &quot;Noticed I was forcing positions today instead of flowing. Reminder: the path of least resistance often leads to the greatest results&hellip;&quot;
               </p>
             </div>
           </div>
@@ -680,7 +680,7 @@ function ReflectionTab({ customer }: { customer: HttpTypes.StoreCustomer | null 
 }
 
 // Mindset Tab Component
-function MindsetTab({ customer }: { customer: HttpTypes.StoreCustomer | null }) {
+function MindsetTab() {
   const [mindsetModules, setMindsetModules] = useState<MindsetModule[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -715,7 +715,7 @@ function MindsetTab({ customer }: { customer: HttpTypes.StoreCustomer | null }) 
     <div className="space-y-8">
       {/* Mindset Philosophy */}
       <div className="bg-gradient-to-br from-gray-800/30 to-gray-900/30 backdrop-blur-sm border border-gray-700/30 rounded-2xl p-8">
-        <h2 className="text-3xl font-light text-white mb-6">The Warrior's Mind</h2>
+        <h2 className="text-3xl font-light text-white mb-6">The Warrior&apos;s Mind</h2>
         <p className="text-gray-300 font-light leading-relaxed mb-6">
           Technical skill is just the beginning. True mastery emerges when ancient wisdom meets modern psychology, 
           creating a mindset that transforms not just your training, but your entire approach to life.
@@ -805,13 +805,13 @@ function MindsetTab({ customer }: { customer: HttpTypes.StoreCustomer | null }) 
         <div className="bg-gradient-to-br from-gray-800/30 to-gray-900/30 backdrop-blur-sm border border-gray-700/30 rounded-2xl p-8">
           <h2 className="text-3xl font-light text-white mb-6">Wisdom for Today</h2>
           <blockquote className="text-2xl font-light text-gray-300 leading-relaxed mb-6 italic">
-            "The warrior's greatest victory is not over his opponent, but over the chaos within his own mind."
+            &quot;The warrior&apos;s greatest victory is not over his opponent&#44; but over the chaos within his own mind.&quot;
           </blockquote>
           <div className="flex items-center space-x-4">
             <div className="w-12 h-12 bg-gradient-to-br from-cyan-400 to-purple-500 rounded-full"></div>
             <div>
               <p className="text-white font-light">Ancient Samurai Wisdom</p>
-              <p className="text-gray-400 text-sm">From '{mindsetModules[0]?.title || 'Mindset Module'}' module</p>
+              <p className="text-gray-400 text-sm">From &apos;{mindsetModules[0]?.title || 'Mindset Module'}&apos; module</p>
             </div>
           </div>
         </div>

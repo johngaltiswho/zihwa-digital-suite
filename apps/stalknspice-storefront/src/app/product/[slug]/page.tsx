@@ -118,7 +118,7 @@ export default function CreativeProductPage() {
         )}
       </AnimatePresence>
 
-      <div className="max-w-[1300px] mx-auto flex justify-between items-center mb-4">
+      <div className="max-w-[1300px] mx-auto flex justify-between items-center mb-1">
         <Link href="/" className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.1em] text-gray-400 hover:text-[#8B2323] transition-colors"><ArrowLeft size={18} /> Back to Store</Link>
         <div className="flex gap-2 items-center">
             <span className={`h-2 w-2 rounded-full animate-pulse ${isOutOfStock ? 'bg-red-500' : 'bg-green-500'}`}></span>
@@ -129,7 +129,7 @@ export default function CreativeProductPage() {
       <div className="max-w-[1200px] mx-auto bg-white rounded-[20px] shadow-2xl shadow-gray-200/30 overflow-hidden border border-gray-100 flex flex-col lg:flex-row">
         
         {/* GALLERY */}
-        <div className="lg:w-1/2 bg-[#FCFAF7] p-6 md:p-14 relative flex flex-col items-center justify-center border-r border-gray-50">
+        <div className="lg:w-1/2 bg-[#FCFAF7] p-6 md:p-10 relative flex flex-col items-center justify-center border-r border-gray-50">
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="relative w-full aspect-square flex items-center justify-center">
             <Image src={activeImg} alt={product.name} fill className="object-contain p-4" priority />
           </motion.div>
@@ -223,12 +223,12 @@ export default function CreativeProductPage() {
       </div>
 
       {/* RECOMMENDATIONS */}
-      <div className="max-w-[1300px] mx-auto mt-10 px-6">
-          <div className="flex justify-between items-end mb-8">
+      <div className="max-w-[1300px] mx-auto mt-6 px-6">
+          <div className="flex justify-between items-end mb-4">
               <h3 className="text-3xl font-serif italic text-gray-900">Recommended Products</h3>
-              <Link href="/products" className="text-xs font-black text-gray-900 border-b-2 border-black pb-1 hover:text-[#8B2323] uppercase tracking-widest">View All</Link>
+              <Link href="/products" className="text-xs font-bold text-gray-900 border-b-2 border-black pb-1 hover:text-[#8B2323] uppercase tracking-widest">View All</Link>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-3">
               {recommendations.map((item) => (
                   <div key={item.id} className="group bg-white p-6 rounded-[10px] border border-gray-50 hover:shadow-2xl transition-all">
                     <Link href={`/product/${item.slug}`}>
@@ -244,8 +244,10 @@ export default function CreativeProductPage() {
             <Link href="/" className="flex items-center gap-2 px-8 py-4 bg-white border-2 border-gray-900 rounded-2xl text-xs font-black uppercase tracking-[0.1em] text-gray-900 hover:bg-gray-900 hover:text-white transition-all shadow-lg"><ArrowLeft size={18} /> Back to Home</Link>
           </div>
       </div>
-
-      <div className="max-w-[1300px] mx-auto py-6 px-2"><Newsletter /></div>
+<section className="bg-white mt-6 -mx-7 -my-4 -mr-4 md:-mr-10">
+  <Newsletter />
+</section>
     </main>
   );
 }
+

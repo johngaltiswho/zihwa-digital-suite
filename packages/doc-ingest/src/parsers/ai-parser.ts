@@ -2,6 +2,7 @@
 
 import type { ExpenseData, PurchaseData } from '@repo/ledger-core'
 import type { ParserResult } from '../types'
+import { buildOpenAIUsage } from '../pricing'
 
 /**
  * AI Parser configuration
@@ -39,6 +40,7 @@ async function parseWithOpenAI(
   text: string,
   config: AIParserConfig
 ): Promise<ParserResult<ExpenseData | PurchaseData>> {
+  const model = config.model || 'gpt-4o-mini'
   const prompt = buildParsingPrompt(text)
 
   try {
@@ -49,7 +51,7 @@ async function parseWithOpenAI(
         'Authorization': `Bearer ${config.apiKey}`,
       },
       body: JSON.stringify({
-        model: config.model || 'gpt-4o-mini',
+        model,
         messages: [
           {
             role: 'system',
@@ -70,8 +72,9 @@ async function parseWithOpenAI(
 
     const data = await response.json()
     const parsedData = JSON.parse(data.choices[0].message.content)
+    const usage = buildOpenAIUsage(data.usage, model)
 
-    return convertAIResponseToResult(parsedData)
+    return convertAIResponseToResult(parsedData, usage)
   } catch (error) {
     throw new Error(
       `Failed to parse with OpenAI: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -173,7 +176,8 @@ IMPORTANT: Return ONLY the JSON object, no markdown, no explanation.`
  * Convert AI response to ParserResult
  */
 function convertAIResponseToResult(
-  aiResponse: any
+  aiResponse: any,
+  usage?: ParserResult<ExpenseData | PurchaseData>['usage']
 ): ParserResult<ExpenseData | PurchaseData> {
   // Validate the response has required fields
   if (!aiResponse.type || !aiResponse.data) {
@@ -188,9 +192,17 @@ function convertAIResponseToResult(
     aiResponse.data.dueDate = new Date(aiResponse.data.dueDate)
   }
 
+  const confidenceRaw =
+    typeof aiResponse.confidence === 'number' ? aiResponse.confidence : undefined
+  const confidence =
+    confidenceRaw !== undefined
+      ? Math.max(0, Math.min(100, confidenceRaw))
+      : 60
+
   return {
     data: aiResponse.data,
-    confidence: aiResponse.confidence || 95,
+    confidence,
     warnings: [],
+    usage,
   }
 }

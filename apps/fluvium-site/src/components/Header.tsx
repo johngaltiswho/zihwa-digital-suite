@@ -24,11 +24,11 @@ export default function Header() {
 
         {/* Navigation */}
         <nav className={`hidden md:flex items-center space-x-8 transition-all duration-1000 delay-200 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <a href="/#about" className="text-gray-300 hover:text-white transition-colors duration-300 font-light">About</a>
-          <a href="/#offerings" className="text-gray-300 hover:text-white transition-colors duration-300 font-light">Offerings</a>
+          <Link href="/#about" className="text-gray-300 hover:text-white transition-colors duration-300 font-light">About</Link>
+          <Link href="/#offerings" className="text-gray-300 hover:text-white transition-colors duration-300 font-light">Offerings</Link>
           <Link href="/humility-db" className="text-gray-300 hover:text-white transition-colors duration-300 font-light">Humility DB</Link>
           <Link href="/shop-maintenance" className="text-gray-300 hover:text-white transition-colors duration-300 font-light">Shop</Link>
-          <a href="/#founder" className="text-gray-300 hover:text-white transition-colors duration-300 font-light">Founder</a>
+          <Link href="/#founder" className="text-gray-300 hover:text-white transition-colors duration-300 font-light">Founder</Link>
           <button className="neon-border bg-transparent text-white px-6 py-2 text-sm font-light tracking-wider hover:bg-cyan-400/10 transition-all duration-300">
             Join the Tribe
           </button>

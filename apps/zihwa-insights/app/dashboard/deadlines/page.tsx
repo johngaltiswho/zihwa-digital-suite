@@ -1,200 +1,315 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Plus, 
-  Calendar, 
-  AlertCircle, 
-  CheckCircle2, 
-  Clock, 
-  Search, 
-  Filter, 
-  MoreVertical,
-  FileCheck,
-  Building2,
-  Loader2
+  Plus, Calendar as CalendarIcon, AlertCircle, Search,
+  Building2, Loader2, X, ChevronLeft, ChevronRight,
+  Pencil, Trash2, ShieldCheck, Clock,  Zap, Landmark
 } from 'lucide-react';
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
-// Define interface for Type Safety
-interface Deadline {
-  id: number;
-  title: string;
-  company: string;
-  type: string;
-  dueDate: string;
-  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'OVERDUE';
-  priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
-}
-
 const DeadlinesPage = () => {
-  const [deadlines, setDeadlines] = useState<Deadline[]>([]);
+  const [deadlines, setDeadlines] = useState<any[]>([]);
+  const [companies, setCompanies] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
+  
+  // States for UX
+  const [viewDate, setViewDate] = useState(new Date()); 
+  const [hoveredDate, setHoveredDate] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<any>(null);
+
+  // Filters
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCompany, setSelectedCompany] = useState('all');
 
-  // Mock data matching the Interface
-  const mockDeadlines: Deadline[] = [
-    { id: 1, title: "PF Contribution Filing", company: "Zihwa Insights", type: "LABOR_LAW", dueDate: "2026-03-15", status: "PENDING", priority: "CRITICAL" },
-    { id: 2, title: "TDS Quarterly Return", company: "Fluviun", type: "TAX_FILING", dueDate: "2026-03-31", status: "IN_PROGRESS", priority: "HIGH" },
-    { id: 3, title: "ESI Payment", company: "Stalks N Spice", type: "LABOR_LAW", dueDate: "2026-03-15", status: "COMPLETED", priority: "CRITICAL" },
-    { id: 4, title: "Annual Audit Review", company: "Pars Optima", type: "AUDIT", dueDate: "2026-02-28", status: "OVERDUE", priority: "CRITICAL" },
-  ];
+  const [formData, setFormData] = useState({
+    title: '', companyId: '', type: 'PF_RETURN', priority: 'MEDIUM', dueDate: ''
+  });
 
-  useEffect(() => {
-    // Simulate API Load
-    const timer = setTimeout(() => {
-      setDeadlines(mockDeadlines);
-      setIsLoading(false);
-    }, 800);
-    return () => clearTimeout(timer);
-  }, []);
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      const [dRes, cRes] = await Promise.all([
+        fetch('/api/compliance/deadlines'),
+        fetch('/api/companies')
+      ]);
+      const dData = await dRes.json();
+      const cData = await cRes.json();
+      
+      setDeadlines(Array.isArray(dData) ? dData : []);
+      setCompanies(Array.isArray(cData) ? cData : []);
+    } catch (e) { console.error(e); } finally { setIsLoading(false); }
+  };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'COMPLETED': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
-      case 'OVERDUE': return 'bg-rose-50 text-rose-700 border-rose-100 animate-pulse';
-      case 'IN_PROGRESS': return 'bg-amber-50 text-amber-700 border-amber-100';
-      default: return 'bg-slate-50 text-slate-600 border-slate-100';
+  useEffect(() => { fetchData(); }, []);
+
+  // --- COMPLIANCE AUTOMATION (PF & ESI) ---
+  const handleAutoSetMonthlyDeadlines = async () => {
+    if (companies.length === 0) return alert("Register a company first.");
+    
+    const year = viewDate.getFullYear();
+    const month = String(viewDate.getMonth() + 1).padStart(2, '0');
+    const deadlineDate = `${year}-${month}-15`; // PF & ESI are due on the 15th
+
+    const requirements = [
+      { title: "Monthly PF Return Filing", type: "PF_RETURN", dueDate: deadlineDate },
+      { title: "Monthly ESI Contribution", type: "ESI_RETURN", dueDate: deadlineDate }
+    ];
+
+    try {
+      for (const req of requirements) {
+        await fetch('/api/compliance/deadlines', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...req, companyId: companies[0].id, priority: 'HIGH' })
+        });
+      }
+      fetchData();
+      alert("PF and ESI Deadlines registered for the 15th of this month.");
+    } catch (e) { alert("Auto-set failed"); }
+  };
+
+  // --- ACTIONS ---
+  const handleDelete = async (id: string) => {
+    if (!confirm("Remove this requirement from audit trail?")) return;
+    await fetch(`/api/compliance/deadlines/${id}`, { method: 'DELETE' });
+    fetchData();
+  };
+
+  const handleEdit = (item: any) => {
+    setEditingItem(item);
+    setFormData({
+      title: item.title,
+      companyId: item.companyId,
+      type: item.type,
+      priority: item.priority,
+      dueDate: item.dueDate.split('T')[0]
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const url = editingItem ? `/api/compliance/deadlines/${editingItem.id}` : '/api/compliance/deadlines';
+    const method = editingItem ? 'PATCH' : 'POST';
+
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData)
+    });
+    
+    if (res.ok) {
+      setIsModalOpen(false);
+      setEditingItem(null);
+      fetchData();
+      setFormData({ title: '', companyId: '', type: 'PF_RETURN', priority: 'MEDIUM', dueDate: '' });
     }
   };
 
-  const getPriorityIcon = (priority: string) => {
-    if (priority === 'CRITICAL') return <AlertCircle className="w-3.5 h-3.5 text-rose-500" />;
-    return <Clock className="w-3.5 h-3.5 text-slate-400" />;
+  // --- CALENDAR GRID ENGINE ---
+  const daysInMonth = (y: number, m: number) => new Date(y, m + 1, 0).getDate();
+  const firstDay = (y: number, m: number) => new Date(y, m, 1).getDay();
+
+  const filtered = deadlines.filter(d => {
+    const matchesSearch = d.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesComp = selectedCompany === 'all' || d.companyId === selectedCompany;
+    return matchesSearch && matchesComp;
+  });
+
+  const stats = {
+    overdue: deadlines.filter(d => new Date(d.dueDate) < new Date() && d.status !== 'COMPLETED').length,
+    pending: deadlines.filter(d => d.status !== 'COMPLETED').length,
+    readiness: deadlines.length ? Math.round((deadlines.filter(d => d.status === 'COMPLETED').length / deadlines.length) * 100) : 0
   };
 
-  const filteredDeadlines = deadlines.filter(item => 
-    item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.company.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  if (isLoading) return <div className="p-20 flex justify-center"><Loader2 className="animate-spin text-slate-400" /></div>;
+  if (isLoading) return <div className="p-10 flex justify-center w-full"><Loader2 className="animate-spin text-gray-900" /></div>;
 
   return (
-    <div className="space-y-6">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="w-full p-0 space-y-4 bg-[#fafbfc]">
+      
+      {/* 1. Header (Theme: Black Bold Heading) */}
+      <div className="flex justify-between items-center w-full">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 font-sans tracking-tight">Compliance Deadlines</h1>
-          <p className="text-sm text-gray-500 font-medium">Track and manage statutory filings and HR audits.</p>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tight">Compliance</h1>
+          <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mt-1">Audit Trail & Regulatory Monitoring</p>
         </div>
-        <Button className="bg-[#0f172a] text-white flex items-center gap-2 h-11 px-6 rounded-lg font-bold shadow-sm hover:bg-slate-800">
-          <Plus className="w-4 h-4" /> Set New Deadline
-        </Button>
-      </div>
-
-      {/* Compliance Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-            <div className="flex justify-between items-start">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Overdue tasks</p>
-                <AlertCircle className="w-4 h-4 text-rose-500" />
-            </div>
-            <p className="text-2xl font-bold text-gray-900 mt-1">01</p>
-        </div>
-        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm border-l-4 border-l-amber-400">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Due This Week</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">05</p>
-        </div>
-        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Pending Uploads</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">12</p>
-        </div>
-        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Completion Rate</p>
-            <p className="text-2xl font-bold text-emerald-600 mt-1">92%</p>
+        <div className="flex gap-3">
+             <Button onClick={handleAutoSetMonthlyDeadlines} className="h-10 border-indigo-100 text-indigo-700 bg-indigo-10 font-bold text-[10px] uppercase flex items-center gap-2">
+                <Zap className="w-3.5 h-3.5" /> Auto-Set PF/ESI (15th)
+            </Button>
+            <Button onClick={() => { setEditingItem(null); setIsModalOpen(true); }} className="bg-[#0f172a] text-white h-10 px-6 rounded-xl font-bold text-xs shadow-md">
+                <Plus className="w-4 h-4 mr-1" /> New Requirement
+            </Button>
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="flex flex-col md:flex-row gap-4 items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-        <div className="relative flex-1 w-full">
+      {/* 2. Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+        {[
+          { label: 'Critical Overdue', val: stats.overdue, icon: <AlertCircle className="text-rose-500 w-4 h-4"/>, color: 'text-rose-600' },
+          { label: 'Pending Deadlines', val: stats.pending, color: 'text-gray-900', icon: <Clock className="w-4 h-4 text-gray-400" /> },
+          { label: 'Compliance Readiness', val: `${stats.readiness}%`, color: 'text-emerald-600', icon: <ShieldCheck className="w-4 h-4" /> }
+        ].map((s, i) => (
+          <div key={i} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-2">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex justify-between">{s.label} {s.icon}</p>
+            <p className={`text-2xl font-black ${s.color}`}>{s.val.toString().padStart(2, '0')}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* 3. Dashboard Toolbar */}
+      <div className="flex gap-2 bg-white p-2 rounded-2xl border border-gray-100 shadow-sm items-center relative z-20">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input 
-            className="pl-10 w-full bg-white text-gray-900 border-gray-100 h-11 focus:border-indigo-400 outline-none" 
-            placeholder="Search by task title or company..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+          <Input className="pl-10 h-10 border-none bg-gray-50 rounded-lg text-xs font-bold text-gray-900" placeholder="Filter by requirement name..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
         </div>
-        <div className="flex gap-2 w-full md:w-auto">
-            {/* Changed variant from "outline" to "ghost" to fix build error */}
-            <Button variant="ghost" className="flex items-center gap-2 text-gray-600 border border-gray-100 h-11 px-5 hover:bg-gray-50">
-                <Filter className="w-4 h-4" /> Filter
-            </Button>
-            <Button variant="ghost" className="flex items-center gap-2 text-gray-600 border border-gray-100 h-11 px-5 hover:bg-gray-50">
-                <Calendar className="w-4 h-4" /> Calendar View
-            </Button>
+        <select className="h-8 border-none bg-gray-100 rounded-lg px-4 text-xs font-bold text-gray-900 outline-none min-w-[200px] appearance-none" value={selectedCompany} onChange={(e) => setSelectedCompany(e.target.value)}>
+            <option value="all">All Organizations</option>
+            {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        <div className="bg-gray-100 p-1 rounded-xl flex gap-1">
+            <button onClick={() => setViewMode('calendar')} className={`h-8 px-4 text-[10px] font-bold rounded-lg transition-all ${viewMode === 'calendar' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'}`}>Calendar View</button>
+            <button onClick={() => setViewMode('list')} className={`h-8 px-4 text-[10px] font-bold rounded-lg transition-all ${viewMode === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'}`}>Detailed List</button>
         </div>
       </div>
 
-      {/* Deadlines Table */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-x-auto">
-        <table className="w-full text-left min-w-[1000px]">
-          <thead className="bg-gray-50/50 border-b border-gray-100 font-bold text-[11px] text-gray-500 uppercase tracking-widest">
-            <tr>
-              <th className="px-6 py-4">Filing / Task Title</th>
-              <th className="px-6 py-4 text-center">Priority</th>
-              <th className="px-6 py-4">Company</th>
-              <th className="px-6 py-4">Category</th>
-              <th className="px-6 py-4">Due Date</th>
-              <th className="px-6 py-4">Status</th>
-              <th className="px-6 py-4 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50 text-[13px]">
-            {filteredDeadlines.map((item) => (
-              <tr key={item.id} className="hover:bg-gray-50/30 transition-colors">
-                <td className="px-6 py-5">
-                  <div className="font-semibold text-gray-900">{item.title}</div>
-                  <div className="text-[11px] text-gray-400 font-medium">Assigned to: HR Operations</div>
-                </td>
-                <td className="px-6 py-5">
-                  <div className="flex items-center justify-center gap-1.5 px-2 py-1 rounded bg-slate-50 border border-slate-100 text-[10px] font-bold text-slate-500">
-                    {getPriorityIcon(item.priority)}
-                    {item.priority}
+      {/* 4. MAIN INTERFACE (Dynamic Grid) */}
+      {viewMode === 'calendar' ? (
+        <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-xl p-10 space-y-8 animate-in fade-in duration-500">
+            <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                    <h2 className="text-xl font-bold text-gray-900 uppercase tracking-tighter">
+                        {viewDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                    </h2>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.1em]">Monthly Statutory Grid</p>
+                </div>
+                <div className="flex gap-2">
+                    <button onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1))} className="p-3 bg-gray-50 hover:bg-gray-100 rounded-2xl text-gray-900 transition-all border border-gray-50"><ChevronLeft/></button>
+                    <button onClick={() => setViewDate(new Date())} className="px-6 h-12 bg-gray-50 rounded-2xl text-[10px] font-bold text-gray-900 uppercase tracking-widest hover:bg-gray-100 border border-gray-100">Today</button>
+                    <button onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1))} className="p-3 bg-gray-50 hover:bg-gray-100 rounded-2xl text-gray-900 transition-all border border-gray-50"><ChevronRight/></button>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-7 gap-1">
+                {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(d => <div key={d} className="text-center text-[12px] font-bold text-gray-400 py-1">{d}</div>)}
+                {Array.from({ length: firstDay(viewDate.getFullYear(), viewDate.getMonth()) }).map((_, i) => <div key={i} />)}
+                {Array.from({ length: daysInMonth(viewDate.getFullYear(), viewDate.getMonth()) }).map((_, i) => {
+                    const day = i + 1;
+                    const dateStr = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const dayTasks = filtered.filter(d => d.dueDate.startsWith(dateStr));
+                    const isToday = new Date().toDateString() === new Date(viewDate.getFullYear(), viewDate.getMonth(), day).toDateString();
+                    const isHovered = hoveredDate === dateStr;
+
+                    return (
+                        <div 
+                            key={day} 
+                            onMouseEnter={() => setHoveredDate(dateStr)} 
+                            onMouseLeave={() => setHoveredDate(null)}
+                            className={`aspect-[2/0.8] rounded-xl border flex flex-col items-center justify-center relative transition-all duration-300 group cursor-pointer ${isToday ? 'bg-gray-900 border-gray-900 shadow-xl scale-80 z-10' : dayTasks.length > 0 ? 'bg-white border-gray-200 hover:border-gray-900' : 'bg-transparent border-transparent hover:bg-gray-50'}`}
+                        >
+                            <span className={`text-medium font-bold ${isToday ? 'text-white' : 'text-gray-900'}`}>{day}</span>
+                            
+                            {/* iPhone Popover Tooltip */}
+                            {isHovered && dayTasks.length > 0 && (
+                                <div className="absolute bottom-full mb-4 w-52 bg-[#0f172a] text-white p-4 rounded-[1.5rem] shadow-2xl z-[100] animate-in fade-in slide-in-from-bottom-2 border border-white/10">
+                                    <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-2 border-b border-white/10 pb-1.5">Compliance for {day}th</p>
+                                    {dayTasks.map(t => (
+                                        <div key={t.id} className="text-[10px] font-bold py-1 flex items-center justify-between">
+                                            {t.title}
+                                            <div className={`w-1.5 h-1.5 rounded-full ${t.status === 'COMPLETED' ? 'bg-emerald-400' : 'bg-rose-500'}`} />
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {dayTasks.length > 0 && !isToday && (
+                                <div className="absolute bottom-1 flex gap-0.5">
+                                    {dayTasks.map((t, idx) => <div key={idx} className={`w-1 h-1 rounded-full ${t.status === 'COMPLETED' ? 'bg-emerald-400' : 'bg-rose-500'}`} />)}
+                                </div>
+                            )}
+                        </div>
+                    )
+                })}
+            </div>
+        </div>
+      ) : (
+        /* TABLE VIEW */
+        <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden animate-in slide-in-from-bottom-2 duration-300">
+            <table className="w-full text-left">
+              <thead className="bg-gray-50/50 text-[10px] text-gray-400 font-bold uppercase tracking-widest border-b">
+                <tr>
+                  <th className="px-10 py-5">Filing Name</th>
+                  <th className="px-10 py-5">Deadline</th>
+                  <th className="px-10 py-5">Status</th>
+                  <th className="px-10 py-5 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {filtered.map((item) => (
+                  <tr key={item.id} className="hover:bg-gray-50/50 group transition-all">
+                    <td className="px-10 py-6">
+                        <div className="font-bold text-gray-900 text-[13px] flex items-center gap-2">
+                            {item.title.includes('PF') ? <Landmark className="w-3.5 h-3.5 text-blue-500" /> : <ShieldCheck className="w-3.5 h-3.5 text-orange-500" />}
+                            {item.title}
+                        </div>
+                        <div className="text-[9px] font-bold text-gray-400 mt-1 uppercase">{item.company?.name}</div>
+                    </td>
+                    <td className="px-10 py-6 font-bold text-gray-900 text-xs">{new Date(item.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                    <td className="px-10 py-6">
+                        <span className={`px-2 py-0.5 text-[9px] font-bold rounded-md border uppercase ${item.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-gray-100 text-gray-400 border-gray-200'}`}>{item.status}</span>
+                    </td>
+                    <td className="px-10 py-6 text-right">
+                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => handleEdit(item)} className="p-2 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-all"><Pencil className="w-4 h-4"/></button>
+                            <button onClick={() => handleDelete(item.id)} className="p-2 text-gray-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-all"><Trash2 className="w-4 h-4"/></button>
+                        </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+        </div>
+      )}
+
+      {/* Shared Modal (Create/Edit) */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
+          <div className="bg-white rounded-[2rem] w-full max-w-sm p-8 shadow-2xl border">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-black text-gray-900 tracking-tight">{editingItem ? "Edit Entry" : "New Requirement"}</h2>
+              <button onClick={() => {setIsModalOpen(false); setEditingItem(null);}} className="text-gray-900 hover:bg-gray-100 rounded-full p-1 transition-all"><X className="w-5 h-5"/></button>
+            </div>
+            <form onSubmit={handleSave} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[9px] font-bold text-gray-400 uppercase tracking-widest ml-1">Requirement Description</label>
+                <Input required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="h-11 rounded-xl bg-gray-50 border-none font-bold text-gray-900 text-sm px-4" placeholder="e.g. Monthly ESI Filing" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">Organization</label>
+                    <select required className="w-full h-11 bg-gray-50 rounded-xl px-4 font-bold text-gray-900 outline-none text-[11px] appearance-none" value={formData.companyId} onChange={e => setFormData({...formData, companyId: e.target.value})}>
+                        <option value="">Select...</option>
+                        {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
                   </div>
-                </td>
-                <td className="px-6 py-5">
-                    <div className="flex items-center gap-2 text-gray-600 font-medium">
-                        <Building2 className="w-4 h-4 text-slate-300" />
-                        {item.company}
-                    </div>
-                </td>
-                <td className="px-6 py-5">
-                    <span className="text-gray-500 font-medium px-2 py-0.5 bg-slate-100 rounded text-[10px]">
-                        {item.type.replace('_', ' ')}
-                    </span>
-                </td>
-                <td className="px-6 py-5">
-                    <div className={`font-bold ${item.status === 'OVERDUE' ? 'text-rose-600' : 'text-gray-700'}`}>
-                        {new Date(item.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </div>
-                </td>
-                <td className="px-6 py-5">
-                  <span className={`px-3 py-1 rounded-full text-[10px] font-bold border ${getStatusColor(item.status)}`}>
-                    {item.status}
-                  </span>
-                </td>
-                <td className="px-6 py-5 text-right">
-                  <div className="flex justify-end items-center gap-3">
-                    {item.status !== 'COMPLETED' && (
-                        <button className="text-emerald-600 hover:text-emerald-700 p-1 hover:bg-emerald-50 rounded" title="Mark as Done">
-                            <CheckCircle2 className="w-5 h-5" />
-                        </button>
-                    )}
-                    <button className="text-blue-600 hover:text-blue-700 p-1 hover:bg-blue-50 rounded" title="Upload Proof/Document">
-                        <FileCheck className="w-5 h-5" />
-                    </button>
-                    <MoreVertical className="w-4 h-4 text-gray-300 cursor-pointer" />
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">Deadline Date</label>
+                    <Input type="date" required value={formData.dueDate} onChange={e => setFormData({...formData, dueDate: e.target.value})} className="h-11 bg-gray-50 border-none rounded-xl font-bold text-gray-900 text-[11px]" />
                   </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+              </div>
+              <div className="pt-4">
+                <Button type="submit" className="w-full bg-[#0f172a] text-white h-12 rounded-2xl font-bold text-sm shadow-xl shadow-gray-200 transition-all active:scale-95">
+                    {editingItem ? "Commit Updates" : "Save Compliance Record"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

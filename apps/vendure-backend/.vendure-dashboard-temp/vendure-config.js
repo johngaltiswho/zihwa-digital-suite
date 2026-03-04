@@ -27,6 +27,7 @@ const DEV_URLS = [
     'http://localhost:3100', // Server port
     'http://localhost:3004', // Stalknspice storefront
     'http://localhost:3009', // Accounting engine
+    'http://localhost:3006', // Fluvium site (Humility DB)
 ];
 exports.config = {
     apiOptions: {
