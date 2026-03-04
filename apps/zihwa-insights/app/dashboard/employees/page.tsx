@@ -44,7 +44,8 @@ type EmployeeRow = {
   ifscCode?: string | null
   elBalance?: number | null
   slBalance?: number | null
-   labourId?: string | null // <--- Add this line
+   labourId?: string | null 
+   dob?: string | Date | null // <--- Add this line
   stats?: {
     attendance: number
     payrollRuns: number
@@ -192,6 +193,16 @@ const formatMonthFilterLabel = (value: string) => {
 }
 
 export default function EmployeesPage() {
+  const [userRole, setUserRole] = useState<string | null>(null)
+  
+ useEffect(() => {
+    fetch('/api/users/user')
+      .then((r) => r.json())
+      .then((d) => { if (d.role) setUserRole(d.role) })
+      .catch(() => {})
+  }, [])
+
+  const isAccountant = userRole === 'ACCOUNTANT'
   const today = useMemo(() => new Date(), [])
   const defaultMonth = useMemo(() => getMonthInputValue(today), [today])
   const monthOptions = useMemo(() => generateMonthOptions(), [])
@@ -333,7 +344,7 @@ export default function EmployeesPage() {
       console.error('Failed to load companies', error)
     }
   }
-  const startEditingLabour = (labour: any) => {
+  const startEditingLabour = (labour: EmployeeRow) => {
     setEditingLabourId(labour.id)
     setEditLabourForm({
       firstName: labour.firstName,
@@ -362,7 +373,7 @@ export default function EmployeesPage() {
       } else {
         throw new Error(data.error || 'Failed to update')
       }
-    } catch (error) {
+    } catch {
       alert('Update failed')
     } finally {
       setSavingLabour(false)
@@ -545,8 +556,8 @@ export default function EmployeesPage() {
         alert(`Successfully imported ${data.count} labourers!`)
         fetchLabours()
       }
-    } catch (err) {
-      alert('Import failed')
+    } catch {
+  alert('Import failed')
     } finally {
       setLabourLoading(false)
     }
@@ -724,17 +735,6 @@ export default function EmployeesPage() {
       .sort((a, b) => a.fullName.localeCompare(b.fullName))
   }, [employees, searchTerm, statusFilter, companyFilter])
 
-  // NEW: Filter for Labours
-  const filteredLabours = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase()
-    return labours
-      .filter((l) => {
-        if (companyFilter !== 'all' && l.company?.id !== companyFilter) return false
-        if (!term) return true
-        return l.fullName.toLowerCase().includes(term) || l.employeeId.toLowerCase().includes(term)
-      })
-      .sort((a, b) => a.fullName.localeCompare(b.fullName))
-  }, [labours, searchTerm, companyFilter])
 
   const attendanceSummary = useMemo(() => {
     return ATTENDANCE_OPTIONS.reduce<Record<AttendanceStatus, number>>((acc, status) => {
@@ -924,8 +924,8 @@ export default function EmployeesPage() {
       setShowAddLabourModal(false)
       // Reset form
       setNewLabour({ companyId: '', labourId: '', firstName: '', lastName: '', designation: '', phone: '', dob: '', netSalary: '', grossSalary: '', status: 'ACTIVE' })
-    } catch (error: any) {
-      alert(error.message || 'Failed to add labourer')
+    } catch (error: unknown) {
+  alert(error instanceof Error ? error.message : 'Failed to add labourer')
     } finally { 
       setSavingLabour(false) 
     }
@@ -945,8 +945,8 @@ export default function EmployeesPage() {
       } else {
         throw new Error(data.error)
       }
-    } catch (error: any) {
-      alert(error.message || 'Delete failed')
+    } catch (error: unknown) {
+  alert(error instanceof Error ? error.message : 'Delete failed')
     } finally { 
       setDeletingLabourId(null) 
     }
@@ -1033,7 +1033,7 @@ export default function EmployeesPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className=" -mt-5 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 text-sm text-gray-500 mb-1">
@@ -1057,15 +1057,17 @@ export default function EmployeesPage() {
               </>
             )}
           </Button>
-          <Button
-            onClick={() => {
-              setTab('employees')
-              setShowAddModal(true)
-            }}
-          >
-            <UserPlus className="h-4 w-4 mr-2" />
-            Add Employee
-          </Button>
+          {!isAccountant && (
+  <Button
+    onClick={() => {
+      setTab('employees')
+      setShowAddModal(true)
+    }}
+  >
+    <UserPlus className="h-4 w-4 mr-2" />
+    Add Employee
+  </Button>
+)}
         </div>
       </div>
 
@@ -1143,11 +1145,11 @@ export default function EmployeesPage() {
 
       {tab === 'employees' && (
         <section className="space-y-6">
-          <div className="space-y-4">
+          <div className="space-y-4 text-gray-900">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-1 items-center gap-3">
                 <div className="relative w-full max-w-sm">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-900" />
                   <Input
                     placeholder="Search by name, department, company..."
                     value={searchTerm}
@@ -1211,7 +1213,7 @@ export default function EmployeesPage() {
                       <th className="px-4 py-2 text-left">IFSC
                       </th>
                       <th className="px-4 py-2 text-left">Status</th>
-                      <th className="px-4 py-2 text-right">Actions</th>
+                    {!isAccountant && <th className="px-4 py-2 text-right">Actions</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -1358,6 +1360,8 @@ export default function EmployeesPage() {
                               </span>
                             )}
                           </td>
+                          {/* ── ACCOUNTANT: no edit/delete ── */}
+                          {!isAccountant && (
                           <td className="px-4 py-3 align-top text-right text-xs">
                             {isEditing ? (
                               <div className="flex justify-end gap-2">
@@ -1393,6 +1397,7 @@ export default function EmployeesPage() {
                               </div>
                             )}
                           </td>
+                          )}
                         </tr>
                       )
                     })}
@@ -1401,7 +1406,8 @@ export default function EmployeesPage() {
               )}
             </div>
           </div>
-
+          {/* ── ACCOUNTANT: hide bulk upload entirely ── */}
+          {!isAccountant && (
           <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
@@ -1498,6 +1504,7 @@ export default function EmployeesPage() {
               </div>
             )}
           </div>
+          )}
         </section>
       )}
       {tab === 'attendance' && (
@@ -1537,7 +1544,8 @@ export default function EmployeesPage() {
                       </option>
                     ))}
                   </select>
-	{/* MOVE THE BUTTON HERE */}
+    {/* ── ACCOUNTANT: hide import attendance ── */}
+    {!isAccountant && (
     <div className="flex items-center">
     <input
       type="file"
@@ -1560,7 +1568,8 @@ export default function EmployeesPage() {
   )}
   {attendanceUploading ? 'Importing...' : 'Import Attendance'}
 </Button>
-  </div>										  
+  </div>		
+                  )}						  
                 </div>
               </div>
 
@@ -1600,7 +1609,7 @@ export default function EmployeesPage() {
                               {day}
                             </th>
                           ))}
-                          <th className="px-2 py-2 text-right text-[11px] font-semibold text-gray-500">Actions</th>
+                        {!isAccountant && <th className="px-2 py-2 text-right text-[11px] font-semibold text-gray-500">Actions</th>}
                         </tr>
                       </thead>
                       <tbody>
@@ -1649,6 +1658,7 @@ export default function EmployeesPage() {
                                   </td>
                                 )
                               })}
+                              {!isAccountant && (
                               <td className="px-2 py-1 text-right text-[11px]">
                                 {isEditingAttendance ? (
                                   <div className="flex justify-end gap-2">
@@ -1674,6 +1684,7 @@ export default function EmployeesPage() {
                                   </button>
                                 )}
                               </td>
+                              )}
                             </tr>
                           )
                         })}
@@ -1830,6 +1841,8 @@ export default function EmployeesPage() {
                 className="pl-9" 
               />
             </div>
+            {/* ── ACCOUNTANT: hide Add / Bulk Import ── */}
+            {!isAccountant && (
             <div className="flex items-center gap-2">
               <input type="file" id="labour-csv" className="hidden" accept=".csv" onChange={handleLabourImport} />
               <Button variant="ghost" onClick={() => document.getElementById('labour-csv')?.click()} className="border border-dashed border-gray-300 h-10">
@@ -1841,6 +1854,7 @@ export default function EmployeesPage() {
                 Add Labour
               </Button>
             </div>
+            )}
           </div>
 
           <div className="overflow-auto rounded-xl border border-gray-100 bg-white shadow-sm">
@@ -1863,11 +1877,11 @@ export default function EmployeesPage() {
                     <th className="px-4 py-3 text-left">Designation</th>
                     <th className="px-4 py-3 text-left">Net Salary</th>
                     <th className="px-4 py-3 text-left">Status</th>
-                    <th className="px-4 py-3 text-right">Actions</th>
+                    {!isAccountant && <th className="px-4 py-3 text-right">Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {getfilteredLabours.map((labour: any) => {
+                  {getfilteredLabours.map((labour) => {
                     const isEditing = editingLabourId === labour.id
                     return (
                       <tr key={labour.id} className="border-t border-gray-50 hover:bg-gray-50/50">
@@ -1930,6 +1944,8 @@ export default function EmployeesPage() {
                             </span>
                           )}
                         </td>
+                         {/* ── ACCOUNTANT: no edit/delete ── */}
+                        {!isAccountant && (
                         <td className="px-4 py-3 text-right align-top">
                           {isEditing ? (
                             <div className="flex justify-end gap-2">
@@ -1949,6 +1965,7 @@ export default function EmployeesPage() {
                             </div>
                           )}
                         </td>
+                        )}
                       </tr>
                     )
                   })}

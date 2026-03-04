@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { DocumentCategory, DocumentComplianceStatus, Prisma } from '@prisma/client'
 import { z } from 'zod'
 import { ensureDocumentTypes } from '@/lib/document-type-seed'
-import { getRouteAuth } from '@/lib/auth'
+import { getRouteAuth, getCompanyWhereFilter } from '@/lib/auth'
 
 // Validation schema for document data
 const documentSchema = z.object({
@@ -23,24 +23,32 @@ const documentSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const { user } = await getRouteAuth()
-
-    if (!user) {
+    const { user, dbUser } = await getRouteAuth()
+    if (!user || !dbUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)
     const companyId = searchParams.get('companyId')
     const category = searchParams.get('category')
+     const scopeFilter = await getCompanyWhereFilter(dbUser)
 
     const whereClause: Prisma.DocumentWhereInput = {
       isActive: true,
+       ...scopeFilter,
     }
 
-    if (companyId) {
+   if (companyId) {
+      // If scopeFilter restricts companies, companyId must be in that list
+      if (scopeFilter.companyId) {
+        const allowedIds = (scopeFilter.companyId as { in: string[] }).in
+        if (!allowedIds.includes(companyId)) {
+          // Requested company is outside their scope — return empty
+          return NextResponse.json([])
+        }
+      }
       whereClause.companyId = companyId
     }
-
     if (category) {
       const allowedCategories: DocumentCategory[] = [
         'KYC',
@@ -98,9 +106,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { user } = await getRouteAuth()
-
-    if (!user) {
+    const { user, dbUser } = await getRouteAuth()
+    if (!user || !dbUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -116,30 +123,22 @@ export async function POST(request: NextRequest) {
     }
 
     const data = validationResult.data
-
-    // Verify that the company exists and user has access
-    const companyAccess = await prisma.companyAccess.findFirst({
-      where: { 
-        companyId: data.companyId,
-        user: {
-          authId: user.id
-        }
-      },
-      include: {
-        company: true
-      }
+  
+     // 2. Verify that the company actually exists
+    const company = await prisma.company.findUnique({
+      where: { id: data.companyId }
     })
 
-    if (!companyAccess) {
+    if (!company) {
       return NextResponse.json(
-        { error: 'Company not found or access denied' },
+        { error: 'Selected company does not exist in the database.' },
         { status: 404 }
       )
     }
 
     await ensureDocumentTypes(prisma)
 
-    let requirementId = data.requirementId
+    let requirementId: string | undefined = data.requirementId;
 
     if (!requirementId && data.documentTypeId) {
       const existingRequirement = await prisma.companyDocumentRequirement.findFirst({
@@ -162,6 +161,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
+
+    
     // Create the document
     const document = await prisma.document.create({
       data: {
@@ -169,7 +170,7 @@ export async function POST(request: NextRequest) {
         description: data.description,
         category: data.category,
         documentTypeId: data.documentTypeId,
-        requirementId,
+        requirementId: requirementId,
         periodMonth: data.periodMonth,
         periodYear: data.periodYear,
         fileUrl: data.fileUrl,
@@ -177,7 +178,7 @@ export async function POST(request: NextRequest) {
         fileSize: data.fileSize,
         mimeType: data.mimeType,
         companyId: data.companyId,
-        uploadedById: user.id,
+        uploadedById: dbUser.id,
         status: DocumentComplianceStatus.SUBMITTED,
       },
       include: {

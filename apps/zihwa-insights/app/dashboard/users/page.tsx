@@ -17,14 +17,14 @@ type UserWithAccess = {
 }
 
 type Company = { id: string; name: string }
-type CompaniesResponse = Company[]
 
-const userRoles: UserRole[] = ['ADMIN', 'CONSULTANT', 'ACCOUNTANT']
-const companyRoles: CompanyRole[] = ['ADMIN', 'EDITOR', 'VIEWER']
+const userRoles: UserRole[] = ['ADMIN', 'CONSULTANT', 'ACCOUNTANT', 'HR']
+const companyRoles: CompanyRole[] = ['ADMIN', 'EDITOR', 'ACCOUNTANT','HR', 'VIEWER']
 
 export default function UsersPage() {
   const [users, setUsers] = useState<UserWithAccess[]>([])
   const [companies, setCompanies] = useState<Company[]>([])
+  // NEW: Tab State for the Combined Action Card
   const [loading, setLoading] = useState(true)
   const [assigning, setAssigning] = useState(false)
   const [selectedUser, setSelectedUser] = useState('')
@@ -32,7 +32,13 @@ export default function UsersPage() {
   const [selectedCompanyRole, setSelectedCompanyRole] = useState<CompanyRole>('VIEWER')
   const [updatingRole, setUpdatingRole] = useState<string | null>(null)
   const [inviting, setInviting] = useState(false)
-  const [inviteForm, setInviteForm] = useState({ email: '', name: '' })
+  const [inviteForm, setInviteForm] = useState({ 
+  email: '', 
+  name: '', 
+  role: 'ACCOUNTANT' as UserRole,
+  companyId: '',
+  companyRole: 'ACCOUNTANT' as CompanyRole,
+})
   const [syncing, setSyncing] = useState(false)
 
   const refreshData = async () => {
@@ -43,15 +49,19 @@ export default function UsersPage() {
         fetch('/api/companies'),
       ])
       const usersData = await usersRes.json()
-      const companiesData = (await companiesRes.json()) as CompaniesResponse
+      
       if (usersData.success) setUsers(usersData.data)
-      if (Array.isArray(companiesData)) {
-        setCompanies(
-          companiesData
-            .filter((company): company is Company => typeof company.id === 'string' && typeof company.name === 'string')
-            .map((company) => ({ id: company.id, name: company.name }))
-        )
-      }
+      const companiesData = await companiesRes.json()
+const companiesList = Array.isArray(companiesData)
+  ? companiesData
+  : Array.isArray(companiesData?.data)
+    ? companiesData.data
+    : []
+setCompanies(
+  companiesList
+    .filter((c: Company) => typeof c.id === 'string' && typeof c.name === 'string')
+    .map((c: Company) => ({ id: c.id, name: c.name }))
+)
     } catch (error) {
       console.error('Failed to load users/companies', error)
     } finally {
@@ -123,6 +133,10 @@ export default function UsersPage() {
               : u
           )
         )
+        // Reset after successful assignment
+        setSelectedUser('')
+        setSelectedCompany('')
+        alert('Access assigned successfully')
       } else {
         alert(data.error || 'Failed to assign company')
       }
@@ -156,7 +170,7 @@ export default function UsersPage() {
         alert(data.error || 'Failed to send invite')
       } else {
         alert('Invitation sent')
-        setInviteForm({ email: '', name: '' })
+        setInviteForm({ email: '', name: '', role: 'CONSULTANT', companyId: '', companyRole: 'VIEWER' })
       }
     } catch (error) {
       console.error('Failed to send invite', error)
@@ -167,7 +181,7 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="-mt-5 space-y-4">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold text-gray-900">Team</h1>
@@ -194,7 +208,7 @@ export default function UsersPage() {
             {syncing ? 'Syncing...' : 'Sync'}
           </button>
           <button
-            onClick={() => setInviteForm({ email: '', name: '' })}
+            onClick={() => setInviteForm({ email: '', name: '', role: 'CONSULTANT', companyId: '', companyRole: 'VIEWER' })}
             className="inline-flex items-center gap-2 px-3 py-2 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 transition-colors"
           >
             <Plus className="w-4 h-4" />
@@ -210,29 +224,48 @@ export default function UsersPage() {
             <Mail className="h-4 w-4 text-blue-600" />
           </div>
           <div className="flex-1">
-            <div className="flex items-center gap-3">
-              <input
-                type="email"
-                value={inviteForm.email}
-                onChange={(e) => setInviteForm((prev) => ({ ...prev, email: e.target.value }))}
-                placeholder="Enter email to invite user"
-                className="flex-1 px-0 py-1 text-gray-900 placeholder-gray-400 border-0 border-b border-gray-100 focus:border-gray-300 focus:outline-none focus:ring-0 bg-transparent text-sm"
-              />
-              <input
-                type="text"
-                value={inviteForm.name}
-                onChange={(e) => setInviteForm((prev) => ({ ...prev, name: e.target.value }))}
-                placeholder="Name (optional)"
-                className="w-32 px-0 py-1 text-gray-900 placeholder-gray-400 border-0 border-b border-gray-100 focus:border-gray-300 focus:outline-none focus:ring-0 bg-transparent text-sm"
-              />
-              <button
-                onClick={handleInvite}
-                disabled={inviting || !inviteForm.email}
-                className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
-              >
-                {inviting ? 'Sending...' : 'Send'}
-              </button>
-            </div>
+            <div className="flex items-center gap-3 flex-wrap">
+  <input
+    type="email"
+    value={inviteForm.email}
+    onChange={(e) => setInviteForm((prev) => ({ ...prev, email: e.target.value }))}
+    placeholder="Enter email to invite user"
+    className="flex-1 min-w-40 px-0 py-1 text-gray-900 placeholder-gray-400 border-0 border-b border-gray-100 focus:border-gray-300 focus:outline-none focus:ring-0 bg-transparent text-sm"
+  />
+  <input
+    type="text"
+    value={inviteForm.name}
+    onChange={(e) => setInviteForm((prev) => ({ ...prev, name: e.target.value }))}
+    placeholder="Name (optional)"
+    className="w-32 px-0 py-1 text-gray-900 placeholder-gray-400 border-0 border-b border-gray-100 focus:border-gray-300 focus:outline-none focus:ring-0 bg-transparent text-sm"
+  />
+  <select
+    value={inviteForm.role}
+    onChange={(e) => setInviteForm((prev) => ({ ...prev, role: e.target.value as UserRole }))}
+    className="w-28 px-0 py-1 text-gray-900 border-0 border-b border-gray-100 focus:border-gray-300 focus:outline-none focus:ring-0 bg-transparent text-xs"
+  >
+    {userRoles.map((r) => (
+      <option key={r} value={r}>{r}</option>
+    ))}
+  </select>
+  <select
+    value={inviteForm.companyId}
+    onChange={(e) => setInviteForm((prev) => ({ ...prev, companyId: e.target.value }))}
+    className="w-40 px-0 py-1 text-gray-900 border-0 border-b border-gray-100 focus:border-gray-300 focus:outline-none focus:ring-0 bg-transparent text-sm"
+  >
+    <option value="">No company</option>
+    {companies.map((c) => (
+      <option key={c.id} value={c.id}>{c.name}</option>
+    ))}
+  </select>
+  <button
+    onClick={handleInvite}
+    disabled={inviting || !inviteForm.email}
+    className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+  >
+    {inviting ? 'Sending...' : 'Send'}
+  </button>
+</div>
           </div>
         </div>
 
@@ -290,7 +323,7 @@ export default function UsersPage() {
       </div>
 
       {/* Users List */}
-      <div className="space-y-3">
+      <div className="space-y-3 text-gray-900">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-medium text-gray-900">Team members</h2>
           <div className="relative">
@@ -339,12 +372,12 @@ export default function UsersPage() {
                     
                     <div className="flex items-center gap-4 mt-3 ml-13">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500">Role:</span>
+                        <span className="text-xs text-gray-900">Role:</span>
                         <select
                           value={user.role}
                           onChange={(e) => handleRoleChange(user.id, e.target.value as UserRole)}
                           disabled={updatingRole === user.id}
-                          className="px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-gray-300"
+                          className="px-2 py-1 text-xs uppercase text-gray-500 border border-gray-200 rounded focus:outline-none focus:border-gray-300"
                         >
                           {userRoles.map((role) => (
                             <option key={role} value={role}>
@@ -366,7 +399,7 @@ export default function UsersPage() {
                                 className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700"
                               >
                                 {access.company.name}
-                                <span className="text-[10px] uppercase text-gray-500">({access.role})</span>
+                                {/* <span className="text-[10px] uppercase text-gray-500">({access.role})</span> */}
                               </span>
                             ))}
                           </div>

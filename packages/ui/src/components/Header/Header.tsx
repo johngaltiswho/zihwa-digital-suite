@@ -1,9 +1,10 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { useWishlist } from "@/lib/vendure/wishlist-context";
 
 import { 
   Menu, Search, CircleUser,User, Heart, X,
@@ -34,10 +35,17 @@ interface ProductSearchResult {
   price: string;
   image: string;
 }
-
+interface Customer {
+  firstName: string;
+  lastName: string;
+  emailAddress: string;
+}
 interface HeaderProps {
   navItems: NavItem[];
   logoSrc: string;
+  customer?: Customer | null;
+  onLogout?: () => void;
+  onUserMenuToggle?: (isOpen: boolean) => void;
 }
 const toSlug = (value: string) =>
   value.toLowerCase()
@@ -153,52 +161,160 @@ const ZeptoHighlight = ({ text, search }: { text: string; search: string }) => {
 };
 
 
-// --- SUB-COMPONENT: AUTH STATUS POPUP (UPDATED DESIGN & LOGIC) ---
 function AuthStatusToast({ type, onClose }: { type: string | null, onClose: () => void }) {
-  const content: Record<string, any> = {
-    login: { title: "Welcome Back!", desc: "You have successfully logged in.", icon: <CircleUser />, color: "bg-[#00a651]" },
-    logout: { title: "Logged Out", desc: "You have been securely signed out.", icon: <LogOut />, color: "bg-gray-800" },
-    created: { title: "Account Created!", desc: "Welcome to Stalks 'n' Spice!", icon: <CheckCircle />, color: "bg-[#8B2323]" },
-    deleted: { title: "Account Deleted", desc: "Your account has been removed.", icon: <Trash2 />, color: "bg-red-600" },
+  const DURATION = 4000;
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const content: Record<string, {
+    title: string;
+    desc: string;
+    icon: React.ReactElement;
+    accent: string;
+    emoji: string;
+  }> = {
+    login: {
+      title: "Welcome Back!",
+      desc: "You have successfully logged in.",
+      icon: <CircleUser />,
+      accent: "#8B2323",
+      emoji: "👋",
+    },
+    logout: {
+      title: "See You Soon!",
+      desc: "You've been securely signed out.",
+      icon: <LogOut />,
+      accent: "#374151",
+      emoji: "👋",
+    },
+    created: {
+      title: "Welcome to SNS!",
+      desc: "Your account is ready. Happy shopping!",
+      icon: <CheckCircle />,
+      accent: "#8B2323",
+      emoji: "🎉",
+    },
+    deleted: {
+      title: "Account Removed",
+      desc: "Your account has been permanently deleted.",
+      icon: <Trash2 />,
+      accent: "#DC2626",
+      emoji: "🗑️",
+    },
   };
 
-  const DURATION = 3000; // 3 Seconds
+  const startTimer = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(onClose, DURATION);
+  }, [onClose]);
 
+  // Auto-dismiss on mount
   useEffect(() => {
     if (!type) return;
-    const timer = setTimeout(onClose, DURATION);
-    return () => clearTimeout(timer);
+    startTimer();
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [type, startTimer]);
+
+  // Dismiss on any mouse movement
+  useEffect(() => {
+    if (!type) return;
+    const handleMouseMove = () => onClose();
+    window.addEventListener("mousemove", handleMouseMove, { once: true });
+    return () => window.removeEventListener("mousemove", handleMouseMove);
   }, [type, onClose]);
 
   if (!type || !content[type]) return null;
   const current = content[type];
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -20, x: "-50%" }}
-      animate={{ opacity: 1, y: 110, x: "-50%" }} // Adjusted to float over header nicely
-      exit={{ opacity: 0, y: -20, x: "-50%" }}
-      className="fixed top-0 left-1/2 z-[1000] w-[90%] max-w-md bg-white rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.1)] border border-gray-100 flex items-center p-5 gap-5 overflow-hidden"
-    >
-      <div className={`${current.color} text-white w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0`}>
-        {React.cloneElement(current.icon as React.ReactElement, { size: 24, strokeWidth: 1.5 })}
-      </div>
-      <div className="flex-1">
-        <h4 className="font-bold text-gray-900 text-lg leading-tight">{current.title}</h4>
-        <p className="text-sm text-gray-400 mt-0.5">{current.desc}</p>
-      </div>
-      <button onClick={onClose} className="text-gray-300 hover:text-gray-500 transition-colors p-1">
-        <X size={20} />
-      </button>
-      
-      {/* Progress Bar Loader */}
-      <motion.div 
-        initial={{ width: "100%" }} 
-        animate={{ width: "0%" }} 
-        transition={{ duration: DURATION / 1000, ease: "linear" }}
-        className={`absolute bottom-0 left-0 h-1 ${current.color} opacity-40`}
-      />
-    </motion.div>
+    <AnimatePresence>
+      {type && content[type] && (
+        <motion.div
+          key={type}
+          initial={{ opacity: 0, y: -80, x: "-50%", scale: 0.85 }}
+          animate={{ opacity: 1, y: 90, x: "-50%", scale: 1 }}
+          exit={{ opacity: 0, y: -60, x: "-50%", scale: 0.9 }}
+          transition={{ type: "spring", stiffness: 400, damping: 28 }}
+          className="fixed top-0 left-1/2 z-[1000] w-[92%] max-w-sm"
+        >
+          {/* Outer glow */}
+          <div
+            className="absolute inset-0 rounded-2xl blur-xl opacity-20 -z-10"
+            style={{ backgroundColor: current.accent }}
+          />
+
+          <div className="relative bg-white rounded-2xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-gray-100">
+            {/* Top accent strip */}
+            <div className="h-1 w-full" style={{ backgroundColor: current.accent }} />
+
+            <div className="flex items-center gap-4 px-5 py-4">
+              {/* Icon */}
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: "spring", stiffness: 500, damping: 20, delay: 0.1 }}
+                className="relative flex-shrink-0"
+              >
+                <div
+                  className="w-11 h-11 rounded-xl flex items-center justify-center"
+                  style={{ backgroundColor: `${current.accent}15` }}
+                >
+                  {React.cloneElement(current.icon, {
+                    size: 20,
+                    strokeWidth: 1.8,
+                    style: { color: current.accent },
+                  })}
+                </div>
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.3, type: "spring", stiffness: 600 }}
+                  className="absolute -top-1.5 -right-1.5 text-sm leading-none"
+                >
+                  {current.emoji}
+                </motion.span>
+              </motion.div>
+
+              {/* Text */}
+              <motion.div
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.15 }}
+                className="flex-1 min-w-0"
+              >
+                <h4 className="font-bold text-gray-900 text-base leading-tight tracking-tight">
+                  {current.title}
+                </h4>
+                <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">
+                  {current.desc}
+                </p>
+              </motion.div>
+
+              {/* Close */}
+              <motion.button
+                whileHover={{ scale: 1.15, rotate: 90 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={onClose}
+                transition={{ duration: 0.15 }}
+                className="flex-shrink-0 w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X size={13} strokeWidth={2.5} />
+              </motion.button>
+            </div>
+
+            {/* Progress bar */}
+            <motion.div
+              initial={{ scaleX: 1, transformOrigin: "left" }}
+              animate={{ scaleX: 0, transformOrigin: "left" }}
+              transition={{ duration: DURATION / 1000, ease: "linear" }}
+              className="h-0.5 w-full"
+              style={{ backgroundColor: current.accent }}
+            />
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -415,9 +531,21 @@ export function StalksHeader({ navItems, logoSrc, customer, onUserMenuToggle, on
   || pathname.startsWith('/collection'); 
 
 
-
+const { count: wishlistCount } = useWishlist();
   const navRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const searchRef   = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+  const handleClickOutside = (e: MouseEvent) => {
+    if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+      setIsSearchFocused(false);
+      setSearchResults([]);
+    }
+  };
+
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => document.removeEventListener("mousedown", handleClickOutside);
+}, []);
   useEffect(() => {
   const handler = setTimeout(() => {
     setDebouncedSearch(searchValue.trim());
@@ -425,6 +553,17 @@ export function StalksHeader({ navItems, logoSrc, customer, onUserMenuToggle, on
 
   return () => clearTimeout(handler);
 }, [searchValue]);
+useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setIsSearchFocused(false);
+        setSearchResults([]);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
 // Handle REAL Vendure GraphQL Search
   useEffect(() => {
     if (debouncedSearch.length < 2) {
@@ -591,12 +730,11 @@ export function StalksHeader({ navItems, logoSrc, customer, onUserMenuToggle, on
     router.push('/'); // Also redirect home on logout
   };
 
-  const submitSearch = (rawValue?: string) => {
-    const term = (rawValue ?? searchValue).trim();
-    if (!term) {
-      router.push('/shop');
-      return;
-    }
+  const submitSearch = (raw?: string) => {
+    const term = (raw ?? searchValue).trim();
+    if (!term) return;
+    setIsSearchFocused(false);
+    setSearchResults([]);
     router.push(`/shop?search=${encodeURIComponent(term)}`);
   };
 // ADD THIS BLOCK around line 410 in the file you just sent
@@ -633,7 +771,33 @@ useEffect(() => {
             <Link href="/offers" className="flex items-center hover:text-red-800 transition-colors"><Tag size={14} className="mr-1.5" /> Offers</Link>
             <Link href="/tracking" className="flex items-center hover:text-red-800 transition-colors"><MapPin size={14} className="mr-1.5" /> Tracking</Link>
             <Link href="/contact" className="flex items-center hover:text-red-800 transition-colors"><PhoneCall size={14} className="mr-1.5" /> Contact Us</Link>
-            <Link href="/wishlist" className="flex items-center hover:text-red-800 transition-colors"><Heart size={14} className="mr-1.5" /> Wishlist</Link>
+            <Link
+  href="/wishlist"
+  className="relative flex items-center gap-1.5 hover:text-red-800 transition-colors"
+>
+  <Heart size={22} />
+
+  <span>Wishlist</span>
+
+  {/* ❤️ WISHLIST COUNT BADGE */}
+  {wishlistCount > 0 && (
+    <span
+      className="
+        absolute -top-2.5 -right-4
+        min-w-[18px] h-[18px]
+        px-1
+        rounded-full
+        bg-[#8B2323]
+        text-white
+        text-[10px]
+        font-bold
+        flex items-center justify-center
+      "
+    >
+      {wishlistCount}
+    </span>
+  )}
+</Link>
 
       {/* DYNAMIC AUTH TRIGGER */}
         <div
@@ -735,9 +899,11 @@ useEffect(() => {
                   value={searchValue}
                   onChange={(e) => setSearchValue(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      submitSearch();
+                  if (e.key === "Enter") {
+                  e.preventDefault();
+                  submitSearch(searchValue);
+                  setIsSearchFocused(false);
+                  setSearchResults([]);
                     }
                   }}
                   onFocus={() => setIsSearchFocused(true)}
@@ -775,83 +941,78 @@ useEffect(() => {
               </div>
               {/* ZEPTO-STYLE SEARCH DROPDOWN */}
               <AnimatePresence>
-                {debouncedSearch.length >= 1 && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -5 }}
-                    transition={{ duration: 0.15 }}
-                    className="
-  fixed lg:absolute
-  left-3 right-3 lg:left-0 lg:right-0
-  top-[140px] lg:top-[calc(100%+10px)]
-  bg-[#fffdfa]
-  border border-[#8B2323]/15
-  rounded-2xl
-  shadow-[0_20px_60px_rgba(0,0,0,0.25)]
-  z-[9999]
-  overflow-hidden
-"
-                  >
-                    
-                    {isSearching ? (
-                      // LOADING STATE
-                      <div className="flex flex-col items-center justify-center p-8">
-                        <div className="w-6 h-6 border-2 border-gray-200 border-t-[#8B2323] rounded-full animate-spin"></div>
-                      </div>
-                    ) : searchResults.length > 0 ? (
-                      // RESULTS LIST (Zepto Style)
-                      <div
-  className="
-    flex flex-col py-2 max-h-[60vh] overflow-y-auto
-
-    [&::-webkit-scrollbar]:w-1.5
-    [&::-webkit-scrollbar-thumb]:bg-[#8B2323]/30
-    [&::-webkit-scrollbar-thumb]:rounded-full
-    hover:[&::-webkit-scrollbar-thumb]:bg-[#8B2323]/50
-  "
->
-                        {searchResults.map((product, index) => (
-                          <React.Fragment key={product.id}>
-
-                            {/* STANDARD ZEPTO ROW */}
-                            <button
-  onMouseDown={(e) => e.preventDefault()}
-  onClick={() => {
-    router.push(`/product/${product.slug}`);
-    setIsSearchFocused(false);
-  }}
-  className="
-    group flex items-center gap-4
-    px-5 py-3
-    w-full text-left
-    transition-all
-    hover:bg-[#8B2323]/5
-  "
->
-
-  <div className="flex-1 min-w-0">
-    <ZeptoHighlight text={product.name} search={debouncedSearch} />
-    {/* <p className="text-[12px] text-gray-400 mt-0.5">
-      {product.price}
-    </p> */}
-  </div>
-</button>
-
-                          </React.Fragment>
-                        ))}
-                      </div>
-                    ) : (
-                      // NO RESULTS STATE
-                      <div className="px-4 py-6 text-center">
-                        <p className="text-[15px] text-gray-600 font-medium">No results found for "{debouncedSearch}"</p>
-                        <p className="text-[13px] text-gray-400 mt-1">Check the spelling or try a different term.</p>
-                      </div>
-                    )}
-
-                  </motion.div>
-                )}
-              </AnimatePresence>
+  {/* 🔧 UPDATED: show dropdown ONLY when focused */}
+  {isSearchFocused && debouncedSearch.length >= 1 && (
+    <motion.div
+      initial={{ opacity: 0, y: -5 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -5 }}
+      transition={{ duration: 0.15 }}
+      className="
+        absolute left-0 right-0 mt-3
+        bg-[#fffdfa]
+        border border-[#8B2323]/15
+        rounded-2xl
+        shadow-[0_20px_60px_rgba(0,0,0,0.25)]
+        z-[999]
+        overflow-hidden
+      "
+    >
+      {isSearching ? (
+        /* 🔧 LOADING STATE */
+        <div className="flex items-center justify-center p-8">
+          <div className="w-6 h-6 border-2 border-gray-200 border-t-[#8B2323] rounded-full animate-spin" />
+        </div>
+      ) : searchResults.length > 0 ? (
+        /* 🔧 RESULTS */
+        <div
+          className="
+            flex flex-col py-2 max-h-[60vh] overflow-y-auto
+            [&::-webkit-scrollbar]:w-1.5
+            [&::-webkit-scrollbar-thumb]:bg-[#8B2323]/30
+            [&::-webkit-scrollbar-thumb]:rounded-full
+            hover:[&::-webkit-scrollbar-thumb]:bg-[#8B2323]/50
+          "
+        >
+          {searchResults.map((product) => (
+            <button
+              key={product.id}
+              onMouseDown={(e) => e.preventDefault()} // 🔧 UPDATED (prevents blur)
+              onClick={() => {
+                router.push(`/product/${product.slug}`);
+                setIsSearchFocused(false); // 🔧 UPDATED
+                setSearchValue(""); // 🔧 UPDATED
+              }}
+              className="
+                group flex items-center gap-4
+                px-5 py-3 w-full text-left
+                transition-all
+                hover:bg-[#8B2323]/5
+              "
+            >
+              <div className="flex-1 min-w-0">
+                <ZeptoHighlight
+                  text={product.name}
+                  search={debouncedSearch}
+                />
+              </div>
+            </button>
+          ))}
+        </div>
+      ) : (
+        /* 🔧 NO RESULTS */
+        <div className="px-4 py-6 text-center">
+          <p className="text-[15px] text-gray-600 font-medium">
+            No results found for "{debouncedSearch}"
+          </p>
+          <p className="text-[13px] text-gray-400 mt-1">
+            Check the spelling or try a different term.
+          </p>
+        </div>
+      )}
+    </motion.div>
+  )}
+</AnimatePresence>
 
             </div>
           </div>

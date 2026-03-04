@@ -36,7 +36,7 @@ import { useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { UploadCloud, CheckCircle2, Loader2 } from "lucide-react";
-import 'react-phone-number-input/style.css';
+
 
 function ApplyForm() {
   const searchParams = useSearchParams();
@@ -80,7 +80,7 @@ function ApplyForm() {
       } else {
         alert(`Submission Failed: ${data.error || "Unknown Error"}`);
       }
-    } catch (err) {
+    } catch {
       alert("Network error: Could not connect to the server.");
     } finally {
       setLoading(false);

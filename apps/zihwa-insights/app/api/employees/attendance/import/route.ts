@@ -9,9 +9,18 @@ const STATUS_MAP: Record<string, AttendanceStatus> = {
   'DN': 'PRESENT', 'D/N': 'PRESENT', 'H/D': 'PRESENT',
   'L': 'LEAVE', 'EL': 'EL', 'SL': 'SL',
 }
-
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'An unexpected error occurred'
+}
+// ✅ Type defined at file scope so it's available everywhere below
+type AttendanceRecordInput = {
+  employeeId: string
+  date: Date
+  status: AttendanceStatus
+  notes: string
+}
 // Handles Case-Insensitivity, Dots, and Spacing
-const clean = (val: any) => {
+const clean = (val: unknown) => {
   return String(val || "").toLowerCase()
     .replace(/\./g, ' ')        // Remove dots
     .replace(/[^a-z0-9\s]/g, '') // Remove symbols
@@ -35,7 +44,7 @@ export async function POST(request: Request) {
     const buffer = await file.arrayBuffer()
     const workbook = XLSX.read(buffer, { type: 'array' })
     const worksheet = workbook.Sheets[workbook.SheetNames[0]]
-    const allRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false }) as any[][]
+    const allRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false }) as unknown[][]
     
     const headerRowIndex = allRows.findIndex(row => 
       row.some(cell => clean(cell) === 'employee no')
@@ -75,7 +84,7 @@ export async function POST(request: Request) {
     })
     const attendanceMap = new Map(existingAttendance.map(r => [`${r.employeeId}|${r.date.toISOString()}`, r]))
 
-    const attendanceRecords: any[] = []
+   const attendanceRecords: AttendanceRecordInput[] = []
     const employeeBalanceUpdates = new Map<string, { el: number, sl: number }>()
 
     // PREPARE DATA
@@ -139,8 +148,8 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: true, count: totalUpdated })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Import failure:', error)
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+    return NextResponse.json({ success: false, error: getErrorMessage(error) }, { status: 500 })
   }
 }

@@ -86,9 +86,11 @@ const dataRows: string[] = lines.slice(1) // Skip headers
     }
     
     return NextResponse.json({ success: true, count })
-  } catch (error: any) {
-    // Log the actual error to your terminal so you can see why it failed
+  } catch (error: unknown) {                                              // ✅ unknown
     console.error('CRITICAL_IMPORT_ERROR:', error)
-    return NextResponse.json({ success: false, error: error.message || 'Import failed' }, { status: 500 })
+    return NextResponse.json(
+      { success: false, error: error instanceof Error ? error.message : 'Import failed' },
+      { status: 500 }
+    )
   }
 }

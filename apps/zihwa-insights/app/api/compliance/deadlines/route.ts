@@ -1,56 +1,66 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-
+import { getRouteAuth, getCompanyWhereFilter } from '@/lib/auth';
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'An unexpected error occurred'
+}
 export async function GET() {
   try {
+    const { user, dbUser } = await getRouteAuth();
+    if (!user || !dbUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const scopeFilter = await getCompanyWhereFilter(dbUser);
+
     const deadlines = await prisma.complianceDeadline.findMany({
-      include: { company: { select: { name: true } } },
-      orderBy: { dueDate: 'asc' }
+      where: { ...scopeFilter },
+      include: { company: { select: { id: true, name: true } } },
+      orderBy: { dueDate: 'asc' },
     });
+
     return NextResponse.json(deadlines);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    console.error('DEADLINE GET ERROR:', error);
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    console.log("Attempting to save:", body);
-
-    // 1. Ensure we have a creator (User) in the database
-    let user = await prisma.user.findFirst();
-    
-    // Fallback: If no user exists, create a local development user
-    if (!user) {
-      user = await prisma.user.create({
-        data: {
-          email: "admin@zihwa.com",
-          authId: "local_dev_id",
-          name: "Local Admin",
-          role: "ADMIN"
-        }
-      });
+    const { user, dbUser } = await getRouteAuth();
+    if (!user || !dbUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 2. Create the deadline
+    const body = await req.json();
+
+    if (!body.title || !body.companyId || !body.dueDate) {
+      return NextResponse.json(
+        { error: 'title, companyId and dueDate are required' },
+        { status: 400 }
+      );
+    }
+
     const deadline = await prisma.complianceDeadline.create({
       data: {
-        title: body.title,
-        type: body.type || "OTHER", // Must match ComplianceType enum
-        priority: body.priority || "MEDIUM", // Must match Priority enum
-        dueDate: new Date(body.dueDate),
-        companyId: body.companyId,
-        createdById: user.id,
-        status: 'PENDING',
+        title:       body.title,
+        description: body.description || null,
+        notes:       body.notes       || null,
+        type:        body.type        || 'OTHER',
+        priority:    body.priority    || 'MEDIUM',
+        frequency:   body.frequency   || null,
+        dueDate:     new Date(body.dueDate),
+        companyId:   body.companyId,
+        createdById: dbUser.id,   // ✅ Prisma User.id (cuid), NOT Supabase auth UUID
+        status:      'PENDING',
       },
-      include: { company: true }
+      include: { company: { select: { id: true, name: true } } },
     });
 
-    console.log("Success! Saved ID:", deadline.id);
     return NextResponse.json(deadline);
-  } catch (error: any) {
-    console.error("BACKEND SAVE ERROR:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  }  catch (error: unknown) {
+    console.error('DEADLINE POST ERROR:', error);
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

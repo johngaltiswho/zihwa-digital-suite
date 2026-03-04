@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { getRouteAuth } from '@/lib/auth'
+import { getRouteAuth, getCompanyWhereFilter } from '@/lib/auth'
 
 // Validation schema for company data
 const companySchema = z.object({
@@ -22,13 +22,22 @@ const companySchema = z.object({
 
 export async function GET() {
   try {
-    const { user } = await getRouteAuth()
+    const { user, dbUser } = await getRouteAuth()
 
-    if (!user) {
+    if (!user || !dbUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const scopeFilter = await getCompanyWhereFilter(dbUser, 'id')
+    // DEBUG — remove after confirming filter works
+    console.log('=== COMPANY FILTER DEBUG ===')
+    console.log('role:', dbUser.role)
+    console.log('userId:', dbUser.id)
+    console.log('scopeFilter:', JSON.stringify(scopeFilter))
+    console.log('============================')
+
     const companies = await prisma.company.findMany({
+      where: { ...scopeFilter },
       orderBy: { createdAt: 'desc' },
       include: {
         _count: {
@@ -53,12 +62,17 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { user } = await getRouteAuth()
+    const { user, dbUser } = await getRouteAuth()
 
-    if (!user) {
+
+    if (!user || !dbUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Only ADMIN / CONSULTANT can create companies
+    if (dbUser.role === 'ACCOUNTANT') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
     const body = await request.json()
     
     // Validate the request body

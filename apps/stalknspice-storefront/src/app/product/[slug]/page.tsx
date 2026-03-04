@@ -9,12 +9,13 @@ import {
   ArrowLeft, ShoppingCart,
   Star, Plus, Minus,
   PartyPopper, X,
-  AlertCircle
+  AlertCircle,Heart,
 } from "lucide-react";
 import { vendureClient } from "@/lib/vendure/client";
 import { GET_PRODUCT_BY_SLUG, GET_PRODUCTS } from "@/lib/vendure/queries/products";
 import { getAssetUrl } from "@/lib/vendure/asset-utils";
 import { useCart } from "@/lib/vendure/cart-context";
+import { useWishlist } from "@/lib/vendure/wishlist-context";
 import type { Product, ProductVariant } from "@/lib/vendure/types";
 import Newsletter from "../../../components/NewsLetter";
 
@@ -22,6 +23,7 @@ export default function CreativeProductPage() {
   const params = useParams();
   const slug = params.slug as string;
   const { addToCart } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [recommendations, setRecommendations] = useState<Product[]>([]);
@@ -100,7 +102,8 @@ export default function CreativeProductPage() {
     : typeof rawStock === 'number' 
       ? Math.min((rawStock / 50) * 100, 100) 
       : isLowStock ? 30 : 100;
-
+// Wishlist state for this product
+  const wishlisted = product ? isInWishlist(product.id) : false;
   return (
     <main className="bg-[#F8F7F4] min-h-screen py-4 px-4 md:px-10 relative">
       
@@ -190,22 +193,54 @@ export default function CreativeProductPage() {
               </div>
             )}
 
-            {/* CART ACTION */}
-            <div className="flex gap-4 mb-12">
+            {/* ── CART + WISHLIST ACTIONS ── */}
+            <div className="flex gap-3 mb-12">
+              {/* Quantity */}
               <div className="flex items-center bg-gray-50 rounded-2xl px-5 py-2 border border-gray-100">
-                <button disabled={isOutOfStock || quantity <= 1} onClick={() => setQuantity(q => q - 1)} className="text-gray-300 hover:text-black transition-colors disabled:opacity-20"><Minus size={16}/></button>
+                <button
+                  disabled={isOutOfStock || quantity <= 1}
+                  onClick={() => setQuantity(q => q - 1)}
+                  className="text-gray-300 hover:text-black transition-colors disabled:opacity-20"
+                >
+                  <Minus size={16}/>
+                </button>
                 <span className="px-6 font-black text-lg">{quantity}</span>
-                 {/* Capped if rawStock is a number */}
-                <button disabled={isOutOfStock || (typeof rawStock === 'number' && quantity >= rawStock)} onClick={() => setQuantity(q => q + 1)} className="text-gray-300 hover:text-black transition-colors disabled:opacity-20"><Plus size={16}/></button>
+                <button
+                  disabled={isOutOfStock || (typeof rawStock === 'number' && quantity >= rawStock)}
+                  onClick={() => setQuantity(q => q + 1)}
+                  className="text-gray-300 hover:text-black transition-colors disabled:opacity-20"
+                >
+                  <Plus size={16}/>
+                </button>
               </div>
               
+              {/* Add to Basket */}
               <button 
                 onClick={handleAddToCart}
                 disabled={isOutOfStock}
                 className={`flex-grow rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] flex items-center justify-center gap-2 transition-all shadow-xl active:scale-95 
                   ${isOutOfStock ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-[#8B2323] text-white hover:bg-black"}`}
               >
-                <ShoppingCart size={16}/> {isOutOfStock ? "Out of Stock" : "Add to Basket"}
+                <ShoppingCart size={16}/>
+                {isOutOfStock ? "Out of Stock" : "Add to Basket"}
+              </button>
+
+              {/* ── WISHLIST HEART BUTTON ── */}
+              <button
+                onClick={() => product && toggleWishlist(product, selectedVariant?.id)}
+                className={`w-14 h-14 rounded-2xl border-2 flex items-center justify-center transition-all active:scale-95 flex-shrink-0
+                  ${wishlisted
+                    ? "bg-[#8B2323]/10 border-[#8B2323]"
+                    : "bg-gray-50 border-gray-100 hover:border-[#8B2323]/40"
+                  }`}
+                aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
+              >
+                <Heart
+                  size={20}
+                  className={`transition-all duration-200 ${
+                    wishlisted ? "fill-[#8B2323] stroke-[#8B2323]" : "stroke-gray-400"
+                  }`}
+                />
               </button>
             </div>
           </div>

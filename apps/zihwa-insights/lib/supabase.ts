@@ -1,4 +1,4 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { createClient} from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -6,22 +6,20 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Service role client - only for server-side usage
-let supabaseServiceRoleInstance: SupabaseClient | null = null
+// let supabaseServiceRoleInstance: SupabaseClient | null = null
 
 export const getSupabaseServiceRole = () => {
-  if (!supabaseServiceRoleInstance && typeof window === 'undefined') {
-    supabaseServiceRoleInstance = createClient(
-      supabaseUrl,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    )
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!serviceKey) {
+    console.error('SUPABASE_SERVICE_ROLE_KEY is not set')
+    return null
   }
-  return supabaseServiceRoleInstance
+  return createClient(supabaseUrl, serviceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  })
 }
 
 // Storage utilities

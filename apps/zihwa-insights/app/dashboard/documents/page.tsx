@@ -6,7 +6,7 @@ import DocumentUpload from './components/DocumentUpload'
 import DocumentsFilter from './components/DocumentsFilter'
 import { Building2, Plus, FileText, Upload } from 'lucide-react'
 import { ensureDocumentTypes } from '@/lib/document-type-seed'
-import { getServerAuth } from '@/lib/auth'
+import { getServerAuth, getCompanyWhereFilter } from '@/lib/auth'
 
 type DocumentWithCompany = {
   id: string
@@ -51,6 +51,8 @@ type RequirementWithStatuses = Awaited<
 interface SearchParams {
   action?: string
   company?: string
+  search?: string
+  
 }
 
 interface PageProps {
@@ -58,7 +60,7 @@ interface PageProps {
 }
 
 export default async function DocumentsPage({ searchParams }: PageProps) {
-  const { user } = await getServerAuth()
+  const { user, dbUser } = await getServerAuth()
 
   if (!user) {
     redirect('/sign-in')
@@ -67,7 +69,10 @@ export default async function DocumentsPage({ searchParams }: PageProps) {
   const params = await searchParams
   const showUploadForm = params.action === 'upload'
   const selectedCompanyId = params.company
-
+  const searchQuery = params.search?.trim() ?? ''
+// Scope filter — ACCOUNTANT only sees their assigned companies
+  const companyScopeFilter = await getCompanyWhereFilter(dbUser, 'id')
+  const docScopeFilter = await getCompanyWhereFilter(dbUser)
   // Get documents and companies
   let documents: DocumentWithCompany[] = []
   let companies: CompanyOption[] = []
@@ -78,6 +83,18 @@ export default async function DocumentsPage({ searchParams }: PageProps) {
 
     const [documentRecords, companyRecords] = await Promise.all([
       prisma.document.findMany({
+        where: {
+          ...docScopeFilter,
+          ...(selectedCompanyId ? { companyId: selectedCompanyId } : {}),
+          ...(searchQuery
+            ? {
+                name: {
+                  contains: searchQuery,
+                  mode: 'insensitive' as const,
+                },
+              }
+            : {}),
+        },
         orderBy: { createdAt: 'desc' },
         include: {
           company: {
@@ -87,9 +104,10 @@ export default async function DocumentsPage({ searchParams }: PageProps) {
             }
           }
         },
-        where: selectedCompanyId ? { companyId: selectedCompanyId } : undefined
+        
       }),
       prisma.company.findMany({
+        where: { ...companyScopeFilter },
         select: {
           id: true,
           name: true,
@@ -154,12 +172,15 @@ export default async function DocumentsPage({ searchParams }: PageProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="-mt-5 space-y-4">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold text-gray-900">Documents</h1>
           <p className="text-gray-500 text-sm">
             {documents.length} {documents.length === 1 ? 'document' : 'documents'}
+            {searchQuery && (
+              <span> matching &quot;{searchQuery}&quot;</span>
+            )}
             {selectedCompanyId && companies.find(c => c.id === selectedCompanyId) && (
               <span> for {companies.find(c => c.id === selectedCompanyId)?.name}</span>
             )}

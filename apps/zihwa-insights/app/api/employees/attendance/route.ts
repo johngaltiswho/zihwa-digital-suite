@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { AttendanceStatus, Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
+import { getRouteAuth, getCompanyWhereFilter } from '@/lib/auth'
 
 const normalizeDate = (value: string | Date) => {
   if (typeof value === 'string') {
@@ -31,13 +32,21 @@ export async function GET(request: Request) {
   end.setMonth(end.getMonth() + 1)
 
   try {
-    const records = await prisma.attendanceRecord.findMany({
-      where: {
-        date: {
-          gte: start,
-          lt: end,
-        },
-      },
+    const { user, dbUser } = await getRouteAuth()
+if (!user || !dbUser) {
+  return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+}
+
+const scopeFilter = await getCompanyWhereFilter(dbUser)
+const employeeFilter = scopeFilter.companyId
+  ? { employee: { companyId: scopeFilter.companyId } }
+  : {}
+
+const records = await prisma.attendanceRecord.findMany({
+  where: {
+    date: { gte: start, lt: end },
+    ...employeeFilter,
+  },
       orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
       include: {
         employee: {

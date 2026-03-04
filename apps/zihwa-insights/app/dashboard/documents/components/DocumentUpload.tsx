@@ -28,6 +28,7 @@ type UploadRow = {
   id: string
   companyId: string
   documentName: string
+  customDocumentName?: string
   category: DocumentCategoryValue
   file?: File
 }
@@ -40,6 +41,22 @@ const categories: { value: DocumentCategoryValue; label: string }[] = [
   { value: 'COMPLIANCE_DOC', label: 'Compliance Documents' },
   { value: 'CONTRACT', label: 'Contracts' },
   { value: 'OTHER', label: 'Other' },
+]
+const documentNameOptions = [
+  'Certificate of Incorporation',
+  'Memorandum of Association (MoA)',
+  'Articles of Association (AoA)',
+  'PAN Card',
+  'TAN Letter',
+  'GST Certificate',
+  'Audited Financial Statements',
+  'Bank Statement',
+  'Income Tax Return',
+  'Board Resolution',
+  'Employment Agreement',
+  'Non-Disclosure Agreement (NDA)',
+  'Vendor Contract',
+  'Other' 
 ]
 
 const createRow = (overrides?: Partial<UploadRow>): UploadRow => ({
@@ -84,7 +101,14 @@ export default function DocumentUpload({ companies, defaultCompanyId }: Document
   }, [companies.length, defaultCompanyId])
 
   const validRows = useMemo(
-    () => rows.filter((row) => row.companyId && row.file),
+    () =>
+      rows.filter(
+        (row) =>
+          row.companyId &&
+          row.file &&
+          row.documentName &&
+          (row.documentName !== 'Other' || (row.documentName === 'Other' && row.customDocumentName?.trim()))
+      ),
     [rows]
   )
 
@@ -138,12 +162,13 @@ export default function DocumentUpload({ companies, defaultCompanyId }: Document
       for (const row of validRows) {
         const file = row.file as File
         const { fileUrl } = await uploadFile(file, row.companyId)
+        const finalDocumentName = row.documentName === 'Other' ? row.customDocumentName : row.documentName
 
         const response = await fetch('/api/documents', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            name: row.documentName || file.name,
+            name: finalDocumentName || file.name,
             description: null,
             category: row.category,
             fileUrl,
@@ -154,8 +179,22 @@ export default function DocumentUpload({ companies, defaultCompanyId }: Document
           }),
         })
 
-        if (!response.ok) {
-          throw new Error(`Failed to save ${row.documentName || file.name}`)
+         if (!response.ok) {
+          // Get the raw text first in case it's an HTML crash page
+          const errorText = await response.text();
+          let parsedError = null;
+          
+          try {
+            parsedError = JSON.parse(errorText);
+          } catch  {
+            console.error("Could not parse JSON. Raw server response:", errorText);
+          }
+
+          console.error("Backend Error Response:", parsedError || errorText);
+          
+          throw new Error(
+            parsedError?.error || `Server responded with status: ${response.status}. Check console for details.`
+          )
         }
       }
 
@@ -201,7 +240,7 @@ export default function DocumentUpload({ companies, defaultCompanyId }: Document
             <tbody className="divide-y divide-gray-50 bg-white">
               {rows.map((row) => (
                 <tr key={row.id}>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-3">
                     <label className="inline-flex w-full cursor-pointer items-center justify-center rounded-md border border-dashed border-gray-300 px-3 py-2 text-xs font-medium text-gray-600 hover:border-gray-400 hover:text-gray-900">
                       {row.file ? row.file.name : 'Choose file'}
                       <input
@@ -211,14 +250,41 @@ export default function DocumentUpload({ companies, defaultCompanyId }: Document
                       />
                     </label>
                   </td>
-                  <td className="px-4 py-3">
-                    <input
-                      type="text"
+                 {/* Document Name Dropdown + Conditional Custom Input */}
+                  <td className="px-4 py-3 space-y-2">
+                    <select
                       value={row.documentName}
-                      onChange={(event) => updateRow(row.id, { documentName: event.target.value })}
-                      placeholder="Enter document name"
-                      className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-gray-300 focus:outline-none"
-                    />
+                      onChange={(event) => {
+  const value = event.target.value
+
+  updateRow(row.id, {
+    documentName: value,
+    customDocumentName:
+      value === 'Other' && row.file
+        ? row.file.name.replace(/\.[^/.]+$/, '')
+        : undefined,
+  })
+}}
+                      className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-300 focus:outline-none"
+                    >
+                      <option value="" disabled>Select document name</option>
+                      {documentNameOptions.map((name) => (
+                        <option key={name} value={name}>
+                          {name}
+                        </option>
+                      ))}
+                    </select>
+                    
+                    {/* Conditionally render manual text input if 'Other' is selected */}
+                    {row.documentName === 'Other' && (
+                      <input
+                        type="text"
+                        value={row.customDocumentName ?? ''}
+                        onChange={(event) => updateRow(row.id, { customDocumentName: event.target.value })}
+                        placeholder="Enter custom name..."
+                        className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-gray-300 focus:outline-none"
+                      />
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <select
