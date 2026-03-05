@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 import type { User } from '@supabase/supabase-js'
+import type { CookieOptions } from '@supabase/ssr'
 import { prisma } from './prisma'
 import { UserRole } from '@prisma/client'
 
@@ -11,8 +12,19 @@ export async function createServerSupabaseClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
+          // In some server contexts, setting cookies may fail; middleware/route handlers
+          // should still refresh session cookies where writable.
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options)
+            })
+          } catch {
+            // no-op
+          }
         },
       },
     }
