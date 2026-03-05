@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { getRouteAuth } from '@/lib/auth'
 import { getSupabaseServiceRole } from '@/lib/supabase'
 import { prisma } from '@/lib/prisma'
-import { UserRole, CompanyRole } from '@prisma/client'
+import { UserRole, CompanyRole, Prisma } from '@prisma/client'
 
 export async function POST(request: Request) {
   try {
@@ -35,16 +35,6 @@ export async function POST(request: Request) {
     if (!admin) {
       return NextResponse.json({ success: false, error: 'Supabase admin client not available' }, { status: 500 })
     }
-    // 🔍 TEMP sanity check — REMOVE after verification
-const payload = JSON.parse(
-  Buffer.from(
-    process.env.SUPABASE_SERVICE_ROLE_KEY!.split('.')[1],
-    'base64'
-  ).toString()
-)
-
-console.log('SUPABASE KEY ROLE:', payload.role)
-
     // Step 1: Send invite email via Supabase
     const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
       data: {
@@ -71,20 +61,39 @@ console.log('SUPABASE KEY ROLE:', payload.role)
 
     const authId = data.user.id
 
-    // Step 2: Upsert into Prisma users table
-    const dbUser = await prisma.user.upsert({
-      where: { authId },
-      update: {
-        name: name ?? email,
-        role: validRole,
-      },
-      create: {
-        authId,
-        email,
-        name: name ?? email,
-        role: validRole,
-      },
-    })
+    // Step 2: Upsert into Prisma users table without breaking on existing email
+    const existingByAuthId = await prisma.user.findUnique({ where: { authId } })
+    const existingByEmail = await prisma.user.findUnique({ where: { email } })
+
+    let dbUser
+    if (existingByAuthId) {
+      dbUser = await prisma.user.update({
+        where: { id: existingByAuthId.id },
+        data: {
+          email,
+          name: name ?? email,
+          role: validRole,
+        },
+      })
+    } else if (existingByEmail) {
+      dbUser = await prisma.user.update({
+        where: { id: existingByEmail.id },
+        data: {
+          authId,
+          name: name ?? email,
+          role: validRole,
+        },
+      })
+    } else {
+      dbUser = await prisma.user.create({
+        data: {
+          authId,
+          email,
+          name: name ?? email,
+          role: validRole,
+        },
+      })
+    }
 
     // Step 3: Assign to company if provided
     if (companyId) {
@@ -113,6 +122,12 @@ console.log('SUPABASE KEY ROLE:', payload.role)
       data: { userId: dbUser.id, email, role: validRole },
     })
   } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      return NextResponse.json(
+        { success: false, error: 'User already exists with this email.' },
+        { status: 409 }
+      )
+    }
     console.error('Failed to invite user', err)
     return NextResponse.json({ success: false, error: 'Failed to invite user' }, { status: 500 })
   }

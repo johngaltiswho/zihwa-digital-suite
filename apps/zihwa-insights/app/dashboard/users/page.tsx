@@ -171,6 +171,7 @@ setCompanies(
       } else {
         alert('Invitation sent')
         setInviteForm({ email: '', name: '', role: 'CONSULTANT', companyId: '', companyRole: 'VIEWER' })
+        await refreshData()
       }
     } catch (error) {
       console.error('Failed to send invite', error)

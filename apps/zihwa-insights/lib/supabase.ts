@@ -1,17 +1,23 @@
 import { createClient} from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabasePublicKey =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+if (!supabasePublicKey) {
+  throw new Error('Missing Supabase public key. Set NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (or NEXT_PUBLIC_SUPABASE_ANON_KEY).')
+}
+
+export const supabase = createClient(supabaseUrl, supabasePublicKey)
 
 // Service role client - only for server-side usage
 // let supabaseServiceRoleInstance: SupabaseClient | null = null
 
 export const getSupabaseServiceRole = () => {
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const serviceKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!serviceKey) {
-    console.error('SUPABASE_SERVICE_ROLE_KEY is not set')
+    console.error('SUPABASE_SECRET_KEY (or SUPABASE_SERVICE_ROLE_KEY) is not set')
     return null
   }
   return createClient(supabaseUrl, serviceKey, {
