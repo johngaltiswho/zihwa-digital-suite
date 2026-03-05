@@ -13,11 +13,160 @@ const normalizeDate = (value: string | Date) => {
   return date
 }
 
-const leaveConsumption = (status?: AttendanceStatus | null) => {
-  return {
-    el: status === 'EL' ? 1 : 0,
-    sl: status === 'SL' ? 1 : 0,
+const balanceConsumption = (status?: AttendanceStatus | null) => ({
+  el: status === 'EL' ? 1 : 0,
+  sl: status === 'SL' ? 1 : 0,
+})
+
+const isHalfDay = (status?: AttendanceStatus | null) => status === 'HALF_DAY'
+
+type CompOffLedgerStatus = 'OPEN' | 'PARTIALLY_USED' | 'EXPIRED' | 'CLOSED'
+
+const COMP_OFF_OPEN_STATUSES: CompOffLedgerStatus[] = ['OPEN', 'PARTIALLY_USED']
+
+const computeLedgerStatus = (earnedDays: number, usedDays: number, expiresOn: Date, asOf: Date): CompOffLedgerStatus => {
+  const remaining = Math.max(earnedDays - usedDays, 0)
+  if (remaining <= 0) return 'CLOSED'
+  if (expiresOn < asOf) return 'EXPIRED'
+  if (usedDays > 0) return 'PARTIALLY_USED'
+  return 'OPEN'
+}
+
+async function expireCompOffEntries(
+  tx: Prisma.TransactionClient,
+  employeeId: string,
+  asOf: Date
+) {
+  await tx.compOffLedger.updateMany({
+    where: {
+      employeeId,
+      status: { in: COMP_OFF_OPEN_STATUSES },
+      expiresOn: { lt: asOf },
+    },
+    data: { status: 'EXPIRED' },
+  })
+}
+
+async function getAvailableCompOffDays(
+  tx: Prisma.TransactionClient,
+  employeeId: string,
+  asOf: Date
+) {
+  const ledgers = await tx.compOffLedger.findMany({
+    where: {
+      employeeId,
+      status: { in: COMP_OFF_OPEN_STATUSES },
+      expiresOn: { gte: asOf },
+    },
+    select: { earnedDays: true, usedDays: true },
+  })
+
+  return ledgers.reduce((sum, ledger) => sum + Math.max(ledger.earnedDays - ledger.usedDays, 0), 0)
+}
+
+async function consumeCompOffDays(
+  tx: Prisma.TransactionClient,
+  employeeId: string,
+  days: number,
+  asOf: Date
+) {
+  if (days <= 0) return 0
+
+  const ledgers = await tx.compOffLedger.findMany({
+    where: {
+      employeeId,
+      status: { in: COMP_OFF_OPEN_STATUSES },
+      expiresOn: { gte: asOf },
+    },
+    orderBy: [{ expiresOn: 'asc' }, { sourceDate: 'asc' }, { createdAt: 'asc' }],
+    select: {
+      id: true,
+      earnedDays: true,
+      usedDays: true,
+      expiresOn: true,
+    },
+  })
+
+  let remaining = days
+  for (const ledger of ledgers) {
+    if (remaining <= 0) break
+    const available = Math.max(ledger.earnedDays - ledger.usedDays, 0)
+    if (available <= 0) continue
+    const consume = Math.min(available, remaining)
+    const nextUsed = ledger.usedDays + consume
+    await tx.compOffLedger.update({
+      where: { id: ledger.id },
+      data: {
+        usedDays: nextUsed,
+        status: computeLedgerStatus(ledger.earnedDays, nextUsed, ledger.expiresOn, asOf),
+      },
+    })
+    remaining -= consume
   }
+
+  return days - remaining
+}
+
+async function releaseCompOffDays(
+  tx: Prisma.TransactionClient,
+  employeeId: string,
+  days: number,
+  asOf: Date
+) {
+  if (days <= 0) return 0
+
+  const ledgers = await tx.compOffLedger.findMany({
+    where: {
+      employeeId,
+      usedDays: { gt: 0 },
+    },
+    orderBy: [{ expiresOn: 'desc' }, { sourceDate: 'desc' }, { createdAt: 'desc' }],
+    select: {
+      id: true,
+      earnedDays: true,
+      usedDays: true,
+      expiresOn: true,
+    },
+  })
+
+  let remaining = days
+  for (const ledger of ledgers) {
+    if (remaining <= 0) break
+    const release = Math.min(ledger.usedDays, remaining)
+    const nextUsed = Math.max(ledger.usedDays - release, 0)
+    await tx.compOffLedger.update({
+      where: { id: ledger.id },
+      data: {
+        usedDays: nextUsed,
+        status: computeLedgerStatus(ledger.earnedDays, nextUsed, ledger.expiresOn, asOf),
+      },
+    })
+    remaining -= release
+  }
+
+  return days - remaining
+}
+
+async function ensureCompanyAccess(employeeId: string, dbUser: { id: string; role: string } | null) {
+  if (!dbUser) return false
+  if (dbUser.role !== 'ACCOUNTANT') return true
+
+  const employee = await prisma.employee.findUnique({
+    where: { id: employeeId },
+    select: { companyId: true },
+  })
+
+  if (!employee) return false
+
+  const access = await prisma.companyAccess.findFirst({
+    where: {
+      userId: dbUser.id,
+      companyId: employee.companyId,
+    },
+    select: { id: true },
+  })
+
+  return Boolean(access)
 }
 
 // GET /api/employees/attendance?month=YYYY-MM
@@ -33,20 +182,20 @@ export async function GET(request: Request) {
 
   try {
     const { user, dbUser } = await getRouteAuth()
-if (!user || !dbUser) {
-  return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
-}
+    if (!user || !dbUser) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
 
-const scopeFilter = await getCompanyWhereFilter(dbUser)
-const employeeFilter = scopeFilter.companyId
-  ? { employee: { companyId: scopeFilter.companyId } }
-  : {}
+    const scopeFilter = await getCompanyWhereFilter(dbUser)
+    const employeeFilter = scopeFilter.companyId
+      ? { employee: { companyId: scopeFilter.companyId } }
+      : {}
 
-const records = await prisma.attendanceRecord.findMany({
-  where: {
-    date: { gte: start, lt: end },
-    ...employeeFilter,
-  },
+    const records = await prisma.attendanceRecord.findMany({
+      where: {
+        date: { gte: start, lt: end },
+        ...employeeFilter,
+      },
       orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
       include: {
         employee: {
@@ -73,12 +222,14 @@ const records = await prisma.attendanceRecord.findMany({
         start,
         end,
         grouped,
-        records,
+        records: records.map((record) => ({
+          ...record,
+          resolvedStatus: record.status,
+        })),
       },
     })
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2021') {
-      // Attendance tables not present yet – respond gracefully
       return NextResponse.json({
         success: true,
         data: {
@@ -90,16 +241,24 @@ const records = await prisma.attendanceRecord.findMany({
       })
     }
     console.error('Failed to fetch attendance records', error)
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to fetch attendance records',
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to fetch attendance records',
+      },
+      { status: 500 }
+    )
   }
 }
 
 // POST /api/employees/attendance - create/update a record for a day
 export async function POST(request: Request) {
   try {
+    const { user, dbUser } = await getRouteAuth()
+    if (!user || !dbUser) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await request.json()
     const { employeeId, date, status, checkIn, checkOut, notes } = body
 
@@ -110,7 +269,15 @@ export async function POST(request: Request) {
       )
     }
 
-    let parsedStatus: AttendanceStatus | undefined = undefined
+    const hasAccess = await ensureCompanyAccess(employeeId, dbUser)
+    if (!hasAccess) {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden' },
+        { status: 403 }
+      )
+    }
+
+    let parsedStatus: AttendanceStatus | undefined
     if (status) {
       if (!Object.values(AttendanceStatus).includes(status)) {
         return NextResponse.json(
@@ -123,27 +290,10 @@ export async function POST(request: Request) {
 
     const normalizedDate = normalizeDate(date)
 
-    const createData: Prisma.AttendanceRecordUncheckedCreateInput = {
-      employeeId,
-      date: normalizedDate,
-      checkIn: checkIn ? new Date(checkIn) : null,
-      checkOut: checkOut ? new Date(checkOut) : null,
-      notes: notes || null,
-    }
-
-    const updateData: Prisma.AttendanceRecordUncheckedUpdateInput = {
-      checkIn: checkIn ? new Date(checkIn) : null,
-      checkOut: checkOut ? new Date(checkOut) : null,
-      notes: notes || null,
-    }
-
-    if (parsedStatus) {
-      createData.status = parsedStatus
-      updateData.status = parsedStatus
-    }
-
     try {
-      const record = await prisma.$transaction(async (tx) => {
+      const result = await prisma.$transaction(async (tx) => {
+        const policyWarnings: string[] = []
+
         const existingRecord = await tx.attendanceRecord.findUnique({
           where: {
             employeeId_date: {
@@ -156,7 +306,7 @@ export async function POST(request: Request) {
 
         const employee = await tx.employee.findUnique({
           where: { id: employeeId },
-          select: { elBalance: true, slBalance: true },
+          select: { elBalance: true, slBalance: true, coBalance: true },
         })
 
         if (!employee) {
@@ -165,29 +315,70 @@ export async function POST(request: Request) {
 
         let elBalance = employee.elBalance ?? 0
         let slBalance = employee.slBalance ?? 0
+        let coBalance = employee.coBalance ?? 0
 
         if (existingRecord) {
-          const refunds = leaveConsumption(existingRecord.status)
+          const refunds = balanceConsumption(existingRecord.status)
           elBalance += refunds.el
           slBalance += refunds.sl
         }
 
-        if (parsedStatus) {
-          const consumption = leaveConsumption(parsedStatus)
-          if (consumption.el > 0 && elBalance < consumption.el) {
-            throw new Error('INSUFFICIENT_EL')
+        await expireCompOffEntries(tx, employeeId, normalizedDate)
+
+        if (existingRecord?.status === AttendanceStatus.CO) {
+          const released = await releaseCompOffDays(tx, employeeId, 1, normalizedDate)
+          coBalance += released
+        }
+
+        let resolvedStatus: AttendanceStatus =
+          parsedStatus ?? existingRecord?.status ?? AttendanceStatus.PRESENT
+
+        if (!isHalfDay(resolvedStatus)) {
+          if (resolvedStatus === AttendanceStatus.EL && elBalance < 1) {
+            resolvedStatus = AttendanceStatus.ABSENT
+            policyWarnings.push('EL balance unavailable. Marked as ABSENT (unpaid).')
           }
-          if (consumption.sl > 0 && slBalance < consumption.sl) {
-            throw new Error('INSUFFICIENT_SL')
+          if (resolvedStatus === AttendanceStatus.SL && slBalance < 1) {
+            resolvedStatus = AttendanceStatus.ABSENT
+            policyWarnings.push('SL balance unavailable. Marked as ABSENT (unpaid).')
           }
-          elBalance -= consumption.el
-          slBalance -= consumption.sl
+          if (resolvedStatus === AttendanceStatus.CO) {
+            const availableCompOff = await getAvailableCompOffDays(tx, employeeId, normalizedDate)
+            if (availableCompOff < 1) {
+              resolvedStatus = AttendanceStatus.ABSENT
+              policyWarnings.push('Comp-off balance unavailable. Marked as ABSENT (unpaid).')
+            }
+          }
+        }
+
+        const consumption = balanceConsumption(resolvedStatus)
+        elBalance -= consumption.el
+        slBalance -= consumption.sl
+
+        if (resolvedStatus === AttendanceStatus.CO) {
+          const consumed = await consumeCompOffDays(tx, employeeId, 1, normalizedDate)
+          if (consumed < 1) {
+            resolvedStatus = AttendanceStatus.ABSENT
+            policyWarnings.push('Comp-off balance unavailable. Marked as ABSENT (unpaid).')
+          } else {
+            coBalance = Math.max(coBalance - consumed, 0)
+          }
+        }
+
+        const availableAfter = await getAvailableCompOffDays(tx, employeeId, normalizedDate)
+        coBalance = availableAfter
+
+        const baseData: Prisma.AttendanceRecordUncheckedUpdateInput = {
+          status: resolvedStatus,
+          checkIn: checkIn ? new Date(checkIn) : null,
+          checkOut: checkOut ? new Date(checkOut) : null,
+          notes: notes || null,
         }
 
         const record = existingRecord && existingRecord.id
           ? await tx.attendanceRecord.update({
               where: { id: existingRecord.id },
-              data: updateData,
+              data: baseData,
               include: {
                 employee: {
                   select: {
@@ -200,7 +391,14 @@ export async function POST(request: Request) {
               },
             })
           : await tx.attendanceRecord.create({
-              data: createData,
+              data: {
+                employeeId,
+                date: normalizedDate,
+                status: resolvedStatus,
+                checkIn: checkIn ? new Date(checkIn) : null,
+                checkOut: checkOut ? new Date(checkOut) : null,
+                notes: notes || null,
+              },
               include: {
                 employee: {
                   select: {
@@ -218,30 +416,21 @@ export async function POST(request: Request) {
           data: {
             elBalance,
             slBalance,
+            coBalance,
           },
         })
 
-        return record
+        return {
+          record,
+          resolvedStatus,
+          policyWarnings,
+        }
       })
 
-      return NextResponse.json({ success: true, data: record })
+      return NextResponse.json({ success: true, data: result })
     } catch (error) {
-      if (error instanceof Error) {
-        if (error.message === 'INSUFFICIENT_EL') {
-          return NextResponse.json(
-            { success: false, error: 'Not enough earned leave balance.' },
-            { status: 400 }
-          )
-        }
-        if (error.message === 'INSUFFICIENT_SL') {
-          return NextResponse.json(
-            { success: false, error: 'Not enough sick leave balance.' },
-            { status: 400 }
-          )
-        }
-        if (error.message === 'Employee not found') {
-          return NextResponse.json({ success: false, error: error.message }, { status: 404 })
-        }
+      if (error instanceof Error && error.message === 'Employee not found') {
+        return NextResponse.json({ success: false, error: error.message }, { status: 404 })
       }
 
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2021') {
@@ -250,6 +439,7 @@ export async function POST(request: Request) {
           { status: 400 }
         )
       }
+
       console.error('Failed to upsert attendance record', error)
       return NextResponse.json(
         { success: false, error: 'Failed to save attendance record' },

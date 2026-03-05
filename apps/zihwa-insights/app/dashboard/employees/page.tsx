@@ -44,6 +44,7 @@ type EmployeeRow = {
   ifscCode?: string | null
   elBalance?: number | null
   slBalance?: number | null
+  coBalance?: number | null
    labourId?: string | null 
    dob?: string | Date | null // <--- Add this line
   stats?: {
@@ -59,6 +60,7 @@ type AttendanceRecordWithEmployee = {
   employeeId: string
   date: string | Date
   status: AttendanceStatus
+  resolvedStatus?: AttendanceStatus
   checkIn?: string | Date | null
   checkOut?: string | Date | null
   notes?: string | null
@@ -83,6 +85,13 @@ type PayrollRecordWithEmployee = {
   status: PayrollStatus
   processedAt?: string | Date | null
   notes?: string | null
+  calculationBreakdown?: {
+    payableUnits?: number
+    unpaidUnits?: number
+    sandwichDays?: number
+    coEarned?: number
+    coUsed?: number
+  } | null
   employee: {
     id: string
     employeeId: string
@@ -90,6 +99,9 @@ type PayrollRecordWithEmployee = {
     lastName: string
     department?: string | null
     companyId?: string | null
+    bankAccountNumber?: string | null
+    ifscCode?: string | null
+    phone?: string | null
     company?: {
       id: string
       name: string
@@ -113,7 +125,15 @@ type BulkFailedRow = {
 
 type Tab = 'employees' | 'attendance' | 'payroll' |'labours'
 
-const ATTENDANCE_OPTIONS: AttendanceStatus[] = ['PRESENT', 'ABSENT', 'REMOTE', 'LEAVE']
+type HolidayRow = {
+  id: string
+  companyId: string
+  date: string | Date
+  name: string
+  isOptional: boolean
+}
+
+const ATTENDANCE_OPTIONS: AttendanceStatus[] = ['PRESENT', 'ABSENT', 'REMOTE', 'LEAVE', 'EL', 'SL', 'HALF_DAY', 'CO']
 const ATTENDANCE_CODES: { value: AttendanceStatus; code: string; label: string }[] = [
   { value: 'PRESENT', code: 'P', label: 'Present' },
   { value: 'ABSENT', code: 'A', label: 'Absent' },
@@ -121,6 +141,8 @@ const ATTENDANCE_CODES: { value: AttendanceStatus; code: string; label: string }
   { value: 'LEAVE', code: 'H', label: 'Holiday' },
   { value: 'EL', code: 'EL', label: 'Earned Leave' },
   { value: 'SL', code: 'SL', label: 'Sick Leave' },
+  { value: 'HALF_DAY', code: 'HD', label: 'Half Day' },
+  { value: 'CO', code: 'CO', label: 'Comp Off' },
 ]
 const EMPLOYEE_STATUSES: EmployeeStatus[] = ['ACTIVE', 'INACTIVE', 'TERMINATED']
 const ATTENDANCE_KEY_DELIMITER = '__@__'
@@ -203,6 +225,7 @@ export default function EmployeesPage() {
   }, [])
 
   const isAccountant = userRole === 'ACCOUNTANT'
+  const canManageHolidays = userRole === 'ADMIN'
   const today = useMemo(() => new Date(), [])
   const defaultMonth = useMemo(() => getMonthInputValue(today), [today])
   const monthOptions = useMemo(() => generateMonthOptions(), [])
@@ -232,6 +255,18 @@ export default function EmployeesPage() {
   const [attendanceCompanyFilter, setAttendanceCompanyFilter] = useState('all')
   const [payrollMonth, setPayrollMonth] = useState(defaultMonth)
   const [payrollCompanyFilter, setPayrollCompanyFilter] = useState('all')
+  const [payrollRunOpen, setPayrollRunOpen] = useState(false)
+  const [payrollRunPhase, setPayrollRunPhase] = useState<'running' | 'success' | 'error'>('running')
+  const [payrollRunMessage, setPayrollRunMessage] = useState('')
+  const [payrollRunProgress, setPayrollRunProgress] = useState('')
+  const [markingPaid, setMarkingPaid] = useState(false)
+  const [selectedPayrollIds, setSelectedPayrollIds] = useState<Set<string>>(new Set())
+  const [holidays, setHolidays] = useState<HolidayRow[]>([])
+  const [holidayDateInput, setHolidayDateInput] = useState('')
+  const [holidayNameInput, setHolidayNameInput] = useState('')
+  const [holidayOptionalInput, setHolidayOptionalInput] = useState(false)
+  const [holidayLoading, setHolidayLoading] = useState(false)
+  const [savingHoliday, setSavingHoliday] = useState(false)
 
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | EmployeeStatus>('all')
@@ -400,6 +435,82 @@ export default function EmployeesPage() {
     }
   }
 
+  const fetchHolidays = async (monthValue = attendanceMonth, companyIdValue = attendanceCompanyFilter) => {
+    if (companyIdValue === 'all') {
+      setHolidays([])
+      return
+    }
+    const [year] = monthValue.split('-').map(Number)
+    if (!year) return
+    setHolidayLoading(true)
+    try {
+      const params = new URLSearchParams({
+        companyId: companyIdValue,
+        year: String(year),
+      })
+      const response = await fetch(`/api/employees/holidays?${params.toString()}`)
+      const data = await response.json()
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to fetch holidays')
+      }
+      setHolidays(data.data || [])
+    } catch (error) {
+      console.error(error)
+      setHolidays([])
+    } finally {
+      setHolidayLoading(false)
+    }
+  }
+
+  const createHoliday = async () => {
+    if (attendanceCompanyFilter === 'all') {
+      alert('Select a company first.')
+      return
+    }
+    if (!holidayDateInput || !holidayNameInput.trim()) {
+      alert('Holiday date and name are required.')
+      return
+    }
+    setSavingHoliday(true)
+    try {
+      const response = await fetch('/api/employees/holidays', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyId: attendanceCompanyFilter,
+          date: holidayDateInput,
+          name: holidayNameInput.trim(),
+          isOptional: holidayOptionalInput,
+        }),
+      })
+      const data = await response.json()
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to add holiday')
+      }
+      setHolidayDateInput('')
+      setHolidayNameInput('')
+      setHolidayOptionalInput(false)
+      await fetchHolidays()
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to add holiday')
+    } finally {
+      setSavingHoliday(false)
+    }
+  }
+
+  const removeHoliday = async (id: string) => {
+    try {
+      const response = await fetch(`/api/employees/holidays/${id}`, { method: 'DELETE' })
+      const data = await response.json()
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to delete holiday')
+      }
+      await fetchHolidays()
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to delete holiday')
+    }
+  }
+
   const fetchPayroll = async (monthValue = payrollMonth) => {
     if (!monthValue) return
     const [year, month] = monthValue.split('-').map(Number)
@@ -412,6 +523,7 @@ export default function EmployeesPage() {
       const data = await res.json()
       if (data.success) {
         setPayrollRecords(data.data || [])
+        setSelectedPayrollIds(new Set())
       } else {
         throw new Error(data.error || 'Failed to load payroll')
       }
@@ -430,6 +542,7 @@ export default function EmployeesPage() {
         fetchEmployees(),
         fetchCompanies(),
         fetchAttendance(defaultMonth),
+        fetchHolidays(defaultMonth, 'all'),
         fetchPayroll(defaultMonth),
         fetchLabours(),
       ])
@@ -444,6 +557,7 @@ export default function EmployeesPage() {
   await Promise.all([
     fetchEmployees(), 
     fetchAttendance(attendanceMonth), 
+    fetchHolidays(attendanceMonth, attendanceCompanyFilter),
     fetchPayroll(payrollMonth),
     fetchLabours() // <--- ADD THIS LINE
   ])
@@ -756,6 +870,20 @@ export default function EmployeesPage() {
     return Array.from({ length: daysInMonth }, (_, index) => index + 1)
   }, [attendanceMonthParts])
 
+  const holidayMap = useMemo(() => {
+    const map = new Map<string, HolidayRow>()
+    holidays.forEach((holiday) => {
+      const key = new Date(holiday.date).toISOString().split('T')[0]
+      map.set(key, holiday)
+    })
+    return map
+  }, [holidays])
+
+  const isHolidayDay = (year: number, month: number, day: number) => {
+    const iso = new Date(Date.UTC(year, month - 1, day)).toISOString().split('T')[0]
+    return holidayMap.has(iso)
+  }
+
   const attendanceStatusMap = useMemo(() => {
     const map = new Map<string, AttendanceStatus>()
     attendanceRecords.forEach((record) => {
@@ -780,6 +908,39 @@ export default function EmployeesPage() {
     const paid = filteredPayrollRecords.filter((record) => record.status === 'PAID').length
     return { totalGross, totalNet, paid }
   }, [filteredPayrollRecords])
+
+  const selectedFilteredPayrollRecords = useMemo(
+    () => filteredPayrollRecords.filter((record) => selectedPayrollIds.has(record.id)),
+    [filteredPayrollRecords, selectedPayrollIds]
+  )
+
+  const allFilteredSelected =
+    filteredPayrollRecords.length > 0 &&
+    filteredPayrollRecords.every((record) => selectedPayrollIds.has(record.id))
+
+  const togglePayrollSelection = (recordId: string) => {
+    setSelectedPayrollIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(recordId)) {
+        next.delete(recordId)
+      } else {
+        next.add(recordId)
+      }
+      return next
+    })
+  }
+
+  const toggleSelectAllFilteredPayroll = () => {
+    setSelectedPayrollIds((prev) => {
+      const next = new Set(prev)
+      if (allFilteredSelected) {
+        filteredPayrollRecords.forEach((record) => next.delete(record.id))
+      } else {
+        filteredPayrollRecords.forEach((record) => next.add(record.id))
+      }
+      return next
+    })
+  }
 
   const statusBadge = (status: EmployeeStatus) => {
     const map: Record<EmployeeStatus, string> = {
@@ -818,51 +979,9 @@ export default function EmployeesPage() {
     setPendingAttendance(new Map())
   }
 
-  const computeLeaveNetChanges = (employeeId: string) => {
-    if (!attendanceMonthParts.year || !attendanceMonthParts.month) {
-      return { el: 0, sl: 0 }
-    }
-    let existingEl = 0
-    let existingSl = 0
-    let finalEl = 0
-    let finalSl = 0
-
-    attendanceDays.forEach((day) => {
-      const isoDate = new Date(Date.UTC(attendanceMonthParts.year, attendanceMonthParts.month - 1, day))
-        .toISOString()
-        .split('T')[0]
-      const key = buildAttendanceKey(employeeId, isoDate)
-      const existingStatus = attendanceStatusMap.get(key)
-      const nextStatus = pendingAttendance.get(key) || existingStatus
-
-      if (existingStatus === 'EL') existingEl += 1
-      if (existingStatus === 'SL') existingSl += 1
-      if (nextStatus === 'EL') finalEl += 1
-      if (nextStatus === 'SL') finalSl += 1
-    })
-
-    return {
-      el: finalEl - existingEl,
-      sl: finalSl - existingSl,
-    }
-  }
-
   const saveAttendanceRow = async (employeeId: string) => {
     if (pendingAttendance.size === 0) {
       setEditingAttendanceRow(null)
-      return
-    }
-
-    const employee = employees.find((emp) => emp.id === employeeId)
-    if (!employee) return
-
-    const { el: netElChange, sl: netSlChange } = computeLeaveNetChanges(employeeId)
-    if (netElChange > 0 && (employee.elBalance ?? 0) < netElChange) {
-      alert('Not enough earned leave balance for this employee.')
-      return
-    }
-    if (netSlChange > 0 && (employee.slBalance ?? 0) < netSlChange) {
-      alert('Not enough sick leave balance for this employee.')
       return
     }
 
@@ -870,6 +989,7 @@ export default function EmployeesPage() {
       const updates = Array.from(pendingAttendance.entries())
         .map(([key, status]) => ({ ...parseAttendanceKey(key), status }))
         .filter((entry) => entry.employeeId === employeeId && entry.date)
+      const warnings: string[] = []
 
       await Promise.all(
         updates.map(async ({ date, status }) => {
@@ -887,11 +1007,20 @@ export default function EmployeesPage() {
             const message = data?.error || 'Failed to save attendance record'
             throw new Error(message)
           }
+          const payload = await response.json().catch(() => null)
+          const policyWarnings = payload?.data?.policyWarnings
+          if (Array.isArray(policyWarnings)) {
+            warnings.push(...policyWarnings)
+          }
         })
       )
       await fetchAttendance(attendanceMonth)
+      await fetchEmployees()
       setPendingAttendance(new Map())
       setEditingAttendanceRow(null)
+      if (warnings.length > 0) {
+        alert(Array.from(new Set(warnings)).join('\n'))
+      }
     } catch (error) {
       console.error(error)
       alert(error instanceof Error ? error.message : 'Failed to save attendance changes')
@@ -979,10 +1108,6 @@ export default function EmployeesPage() {
     return map[status] || 'bg-gray-100 text-gray-600'
   }
   const handleGeneratePayroll = async () => {
-    if (payrollCompanyFilter === 'all') {
-      alert('Select a company to generate payroll.')
-      return
-    }
     if (!payrollMonth) {
       alert('Select a month before generating payroll.')
       return
@@ -994,31 +1119,169 @@ export default function EmployeesPage() {
       alert('Invalid month selected.')
       return
     }
+
+    const targetCompanyIds =
+      payrollCompanyFilter === 'all'
+        ? companies.map((company) => company.id)
+        : [payrollCompanyFilter]
+
+    if (targetCompanyIds.length === 0) {
+      alert('No companies available for payroll generation.')
+      return
+    }
+
+    setPayrollRunPhase('running')
+    setPayrollRunOpen(true)
+    setPayrollRunMessage('Payroll is being generated. You can continue using this page and check back in a few minutes.')
+    setPayrollRunProgress(`Starting for ${targetCompanyIds.length} compan${targetCompanyIds.length === 1 ? 'y' : 'ies'}...`)
     setGeneratingPayroll(true)
     try {
-      const response = await fetch('/api/employees/payroll/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          companyId: payrollCompanyFilter,
-          month: monthNumber,
-          year: yearNumber,
-        }),
-      })
-      const data = await response.json()
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to generate payroll')
+      let totalCreated = 0
+      let totalUpdated = 0
+      let totalSkipped = 0
+      let totalSandwich = 0
+      let totalCoEarned = 0
+      let totalCoUsed = 0
+      let emptyCompanies = 0
+
+      for (let index = 0; index < targetCompanyIds.length; index += 1) {
+        const companyId = targetCompanyIds[index]
+        const companyName = companies.find((company) => company.id === companyId)?.name || companyId
+        setPayrollRunProgress(`Processing ${index + 1}/${targetCompanyIds.length}: ${companyName}`)
+
+        const response = await fetch('/api/employees/payroll/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            companyId,
+            month: monthNumber,
+            year: yearNumber,
+          }),
+        })
+        const data = await response.json()
+        if (response.status === 404 && data?.error === 'No employees found for this company.') {
+          emptyCompanies += 1
+          continue
+        }
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Failed to generate payroll')
+        }
+        totalCreated += data.summary?.created ?? 0
+        totalUpdated += data.summary?.updated ?? 0
+        totalSkipped += data.summary?.skipped ?? 0
+        totalSandwich += Number(data.summary?.sandwichAppliedCount ?? 0)
+        totalCoEarned += Number(data.summary?.coEarnedDaysTotal ?? 0)
+        totalCoUsed += Number(data.summary?.coUsedDaysTotal ?? 0)
       }
+
       await fetchPayroll(payrollMonth)
-      alert(
-        `Payroll generated. Created: ${data.summary.created}, Updated: ${data.summary.updated}, Skipped: ${data.summary.skipped}.`
+      setPayrollRunPhase('success')
+      setPayrollRunProgress(`Completed for ${targetCompanyIds.length - emptyCompanies}/${targetCompanyIds.length} companies.`)
+      setPayrollRunMessage(
+        `Payroll generated. Created: ${totalCreated}, Updated: ${totalUpdated}, Skipped: ${totalSkipped}, Sandwich: ${totalSandwich}, CO earned: ${totalCoEarned}, CO used: ${totalCoUsed}, Empty companies skipped: ${emptyCompanies}.`
       )
     } catch (error) {
       console.error(error)
-      alert(error instanceof Error ? error.message : 'Failed to generate payroll')
+      setPayrollRunPhase('error')
+      setPayrollRunProgress('Payroll generation stopped before completion.')
+      setPayrollRunMessage(error instanceof Error ? error.message : 'Failed to generate payroll')
     } finally {
       setGeneratingPayroll(false)
     }
+  }
+
+  const markPayrollRecordAsPaid = async (record: PayrollRecordWithEmployee) => {
+    const response = await fetch('/api/employees/payroll', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        employeeId: record.employeeId,
+        month: record.month,
+        year: record.year,
+        grossAmount: record.grossAmount,
+        netAmount: record.netAmount,
+        bonus: record.bonus ?? 0,
+        deductions: record.deductions ?? 0,
+        notes: record.notes ?? null,
+        status: 'PAID',
+      }),
+    })
+    const data = await response.json().catch(() => null)
+    if (!response.ok || !data?.success) {
+      throw new Error(data?.error || 'Failed to mark payroll as PAID')
+    }
+  }
+
+  const handleMarkRecordPaid = async (record: PayrollRecordWithEmployee) => {
+    setMarkingPaid(true)
+    try {
+      await markPayrollRecordAsPaid(record)
+      await fetchPayroll(payrollMonth)
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to mark payroll as PAID')
+    } finally {
+      setMarkingPaid(false)
+    }
+  }
+
+  const handleMarkFilteredPaid = async () => {
+    const candidates = filteredPayrollRecords.filter((record) => record.status !== 'PAID')
+    if (candidates.length === 0) {
+      alert('No unpaid payroll records in current filter.')
+      return
+    }
+    if (!confirm(`Mark ${candidates.length} payroll record(s) as PAID?`)) {
+      return
+    }
+
+    setMarkingPaid(true)
+    try {
+      let failed = 0
+      for (const record of candidates) {
+        try {
+          await markPayrollRecordAsPaid(record)
+        } catch {
+          failed += 1
+        }
+      }
+      await fetchPayroll(payrollMonth)
+      const succeeded = candidates.length - failed
+      alert(`Marked as PAID: ${succeeded}. Failed: ${failed}.`)
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to mark filtered payroll as PAID')
+    } finally {
+      setMarkingPaid(false)
+    }
+  }
+
+  const handleExportSelectedPayroll = async () => {
+    if (selectedFilteredPayrollRecords.length === 0) {
+      alert('Select at least one payroll record to export.')
+      return
+    }
+
+    const XLSX = await import('xlsx')
+    const rows = selectedFilteredPayrollRecords.map((record, index) => {
+      const employeeName = `${record.employee.firstName} ${record.employee.lastName}`.trim()
+      return {
+        'Sr No': index + 1,
+        Name: employeeName,
+        'Transfer Type': 'NEFT',
+        'Acc No': record.employee.bankAccountNumber || '',
+        Amount: record.netAmount,
+        'IFSC ': record.employee.ifscCode || '',
+        'Phone No': record.employee.phone || '',
+        Remarks: `Payroll ${getMonthLabel(record.year, record.month)}`,
+        'LEI Code': '',
+      }
+    })
+
+    const worksheet = XLSX.utils.json_to_sheet(rows)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1')
+    const [yearStr, monthStr] = payrollMonth.split('-')
+    const suffix = yearStr && monthStr ? `${yearStr}-${monthStr}` : 'payroll'
+    XLSX.writeFile(workbook, `bulk-payment-transfer-${suffix}.xlsx`)
   }
 
   if (loading && employees.length === 0) {
@@ -1522,7 +1785,10 @@ export default function EmployeesPage() {
                     onChange={async (event) => {
                       const value = event.target.value
                       setAttendanceMonth(value)
-                      await fetchAttendance(value)
+                      await Promise.all([
+                        fetchAttendance(value),
+                        fetchHolidays(value, attendanceCompanyFilter),
+                      ])
                     }}
                     className="h-10 rounded-md border border-gray-200 px-3 text-sm text-gray-700 focus:border-gray-300 focus:outline-none"
                   >
@@ -1534,7 +1800,11 @@ export default function EmployeesPage() {
                   </select>
                   <select
                     value={attendanceCompanyFilter}
-                    onChange={(event) => setAttendanceCompanyFilter(event.target.value)}
+                    onChange={async (event) => {
+                      const value = event.target.value
+                      setAttendanceCompanyFilter(value)
+                      await fetchHolidays(attendanceMonth, value)
+                    }}
                     className="h-10 rounded-md border border-gray-200 px-3 text-sm text-gray-700 focus:border-gray-300 focus:outline-none"
                   >
                     <option value="all">All companies</option>
@@ -1581,6 +1851,66 @@ export default function EmployeesPage() {
                   </div>
                 ))}
               </div>
+
+              <div className="rounded-xl border border-gray-100 bg-gray-50/50 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-semibold text-gray-900">Holiday calendar</div>
+                    <p className="text-xs text-gray-500">Used for sandwich policy and comp-off accrual.</p>
+                  </div>
+                  {canManageHolidays && (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <input
+                        type="date"
+                        value={holidayDateInput}
+                        onChange={(event) => setHolidayDateInput(event.target.value)}
+                        className="h-9 rounded-md border border-gray-200 px-2 text-xs text-gray-700"
+                      />
+                      <input
+                        type="text"
+                        value={holidayNameInput}
+                        onChange={(event) => setHolidayNameInput(event.target.value)}
+                        placeholder="Holiday name"
+                        className="h-9 rounded-md border border-gray-200 px-2 text-xs text-gray-700"
+                      />
+                      <label className="inline-flex items-center gap-1 text-xs text-gray-600">
+                        <input
+                          type="checkbox"
+                          checked={holidayOptionalInput}
+                          onChange={(event) => setHolidayOptionalInput(event.target.checked)}
+                        />
+                        Optional
+                      </label>
+                      <Button onClick={createHoliday} disabled={savingHoliday || attendanceCompanyFilter === 'all'} className="h-9">
+                        {savingHoliday ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Add'}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {holidayLoading ? (
+                    <span className="text-xs text-gray-500">Loading holidays...</span>
+                  ) : holidays.length === 0 ? (
+                    <span className="text-xs text-gray-500">No holidays configured for selected company/year.</span>
+                  ) : (
+                    holidays.map((holiday) => (
+                      <span key={holiday.id} className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-800">
+                        {new Date(holiday.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} {holiday.name}
+                        {holiday.isOptional ? '(Optional)' : ''}
+                        {canManageHolidays && (
+                          <button
+                            onClick={() => removeHoliday(holiday.id)}
+                            className="text-amber-700 hover:text-red-600"
+                            title="Remove holiday"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </span>
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="border-t border-gray-100">
@@ -1604,9 +1934,17 @@ export default function EmployeesPage() {
                           <th className="bg-gray-50 px-2 py-2 text-center text-[11px] font-semibold text-gray-500">
                             SL
                           </th>
+                          <th className="bg-gray-50 px-2 py-2 text-center text-[11px] font-semibold text-gray-500">
+                            CO
+                          </th>
                           {attendanceDays.map((day) => (
                             <th key={day} className="px-1 py-2 text-[11px] font-semibold text-gray-500">
-                              {day}
+                              <div className="flex flex-col items-center gap-0.5">
+                                <span>{day}</span>
+                                {attendanceMonthParts.year && attendanceMonthParts.month && isHolidayDay(attendanceMonthParts.year, attendanceMonthParts.month, day) && (
+                                  <span className="rounded bg-amber-100 px-1 text-[9px] text-amber-700">H</span>
+                                )}
+                              </div>
                             </th>
                           ))}
                         {!isAccountant && <th className="px-2 py-2 text-right text-[11px] font-semibold text-gray-500">Actions</th>}
@@ -1625,6 +1963,9 @@ export default function EmployeesPage() {
                               </td>
                               <td className="px-2 py-2 text-center text-[11px] text-gray-700">
                                 {formatLeaveBalance(employee.slBalance)}
+                              </td>
+                              <td className="px-2 py-2 text-center text-[11px] text-gray-700">
+                                {formatLeaveBalance(employee.coBalance)}
                               </td>
                               {attendanceDays.map((day) => {
                                 const { year, month } = attendanceMonthParts
@@ -1709,6 +2050,34 @@ export default function EmployeesPage() {
       )}
       {tab === 'payroll' && (
         <section className="space-y-6">
+          {payrollRunOpen && (
+            <div
+              className={`rounded-xl border px-4 py-3 text-sm ${
+                payrollRunPhase === 'running'
+                  ? 'border-blue-200 bg-blue-50 text-blue-800'
+                  : payrollRunPhase === 'success'
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                    : 'border-red-200 bg-red-50 text-red-800'
+              }`}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="font-semibold">
+                    {payrollRunPhase === 'running' ? 'Generating payroll' : payrollRunPhase === 'success' ? 'Payroll completed' : 'Payroll failed'}
+                  </div>
+                  <p className="mt-1">{payrollRunMessage}</p>
+                  {payrollRunProgress && <p className="mt-1 text-xs opacity-90">{payrollRunProgress}</p>}
+                </div>
+                <button
+                  onClick={() => setPayrollRunOpen(false)}
+                  className="text-xs font-medium underline underline-offset-2"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
@@ -1745,7 +2114,7 @@ export default function EmployeesPage() {
                   </select>
                   <Button
                     onClick={handleGeneratePayroll}
-                    disabled={payrollCompanyFilter === 'all' || generatingPayroll}
+                    disabled={generatingPayroll || markingPaid}
                   >
                     {generatingPayroll ? (
                       <>
@@ -1755,6 +2124,29 @@ export default function EmployeesPage() {
                     ) : (
                       'Generate payroll'
                     )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="border border-gray-200"
+                    onClick={handleMarkFilteredPaid}
+                    disabled={generatingPayroll || markingPaid || filteredPayrollRecords.length === 0}
+                  >
+                    {markingPaid ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Updating
+                      </>
+                    ) : (
+                      'Mark Filtered as PAID'
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="border border-gray-200"
+                    onClick={handleExportSelectedPayroll}
+                    disabled={generatingPayroll || markingPaid || selectedFilteredPayrollRecords.length === 0}
+                  >
+                    Export Selected (Excel)
                   </Button>
                 </div>
               </div>
@@ -1777,11 +2169,23 @@ export default function EmployeesPage() {
               </div>
 
               <div className="overflow-hidden rounded-xl border border-gray-100">
-                <div className="grid grid-cols-5 bg-gray-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <div className="grid grid-cols-10 bg-gray-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={allFilteredSelected}
+                      onChange={toggleSelectAllFilteredPayroll}
+                      aria-label="Select all payroll rows"
+                    />
+                  </div>
                   <div>Cycle</div>
                   <div>Employee</div>
                   <div className="text-right">Gross</div>
                   <div className="text-right">Net</div>
+                  <div className="text-right">Payable</div>
+                  <div className="text-right">Unpaid</div>
+                  <div className="text-right">Sandwich</div>
+                  <div className="text-right">CO +/-</div>
                   <div>Status</div>
                 </div>
                 {payrollLoading ? (
@@ -1795,7 +2199,15 @@ export default function EmployeesPage() {
                   filteredPayrollRecords.map((record) => {
                     const name = `${record.employee.firstName} ${record.employee.lastName}`
                     return (
-                      <div key={record.id} className="grid grid-cols-5 border-t border-gray-50 px-4 py-3 text-sm">
+                      <div key={record.id} className="grid grid-cols-10 border-t border-gray-50 px-4 py-3 text-sm">
+                        <div className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={selectedPayrollIds.has(record.id)}
+                            onChange={() => togglePayrollSelection(record.id)}
+                            aria-label={`Select payroll row ${record.id}`}
+                          />
+                        </div>
                         <div>
                           <p className="font-medium text-gray-900">{getMonthLabel(record.year, record.month)}</p>
                           <p className="text-xs text-gray-500">#{record.employee.employeeId}</p>
@@ -1806,19 +2218,36 @@ export default function EmployeesPage() {
                         </div>
                         <div className="text-right font-medium text-gray-900">{formatCurrency(record.grossAmount)}</div>
                         <div className="text-right font-medium text-gray-900">{formatCurrency(record.netAmount)}</div>
+                        <div className="text-right text-gray-700">{record.calculationBreakdown?.payableUnits ?? '—'}</div>
+                        <div className="text-right text-gray-700">{record.calculationBreakdown?.unpaidUnits ?? '—'}</div>
+                        <div className="text-right text-gray-700">{record.calculationBreakdown?.sandwichDays ?? '—'}</div>
+                        <div className="text-right text-gray-700">
+                          +{record.calculationBreakdown?.coEarned ?? 0} / -{record.calculationBreakdown?.coUsed ?? 0}
+                        </div>
                         <div className="flex items-center">
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
-                              record.status === 'PAID'
-                                ? 'bg-emerald-50 text-emerald-700'
-                                : record.status === 'PROCESSING'
-                                  ? 'bg-amber-50 text-amber-700'
-                                  : 'bg-gray-100 text-gray-600'
-                            }`}
-                          >
-                            {record.status === 'PAID' && <CheckCircle2 className="h-3.5 w-3.5" />}
-                            {record.status}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
+                                record.status === 'PAID'
+                                  ? 'bg-emerald-50 text-emerald-700'
+                                  : record.status === 'PROCESSING'
+                                    ? 'bg-amber-50 text-amber-700'
+                                    : 'bg-gray-100 text-gray-600'
+                              }`}
+                            >
+                              {record.status === 'PAID' && <CheckCircle2 className="h-3.5 w-3.5" />}
+                              {record.status}
+                            </span>
+                            {record.status !== 'PAID' && (
+                              <button
+                                onClick={() => handleMarkRecordPaid(record)}
+                                disabled={markingPaid || generatingPayroll}
+                                className="rounded border border-gray-200 px-2 py-1 text-[11px] text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                Mark PAID
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     )

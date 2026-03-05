@@ -57,6 +57,7 @@ export async function GET() {
       ifscCode: employee.ifscCode,
       elBalance: employee.elBalance,
       slBalance: employee.slBalance,
+      coBalance: employee.coBalance,
       joiningDate: employee.joiningDate,
       company: employee.company,
       stats: {
@@ -99,6 +100,7 @@ export async function GET() {
           ifscCode: employee.ifscCode,
           elBalance: employee.elBalance,
           slBalance: employee.slBalance,
+          coBalance: employee.coBalance,
           joiningDate: employee.joiningDate,
           company: employee.company,
           stats: {
@@ -220,6 +222,7 @@ export async function PATCH(request: Request) {
       status,
       elBalance,
       slBalance,
+      coBalance,
     } = body
 
     if (!id) {
@@ -243,6 +246,9 @@ export async function PATCH(request: Request) {
     }
     if (slBalance !== undefined) {
       data.slBalance = slBalance === null || slBalance === '' ? 0 : Number(slBalance)
+    }
+    if (coBalance !== undefined) {
+      data.coBalance = coBalance === null || coBalance === '' ? 0 : Number(coBalance)
     }
 
     const updated = await prisma.employee.update({

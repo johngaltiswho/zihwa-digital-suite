@@ -47,6 +47,7 @@ model Company {
   complianceDeadlines  ComplianceDeadline[]
   documents            Document[]
   employees            Employee[]
+  companyHolidays      CompanyHoliday[]
   labours              Labour[]
   candidates    Candidate[]
 
@@ -196,10 +197,13 @@ model Employee {
   updatedAt         DateTime           @updatedAt
   elBalance         Float              @default(0)
   slBalance         Float              @default(0)
+  coBalance         Float              @default(0)
   lastLeaveAccrual  DateTime?
+  lastCompOffAccrual DateTime?
   attendanceRecords AttendanceRecord[]
   company           Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
   payrollRecords    PayrollRecord[]
+  compOffLedger     CompOffLedger[]
 
   @@unique([companyId, employeeId])
   @@map("employees")
@@ -233,12 +237,44 @@ model PayrollRecord {
   status      PayrollStatus @default(PENDING)
   processedAt DateTime?
   notes       String?
+  calculationBreakdown Json?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   employee    Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@unique([employeeId, month, year])
   @@map("payroll_records")
+}
+
+model CompanyHoliday {
+  id        String   @id @default(cuid())
+  companyId String
+  date      DateTime
+  name      String
+  isOptional Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, date])
+  @@map("company_holidays")
+}
+
+model CompOffLedger {
+  id                    String             @id @default(cuid())
+  employeeId            String
+  sourceDate            DateTime
+  earnedDays            Float
+  usedDays              Float              @default(0)
+  expiresOn             DateTime
+  status                CompOffLedgerStatus @default(OPEN)
+  referenceAttendanceId String?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  employee              Employee           @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId, expiresOn, status])
+  @@map("comp_off_ledger")
 }
 
 model Vendor {
@@ -1672,10 +1708,20 @@ enum AttendanceStatus {
   LEAVE
   EL
   SL
+  HALF_DAY
+  CO
 }
 
 enum PayrollStatus {
   PENDING
   PROCESSING
+  APPROVED
   PAID
+}
+
+enum CompOffLedgerStatus {
+  OPEN
+  PARTIALLY_USED
+  EXPIRED
+  CLOSED
 }

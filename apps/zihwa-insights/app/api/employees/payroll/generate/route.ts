@@ -1,11 +1,35 @@
 import { NextResponse } from 'next/server'
-import { AttendanceStatus, PayrollStatus } from '@prisma/client'
+import { AttendanceStatus, PayrollStatus, Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
+import { getCompanyWhereFilter, getRouteAuth } from '@/lib/auth'
 
-const PAYABLE_STATUSES = new Set<AttendanceStatus>(['PRESENT', 'REMOTE', 'LEAVE', 'EL', 'SL'])
+const TRIGGER_STATUSES = new Set<AttendanceStatus>(['ABSENT', 'EL', 'SL'])
+const HOLIDAY_WORK_STATUSES = new Set<AttendanceStatus>(['PRESENT', 'REMOTE', 'HALF_DAY'])
+
+type AttendanceForCalc = {
+  id: string
+  status: AttendanceStatus
+}
+
+const toIsoDate = (date: Date) => date.toISOString().split('T')[0]
+
+const toUtcDate = (year: number, month: number, day: number) =>
+  new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0))
+
+const round2 = (value: number) => Math.round(value * 100) / 100
+
+const isSunday = (year: number, month: number, day: number) => toUtcDate(year, month, day).getUTCDay() === 0
+
+const getRemainingCompOff = (earnedDays: number, usedDays: number) =>
+  Math.max(round2(earnedDays - usedDays), 0)
 
 export async function POST(request: Request) {
   try {
+    const { user, dbUser } = await getRouteAuth()
+    if (!user || !dbUser) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await request.json()
     const { companyId, month, year } = body as { companyId?: string; month?: number; year?: number }
 
@@ -16,9 +40,14 @@ export async function POST(request: Request) {
       )
     }
 
+    const scopeFilter = await getCompanyWhereFilter(dbUser)
+    const allowedCompanyIds = (scopeFilter as { companyId?: { in?: string[] } }).companyId?.in
+    if (allowedCompanyIds && !allowedCompanyIds.includes(companyId)) {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 })
+    }
+
     const monthNumber = Number(month)
     const yearNumber = Number(year)
-
     if (!monthNumber || !yearNumber) {
       return NextResponse.json({ success: false, error: 'Invalid month or year' }, { status: 400 })
     }
@@ -40,88 +69,264 @@ export async function POST(request: Request) {
     }
 
     const employeeIds = employees.map((employee) => employee.id)
-    const start = new Date(Date.UTC(yearNumber, monthNumber - 1, 1))
-    const end = new Date(Date.UTC(yearNumber, monthNumber, 1))
+    const start = toUtcDate(yearNumber, monthNumber, 1)
+    const end = toUtcDate(monthNumber === 12 ? yearNumber + 1 : yearNumber, monthNumber === 12 ? 1 : monthNumber + 1, 1)
 
-    const attendanceRecords = await prisma.attendanceRecord.findMany({
-      where: {
-        employeeId: { in: employeeIds },
-        date: {
-          gte: start,
-          lt: end,
+    const [attendanceRecords, existingPayroll, holidays] = await Promise.all([
+      prisma.attendanceRecord.findMany({
+        where: {
+          employeeId: { in: employeeIds },
+          date: { gte: start, lt: end },
         },
-      },
-      select: {
-        employeeId: true,
-        date: true,
-        status: true,
-      },
-    })
+        select: {
+          id: true,
+          employeeId: true,
+          date: true,
+          status: true,
+        },
+      }),
+      prisma.payrollRecord.findMany({
+        where: {
+          employeeId: { in: employeeIds },
+          month: monthNumber,
+          year: yearNumber,
+        },
+        select: {
+          employeeId: true,
+          status: true,
+        },
+      }),
+      prisma.companyHoliday.findMany({
+        where: {
+          companyId,
+          date: { gte: start, lt: end },
+        },
+        select: {
+          date: true,
+        },
+      }),
+    ])
 
-    const existingPayroll = await prisma.payrollRecord.findMany({
-      where: {
-        employeeId: { in: employeeIds },
-        month: monthNumber,
-        year: yearNumber,
-      },
-      select: {
-        id: true,
-        employeeId: true,
-        status: true,
-      },
-    })
+    const attendanceByEmployee = new Map<string, Map<string, AttendanceForCalc>>()
+    for (const record of attendanceRecords) {
+      const key = toIsoDate(record.date)
+      const byDate = attendanceByEmployee.get(record.employeeId) ?? new Map<string, AttendanceForCalc>()
+      byDate.set(key, { id: record.id, status: record.status })
+      attendanceByEmployee.set(record.employeeId, byDate)
+    }
 
-    const attendanceMap = new Map<string, AttendanceStatus>()
-    attendanceRecords.forEach((record) => {
-      const key = `${record.employeeId}-${record.date.toISOString().split('T')[0]}`
-      attendanceMap.set(key, record.status)
-    })
-
+    const holidaySet = new Set(holidays.map((holiday) => toIsoDate(holiday.date)))
     const existingPayrollMap = new Map(existingPayroll.map((record) => [record.employeeId, record]))
-    const totalDaysInMonth = new Date(yearNumber, monthNumber, 0).getDate()
+    const totalDaysInMonth = new Date(Date.UTC(yearNumber, monthNumber, 0)).getUTCDate()
 
     let created = 0
     let updated = 0
     let skipped = 0
-
-    const operations = []
+    let sandwichAppliedCount = 0
+    let coEarnedDaysTotal = 0
+    let coUsedDaysTotal = 0
+    let insufficientLeaveFallbackCount = 0
 
     for (const employee of employees) {
       const existing = existingPayrollMap.get(employee.id)
-      if (existing && existing.status === 'PAID') {
+      if (existing?.status === PayrollStatus.PAID) {
         skipped += 1
         continue
       }
 
-      let paidDays = 0
-      let unpaidDays = 0
+      const employeeAttendance = attendanceByEmployee.get(employee.id) ?? new Map<string, AttendanceForCalc>()
+      const dayStatuses = new Map<number, AttendanceStatus | undefined>()
+      let presentDays = 0
+      let remoteDays = 0
+      let halfDays = 0
+      let leaveDays = 0
+      let elDays = 0
+      let slDays = 0
+      let coDays = 0
+      let missingWorkingDays = 0
+      let absentDays = 0
+      let sandwichDays = 0
+      let coEarned = 0
+      let coUsed = 0
+      let payableUnits = 0
+      let unpaidUnits = 0
+      const holidayWorkAttendanceRefs: Array<{ attendanceId: string; sourceDate: Date; earnedDays: number }> = []
 
-      for (let day = 1; day <= totalDaysInMonth; day += 1) {
-        const isoDate = new Date(Date.UTC(yearNumber, monthNumber - 1, day)).toISOString().split('T')[0]
-        const status = attendanceMap.get(`${employee.id}-${isoDate}`)
-        if (status) {
-          if (PAYABLE_STATUSES.has(status)) {
-            paidDays += 1
-          } else {
-            unpaidDays += 1
-          }
-        } else {
-          unpaidDays += 1
-        }
+      const isNonWorkingDay = (day: number) => {
+        const isoDate = toIsoDate(toUtcDate(yearNumber, monthNumber, day))
+        return isSunday(yearNumber, monthNumber, day) || holidaySet.has(isoDate)
       }
 
-      const grossBase = employee.grossSalary ?? employee.netSalary ?? 0
-      const netBase = employee.netSalary ?? grossBase
+      for (let day = 1; day <= totalDaysInMonth; day += 1) {
+        const isoDate = toIsoDate(toUtcDate(yearNumber, monthNumber, day))
+        dayStatuses.set(day, employeeAttendance.get(isoDate)?.status)
+      }
 
-      const perDayGross = totalDaysInMonth > 0 ? grossBase / totalDaysInMonth : 0
-      const perDayNet = totalDaysInMonth > 0 ? netBase / totalDaysInMonth : 0
+      const findNearestWorkingStatus = (fromDay: number, direction: -1 | 1): AttendanceStatus | undefined => {
+        let cursor = fromDay + direction
+        while (cursor >= 1 && cursor <= totalDaysInMonth) {
+          if (!isNonWorkingDay(cursor)) return dayStatuses.get(cursor)
+          cursor += direction
+        }
+        return undefined
+      }
 
-      const grossAmount = Math.round(perDayGross * paidDays)
-      const netAmount = Math.round(perDayNet * paidDays)
-      const deductions = Math.round(perDayNet * unpaidDays)
+      for (let day = 1; day <= totalDaysInMonth; day += 1) {
+        const isoDate = toIsoDate(toUtcDate(yearNumber, monthNumber, day))
+        const attendance = employeeAttendance.get(isoDate)
+        const status = attendance?.status
+        const nonWorking = isNonWorkingDay(day)
 
-      operations.push(
-        prisma.payrollRecord.upsert({
+        if (nonWorking) {
+          if (status && HOLIDAY_WORK_STATUSES.has(status)) {
+            const earned = status === AttendanceStatus.HALF_DAY ? 0.5 : 1
+            payableUnits += earned
+            coEarned += earned
+            if (status === AttendanceStatus.HALF_DAY) halfDays += 1
+            if (status === AttendanceStatus.PRESENT) presentDays += 1
+            if (status === AttendanceStatus.REMOTE) remoteDays += 1
+            if (attendance?.id) {
+              holidayWorkAttendanceRefs.push({
+                attendanceId: attendance.id,
+                sourceDate: toUtcDate(yearNumber, monthNumber, day),
+                earnedDays: earned,
+              })
+            }
+          } else {
+            const previousWorkingStatus = findNearestWorkingStatus(day, -1)
+            const nextWorkingStatus = findNearestWorkingStatus(day, 1)
+            const isSandwich =
+              previousWorkingStatus !== undefined &&
+              nextWorkingStatus !== undefined &&
+              TRIGGER_STATUSES.has(previousWorkingStatus) &&
+              TRIGGER_STATUSES.has(nextWorkingStatus)
+
+            if (isSandwich) {
+              sandwichDays += 1
+              unpaidUnits += 1
+            } else {
+              payableUnits += 1
+            }
+          }
+          continue
+        }
+
+        if (!status) {
+          missingWorkingDays += 1
+          unpaidUnits += 1
+          continue
+        }
+
+        if (status === AttendanceStatus.ABSENT) {
+          absentDays += 1
+          unpaidUnits += 1
+          continue
+        }
+
+        if (status === AttendanceStatus.HALF_DAY) {
+          halfDays += 1
+          payableUnits += 0.5
+          unpaidUnits += 0.5
+          continue
+        }
+
+        if (status === AttendanceStatus.PRESENT) presentDays += 1
+        if (status === AttendanceStatus.REMOTE) remoteDays += 1
+        if (status === AttendanceStatus.LEAVE) leaveDays += 1
+        if (status === AttendanceStatus.EL) elDays += 1
+        if (status === AttendanceStatus.SL) slDays += 1
+        if (status === AttendanceStatus.CO) {
+          coDays += 1
+          coUsed += 1
+        }
+
+        payableUnits += 1
+      }
+
+      await prisma.$transaction(async (tx) => {
+        const refs = holidayWorkAttendanceRefs.map((entry) => entry.attendanceId)
+        const existingRefs = refs.length > 0
+          ? await tx.compOffLedger.findMany({
+              where: { referenceAttendanceId: { in: refs } },
+              select: { referenceAttendanceId: true },
+            })
+          : []
+
+        const existingRefSet = new Set(
+          existingRefs
+            .map((entry) => entry.referenceAttendanceId)
+            .filter(Boolean) as string[]
+        )
+
+        const newLedgerEntries = holidayWorkAttendanceRefs
+          .filter((entry) => !existingRefSet.has(entry.attendanceId))
+          .map((entry) => {
+            const expiresOn = new Date(entry.sourceDate)
+            expiresOn.setUTCDate(expiresOn.getUTCDate() + 90)
+            return {
+              employeeId: employee.id,
+              sourceDate: entry.sourceDate,
+              earnedDays: entry.earnedDays,
+              usedDays: 0,
+              expiresOn,
+              status: 'OPEN' as const,
+              referenceAttendanceId: entry.attendanceId,
+            }
+          })
+
+        if (newLedgerEntries.length > 0) {
+          await tx.compOffLedger.createMany({ data: newLedgerEntries })
+        }
+
+        await tx.compOffLedger.updateMany({
+          where: {
+            employeeId: employee.id,
+            status: { in: ['OPEN', 'PARTIALLY_USED'] },
+            expiresOn: { lt: new Date() },
+          },
+          data: { status: 'EXPIRED' },
+        })
+
+        const openLedgers = await tx.compOffLedger.findMany({
+          where: {
+            employeeId: employee.id,
+            status: { in: ['OPEN', 'PARTIALLY_USED'] },
+            expiresOn: { gte: new Date() },
+          },
+          select: { earnedDays: true, usedDays: true },
+        })
+        const coBalance = round2(
+          openLedgers.reduce((sum, ledger) => sum + getRemainingCompOff(ledger.earnedDays, ledger.usedDays), 0)
+        )
+
+        const grossBase = employee.grossSalary ?? employee.netSalary ?? 0
+        const netBase = employee.netSalary ?? grossBase
+        const perDayGross = totalDaysInMonth > 0 ? grossBase / totalDaysInMonth : 0
+        const perDayNet = totalDaysInMonth > 0 ? netBase / totalDaysInMonth : 0
+
+        const grossAmount = Math.round(perDayGross * payableUnits)
+        const netAmount = Math.round(perDayNet * payableUnits)
+        const deductions = Math.round(perDayNet * unpaidUnits)
+
+        const breakdown = {
+          payableUnits: round2(payableUnits),
+          unpaidUnits: round2(unpaidUnits),
+          presentDays,
+          remoteDays,
+          halfDays,
+          leaveDays,
+          elDays,
+          slDays,
+          coDays,
+          absentDays,
+          missingWorkingDays,
+          sandwichDays,
+          coEarned: round2(coEarned),
+          coUsed: round2(coUsed),
+          holidayWorkedCount: holidayWorkAttendanceRefs.length,
+        }
+
+        await tx.payrollRecord.upsert({
           where: {
             employeeId_month_year: {
               employeeId: employee.id,
@@ -138,24 +343,32 @@ export async function POST(request: Request) {
             bonus: 0,
             deductions,
             status: PayrollStatus.PENDING,
+            calculationBreakdown: breakdown as Prisma.InputJsonValue,
           },
           update: {
             grossAmount,
             netAmount,
             deductions,
+            calculationBreakdown: breakdown as Prisma.InputJsonValue,
           },
         })
-      )
 
-      if (existing) {
-        updated += 1
-      } else {
-        created += 1
-      }
-    }
+        await tx.employee.update({
+          where: { id: employee.id },
+          data: {
+            coBalance,
+            lastCompOffAccrual: newLedgerEntries.length > 0 ? new Date() : undefined,
+          },
+        })
+      })
 
-    if (operations.length > 0) {
-      await prisma.$transaction(operations)
+      sandwichAppliedCount += sandwichDays
+      coEarnedDaysTotal += coEarned
+      coUsedDaysTotal += coUsed
+      insufficientLeaveFallbackCount += 0
+
+      if (existing) updated += 1
+      else created += 1
     }
 
     return NextResponse.json({
@@ -165,6 +378,10 @@ export async function POST(request: Request) {
         updated,
         skipped,
         processed: created + updated,
+        sandwichAppliedCount: round2(sandwichAppliedCount),
+        coEarnedDaysTotal: round2(coEarnedDaysTotal),
+        coUsedDaysTotal: round2(coUsedDaysTotal),
+        insufficientLeaveFallbackCount,
       },
     })
   } catch (error) {

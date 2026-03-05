@@ -1,14 +1,23 @@
 import { NextResponse } from 'next/server'
 import { PayrollStatus, Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
+import { getCompanyWhereFilter, getRouteAuth } from '@/lib/auth'
 
 // GET /api/employees/payroll?month=MM&year=YYYY
 export async function GET(request: Request) {
+  const { user, dbUser } = await getRouteAuth()
+  if (!user || !dbUser) {
+    return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+  }
+
   const url = new URL(request.url)
   const monthParam = url.searchParams.get('month')
   const yearParam = url.searchParams.get('year')
 
-  const where: Prisma.PayrollRecordWhereInput = {}
+  const scopeFilter = await getCompanyWhereFilter(dbUser)
+  const where: Prisma.PayrollRecordWhereInput = {
+    ...(scopeFilter.companyId ? { employee: { companyId: scopeFilter.companyId } } : {}),
+  }
   if (monthParam) where.month = Number(monthParam)
   if (yearParam) where.year = Number(yearParam)
 
@@ -25,6 +34,9 @@ export async function GET(request: Request) {
             lastName: true,
             department: true,
             companyId: true,
+            bankAccountNumber: true,
+            ifscCode: true,
+            phone: true,
             company: {
               select: {
                 id: true,
@@ -53,6 +65,11 @@ export async function GET(request: Request) {
 // POST /api/employees/payroll - create/update payroll record
 export async function POST(request: Request) {
   try {
+    const { user, dbUser } = await getRouteAuth()
+    if (!user || !dbUser) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await request.json()
     const {
       employeeId,
@@ -80,6 +97,20 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, error: 'Invalid payroll status' }, { status: 400 })
       }
       parsedStatus = status
+    }
+
+    const employee = await prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { id: true, companyId: true },
+    })
+    if (!employee) {
+      return NextResponse.json({ success: false, error: 'Employee not found' }, { status: 404 })
+    }
+
+    const scopeFilter = await getCompanyWhereFilter(dbUser)
+    const allowedCompanyIds = (scopeFilter as { companyId?: { in?: string[] } }).companyId?.in
+    if (allowedCompanyIds && !allowedCompanyIds.includes(employee.companyId)) {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 })
     }
 
     const createData: Prisma.PayrollRecordUncheckedCreateInput = {
@@ -134,6 +165,9 @@ export async function POST(request: Request) {
             firstName: true,
             lastName: true,
             companyId: true,
+            bankAccountNumber: true,
+            ifscCode: true,
+            phone: true,
             company: {
               select: {
                 id: true,
