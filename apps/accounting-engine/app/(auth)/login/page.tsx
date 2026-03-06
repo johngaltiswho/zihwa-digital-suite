@@ -19,8 +19,8 @@ function LoginContent() {
   useEffect(() => {
     let isMounted = true
 
-    void supabase.auth.getSession().then(({ data }) => {
-      if (isMounted && data.session && !didRedirectRef.current) {
+    void supabase.auth.getUser().then(({ data }) => {
+      if (isMounted && data.user && !didRedirectRef.current) {
         didRedirectRef.current = true
         router.replace(redirectTo)
       }
