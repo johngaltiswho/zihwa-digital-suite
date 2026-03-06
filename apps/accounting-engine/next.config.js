@@ -1,3 +1,5 @@
+const path = require('path')
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: [
@@ -16,6 +18,7 @@ const nextConfig = {
       '../../node_modules/.pnpm/@prisma+engines@*/node_modules/@prisma/engines/**',
     ],
   },
+  outputFileTracingRoot: path.join(__dirname, '../../'),
   typedRoutes: false,
 }
 
