@@ -32,6 +32,7 @@ export default function UsersPage() {
   const [selectedCompanyRole, setSelectedCompanyRole] = useState<CompanyRole>('VIEWER')
   const [updatingRole, setUpdatingRole] = useState<string | null>(null)
   const [inviting, setInviting] = useState(false)
+  const [resendingInviteId, setResendingInviteId] = useState<string | null>(null)
   const [inviteForm, setInviteForm] = useState({ 
   email: '', 
   name: '', 
@@ -178,6 +179,26 @@ setCompanies(
       alert('Failed to send invite')
     } finally {
       setInviting(false)
+    }
+  }
+
+  const handleResendInvite = async (userId: string, email: string) => {
+    setResendingInviteId(userId)
+    try {
+      const response = await fetch('/api/users/invite/resend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      const data = await response.json()
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to resend invite')
+      }
+      alert(`Invite resent to ${email}`)
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to resend invite')
+    } finally {
+      setResendingInviteId(null)
     }
   }
 
@@ -387,6 +408,14 @@ setCompanies(
                           ))}
                         </select>
                       </div>
+
+                      <button
+                        onClick={() => handleResendInvite(user.id, user.email)}
+                        disabled={resendingInviteId === user.id}
+                        className="px-2 py-1 text-xs border border-gray-200 rounded text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+                      >
+                        {resendingInviteId === user.id ? 'Sending...' : 'Resend invite'}
+                      </button>
                       
                       <div className="flex items-center gap-2 flex-1">
                         <span className="text-xs text-gray-500">Companies:</span>
