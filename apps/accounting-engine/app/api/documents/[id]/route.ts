@@ -76,10 +76,11 @@ export async function GET(
         processedAt: document.processedAt,
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Internal server error'
     console.error('Get document error:', error)
     return NextResponse.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: message },
       { status: 500 }
     )
   }
@@ -163,10 +164,11 @@ export async function PATCH(
     }
 
     return NextResponse.json({ success: true })
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to update document'
     console.error('Update document error:', error)
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to update document' },
+      { success: false, error: message },
       { status: 500 }
     )
   }
@@ -211,10 +213,11 @@ export async function DELETE(
     })
 
     return NextResponse.json({ success: true })
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to delete document'
     console.error('Delete document error:', error)
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to delete document' },
+      { success: false, error: message },
       { status: 500 }
     )
   }

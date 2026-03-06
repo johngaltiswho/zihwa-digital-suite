@@ -19,10 +19,16 @@ const permissionByTool: Record<CopilotToolName, Permission> = {
   get_company_summary: 'company.read',
 }
 
+function getDraftIdFromResult(result: unknown): string | null {
+  if (!result || typeof result !== 'object') return null
+  const id = (result as { id?: unknown }).id
+  return typeof id === 'string' ? id : null
+}
+
 export async function POST(
   request: NextRequest,
   context: { params: Promise<{ companyId: string }> }
-) {
+): Promise<Response> {
   const { companyId } = await context.params
 
   const body = await request.json()
@@ -104,7 +110,7 @@ export async function POST(
         toolName,
         result,
       },
-      draftId: (result as any)?.id ?? null,
+      draftId: getDraftIdFromResult(result),
     })
 
     const messages = await listCopilotMessages(thread.id)
@@ -122,22 +128,23 @@ export async function POST(
         messages,
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
     await createCopilotToolCall({
       messageId: userMessage.id,
       toolName,
       input: (body.args ?? {}) as Record<string, unknown>,
       status: 'FAILED',
-      error: error.message || 'Tool failed',
+      error: message || 'Tool failed',
     })
 
     const assistant = await createCopilotMessage({
       threadId: thread.id,
       role: 'ASSISTANT',
-      content: `Failed to execute ${toolName}: ${error.message || 'Unknown error'}`,
+      content: `Failed to execute ${toolName}: ${message}`,
       metadata: {
         toolName,
-        error: error.message || 'Unknown error',
+        error: message,
       },
     })
 
@@ -152,7 +159,7 @@ export async function POST(
             status: 'FAILED',
           },
         },
-        error: error.message || 'Tool execution failed',
+        error: message || 'Tool execution failed',
       },
       { status: 400 }
     )

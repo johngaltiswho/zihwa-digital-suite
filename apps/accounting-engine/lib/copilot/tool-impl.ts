@@ -8,11 +8,64 @@ import {
   getActiveAccountingContext,
   prisma,
 } from '@repo/db'
-import { AccountingContextSchema, DraftPayloadSchema } from '@repo/ledger-core'
+import {
+  AccountingContextSchema,
+  DraftPayloadSchema,
+  type DraftPayload,
+  type ExpenseData,
+  type PurchaseData,
+  type VoucherResult,
+} from '@repo/ledger-core'
 import { getCompanyZohoConnection } from '../zoho/company-connection'
 import { postExpense, postPurchase } from '@repo/connector-zoho-books'
 
-export async function searchVendors(companyId: string, query: string) {
+type ExtractedDocumentData = {
+  data?: {
+    vendorName?: unknown
+    merchant?: unknown
+  }
+}
+
+function toExpenseData(payload: DraftPayload): ExpenseData {
+  return {
+    merchant: payload.merchant || payload.vendorName || 'Unknown merchant',
+    amount: payload.amount,
+    currency: payload.currency,
+    date: new Date(payload.date),
+    description: payload.narration,
+    taxAmount: payload.taxAmount,
+    lineItems: payload.lineItems.map((item) => ({
+      description: item.description,
+      quantity: item.quantity,
+      rate: item.rate,
+      amount: item.amount,
+      accountId: item.ledgerId,
+      taxId: item.taxId,
+    })),
+  }
+}
+
+function toPurchaseData(payload: DraftPayload): PurchaseData {
+  return {
+    vendorName: payload.vendorName || payload.merchant || 'Unknown vendor',
+    billNumber: payload.billNumber,
+    amount: payload.amount,
+    currency: payload.currency,
+    date: new Date(payload.date),
+    description: payload.narration,
+    taxAmount: payload.taxAmount,
+    lineItems: payload.lineItems.map((item) => ({
+      description: item.description,
+      quantity: item.quantity,
+      rate: item.rate,
+      amount: item.amount,
+      accountId: item.ledgerId,
+      taxId: item.taxId,
+    })),
+  }
+}
+
+export async function searchVendors(companyId: string, query: string): Promise<string[]> {
   const docs = await prisma.processedDocument.findMany({
     where: {
       companyId,
@@ -25,7 +78,7 @@ export async function searchVendors(companyId: string, query: string) {
 
   const hits = new Set<string>()
   for (const doc of docs) {
-    const payload = doc.extractedData as any
+    const payload = (doc.extractedData ?? {}) as ExtractedDocumentData
     const vendor = payload?.data?.vendorName || payload?.data?.merchant
     if (typeof vendor === 'string' && vendor.toLowerCase().includes(query.toLowerCase())) {
       hits.add(vendor)
@@ -40,28 +93,37 @@ export async function createExpenseDraft(input: {
   companyId: string
   userId: string
   payload: Record<string, unknown>
-}) {
+}): Promise<{ id: string }> {
   const parsed = DraftPayloadSchema.parse(input.payload)
 
-  return createAccountingDraft({
+  const draft = await createAccountingDraft({
     organizationId: input.organizationId,
     companyId: input.companyId,
     createdBy: input.userId,
     payload: parsed as unknown as Record<string, unknown>,
     source: 'COPILOT',
   })
+  return { id: draft.id }
 }
 
-export async function attachDocumentToDraft(companyId: string, draftId: string, documentId: string) {
+export async function attachDocumentToDraft(
+  companyId: string,
+  draftId: string,
+  documentId: string
+): Promise<{ id: string }> {
   const draft = await getAccountingDraftById(draftId)
   if (!draft || draft.companyId !== companyId) throw new Error('Draft not found in active company')
   const document = await getDocument(documentId)
   if (!document || document.companyId !== companyId) throw new Error('Document not found in active company')
 
-  return updateAccountingDraft(draftId, { documentId })
+  const updated = await updateAccountingDraft(draftId, { documentId })
+  return { id: updated.id }
 }
 
-export async function validateDraft(companyId: string, draftId: string) {
+export async function validateDraft(
+  companyId: string,
+  draftId: string
+): Promise<{ isValid: boolean; errors: string[]; warnings: string[] }> {
   const draft = await getAccountingDraftById(draftId)
   if (!draft || draft.companyId !== companyId) throw new Error('Draft not found in active company')
 
@@ -92,7 +154,11 @@ export async function validateDraft(companyId: string, draftId: string) {
   return validation
 }
 
-export async function submitDraftForApproval(companyId: string, draftId: string, userId: string) {
+export async function submitDraftForApproval(
+  companyId: string,
+  draftId: string,
+  userId: string
+): Promise<{ id: string }> {
   const draft = await getAccountingDraftById(draftId)
   if (!draft || draft.companyId !== companyId) throw new Error('Draft not found in active company')
 
@@ -114,10 +180,14 @@ export async function submitDraftForApproval(companyId: string, draftId: string,
     },
   })
 
-  return getAccountingDraftById(draftId)
+  return { id: draftId }
 }
 
-export async function approveAndPostDraft(companyId: string, draftId: string, userId: string) {
+export async function approveAndPostDraft(
+  companyId: string,
+  draftId: string,
+  userId: string
+): Promise<{ id: string; status: 'POSTED' | 'FAILED' }> {
   const draft = await getAccountingDraftById(draftId)
   if (!draft || draft.companyId !== companyId) throw new Error('Draft not found in active company')
 
@@ -128,11 +198,11 @@ export async function approveAndPostDraft(companyId: string, draftId: string, us
 
   const payload = DraftPayloadSchema.parse(draft.payload)
 
-  let result
+  let result: VoucherResult
   if (payload.type === 'expense') {
-    result = await postExpense(payload as any, connection.orgId, connection.tokens.accessToken)
+    result = await postExpense(toExpenseData(payload), connection.orgId, connection.tokens.accessToken)
   } else {
-    result = await postPurchase(payload as any, connection.orgId, connection.tokens.accessToken)
+    result = await postPurchase(toPurchaseData(payload), connection.orgId, connection.tokens.accessToken)
   }
 
   const nextStatus = result.success ? 'POSTED' : 'FAILED'
@@ -142,7 +212,7 @@ export async function approveAndPostDraft(companyId: string, draftId: string, us
     postedAt: result.success ? new Date() : null,
     zohoResult: result as unknown as Record<string, unknown>,
     approvalMeta: {
-      ...(draft.approvalMeta as any),
+      ...((draft.approvalMeta ?? {}) as Record<string, unknown>),
       approvedBy: userId,
     },
   })
@@ -159,15 +229,23 @@ export async function approveAndPostDraft(companyId: string, draftId: string, us
     createdBy: userId,
   })
 
-  return getAccountingDraftById(draftId)
+  return { id: draftId, status: nextStatus }
 }
 
-export async function getCompanySummary(companyId: string, dateRange?: { from?: string; to?: string }) {
+export async function getCompanySummary(
+  companyId: string,
+  dateRange?: { from?: string; to?: string }
+): Promise<{
+  dateRange: { from?: string; to?: string } | null
+  totalDrafts: number
+  totalDraftAmount: number
+  byStatus: Record<string, number>
+}> {
   const drafts = await listAccountingDrafts(companyId)
 
   const totalDraftAmount = drafts.reduce((sum, draft) => {
-    const payload = draft.payload as any
-    const amount = typeof payload?.amount === 'number' ? payload.amount : 0
+    const parsed = DraftPayloadSchema.safeParse(draft.payload)
+    const amount = parsed.success ? parsed.data.amount : 0
     return sum + amount
   }, 0)
 

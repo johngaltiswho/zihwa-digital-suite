@@ -5,7 +5,7 @@ import { requireCompanyPermission, requireOrgAccess, requireUser } from '@/lib/a
 
 type ProcessingStatus = 'UPLOADED' | 'PROCESSING' | 'EXTRACTED' | 'POSTED' | 'FAILED'
 
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<Response> {
   try {
     const auth = await requireUser()
     if (!('user' in auth)) return auth.error
@@ -73,10 +73,11 @@ export async function GET(request: NextRequest) {
         offset,
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Internal server error'
     console.error('List documents error:', error)
     return NextResponse.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: message },
       { status: 500 }
     )
   }

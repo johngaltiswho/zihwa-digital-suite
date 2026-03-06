@@ -12,7 +12,7 @@ import { exchangeAndStoreTokens } from '@repo/db'
  * - location: Data center location
  * - state: Optional orgId for reconnection
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<Response> {
   try {
     const searchParams = request.nextUrl.searchParams
     const code = searchParams.get('code')

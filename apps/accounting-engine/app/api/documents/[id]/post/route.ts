@@ -60,7 +60,7 @@ function ensurePurchaseLineItems(data: PurchaseData): PurchaseData {
   }
 }
 
-export async function POST(request: NextRequest, context: DocumentRouteContext) {
+export async function POST(request: NextRequest, context: DocumentRouteContext): Promise<Response> {
   const { id } = await context.params
 
   try {
@@ -234,24 +234,26 @@ export async function POST(request: NextRequest, context: DocumentRouteContext) 
           error: result.error,
         },
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to post to Zoho Books'
       await updateDocument(id, {
         status: 'FAILED',
-        error: error.message || 'Failed to post to Zoho Books',
+        error: message,
       })
 
       return NextResponse.json(
         {
           success: false,
-          error: `Failed to post to Zoho: ${error.message}`,
+          error: `Failed to post to Zoho: ${message}`,
         },
         { status: 500 }
       )
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Internal server error'
     console.error('Post endpoint error:', error)
     return NextResponse.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: message },
       { status: 500 }
     )
   }

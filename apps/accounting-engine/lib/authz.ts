@@ -9,23 +9,73 @@ import {
 import { hasCompanyPermission, orgRoleToCompanyPower, type Permission } from '@repo/ledger-core'
 import { getServerSession } from './supabase-server'
 
-export async function requireUser() {
-  const { session } = await getServerSession()
-  const user = session?.user
-  if (!user) {
-    return { error: NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }) }
-  }
+type OrgRole = 'OWNER' | 'ADMIN' | 'ACCOUNTANT' | 'VIEWER'
+type CompanyRole = 'VIEWER' | 'PREPARER' | 'APPROVER' | 'ADMIN'
+type AuthError = { error: Response }
 
-  return { user }
+type UserAuthResult = AuthError | { user: { id: string } }
+type OrgAccessResult =
+  | AuthError
+  | {
+      user: { id: string }
+      organization: { id: string }
+      orgMembership: { role: OrgRole }
+    }
+type CompanyPermissionResult =
+  | AuthError
+  | {
+      user: { id: string }
+      company: { id: string; organizationId: string }
+      orgMembership: { role: OrgRole } | null
+      companyMembership: { role: CompanyRole } | null
+      effectiveRole: CompanyRole
+    }
+
+type ScopedDocument = {
+  id: string
+  fileName: string
+  fileUrl: string
+  fileType: string
+  documentType: 'EXPENSE' | 'PURCHASE' | 'INVOICE' | 'CREDIT_NOTE'
+  status: 'UPLOADED' | 'PROCESSING' | 'EXTRACTED' | 'POSTED' | 'FAILED'
+  extractedData: unknown
+  postingResult: unknown
+  zohoVoucherId: string | null
+  zohoOrgId: string | null
+  organizationId: string | null
+  companyId: string | null
+  error: string | null
+  createdAt: Date
+  processedAt: Date | null
 }
 
-export async function requireOrgAccess(organizationId: string) {
-  const auth = await requireUser()
-  if (!('user' in auth)) return auth
-  const userId = auth.user?.id
+type DocumentPermissionResult =
+  | AuthError
+  | ({ user: { id: string }; organization: { id: string }; orgMembership: { role: OrgRole } } & {
+      document: ScopedDocument
+    })
+  | ({
+      user: { id: string }
+      company: { id: string; organizationId: string }
+      orgMembership: { role: OrgRole } | null
+      companyMembership: { role: CompanyRole } | null
+      effectiveRole: CompanyRole
+    } & { document: ScopedDocument })
+
+export async function requireUser(): Promise<UserAuthResult> {
+  const { session } = await getServerSession()
+  const userId = session?.user?.id
   if (!userId) {
     return { error: NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }) }
   }
+
+  return { user: { id: userId } }
+}
+
+export async function requireOrgAccess(organizationId: string): Promise<OrgAccessResult> {
+  const auth = await requireUser()
+  if (!('user' in auth)) return auth
+  const userId = auth.user.id
 
   const org = await getOrganizationById(organizationId)
   if (!org) {
@@ -37,16 +87,20 @@ export async function requireOrgAccess(organizationId: string) {
     return { error: NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 }) }
   }
 
-  return { user: auth.user, organization: org, orgMembership: membership }
+  return {
+    user: auth.user,
+    organization: { id: org.id },
+    orgMembership: { role: membership.role as OrgRole },
+  }
 }
 
-export async function requireCompanyPermission(companyId: string, permission: Permission) {
+export async function requireCompanyPermission(
+  companyId: string,
+  permission: Permission
+): Promise<CompanyPermissionResult> {
   const auth = await requireUser()
   if (!('user' in auth)) return auth
-  const userId = auth.user?.id
-  if (!userId) {
-    return { error: NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }) }
-  }
+  const userId = auth.user.id
 
   const company = await getCompanyById(companyId)
   if (!company) {
@@ -68,20 +122,40 @@ export async function requireCompanyPermission(companyId: string, permission: Pe
 
   return {
     user: auth.user,
-    company,
-    orgMembership,
-    companyMembership,
-    effectiveRole,
+    company: { id: company.id, organizationId: company.organizationId },
+    orgMembership: orgMembership ? { role: orgMembership.role as OrgRole } : null,
+    companyMembership: companyMembership ? { role: companyMembership.role as CompanyRole } : null,
+    effectiveRole: effectiveRole as CompanyRole,
   }
 }
 
-export async function requireDocumentPermission(documentId: string, permission: Permission) {
+export async function requireDocumentPermission(
+  documentId: string,
+  permission: Permission
+): Promise<DocumentPermissionResult> {
   const auth = await requireUser()
   if (!('user' in auth)) return auth
 
   const document = await getDocument(documentId)
   if (!document) {
     return { error: NextResponse.json({ success: false, error: 'Document not found' }, { status: 404 }) }
+  }
+  const scopedDocument: ScopedDocument = {
+    id: document.id,
+    fileName: document.fileName,
+    fileUrl: document.fileUrl,
+    fileType: document.fileType,
+    documentType: document.documentType,
+    status: document.status,
+    extractedData: document.extractedData,
+    postingResult: document.postingResult,
+    zohoVoucherId: document.zohoVoucherId,
+    zohoOrgId: document.zohoOrgId,
+    organizationId: document.organizationId,
+    companyId: document.companyId,
+    error: document.error,
+    createdAt: document.createdAt,
+    processedAt: document.processedAt,
   }
 
   if (document.companyId) {
@@ -90,7 +164,7 @@ export async function requireDocumentPermission(documentId: string, permission: 
 
     return {
       ...companyAuth,
-      document,
+      document: scopedDocument,
     }
   }
 
@@ -100,7 +174,7 @@ export async function requireDocumentPermission(documentId: string, permission: 
 
     return {
       ...orgAuth,
-      document,
+      document: scopedDocument,
     }
   }
 

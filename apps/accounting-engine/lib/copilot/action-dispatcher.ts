@@ -17,13 +17,18 @@ export type CopilotToolName =
   | 'approve_and_post'
   | 'get_company_summary'
 
+type DateRangeArg = {
+  from?: string
+  to?: string
+}
+
 export async function runCopilotTool(input: {
   toolName: CopilotToolName
   companyId: string
   organizationId: string
   userId: string
   args: Record<string, unknown>
-}) {
+}): Promise<unknown> {
   switch (input.toolName) {
     case 'search_vendors':
       return searchVendors(input.companyId, String(input.args.query ?? ''))
@@ -43,7 +48,7 @@ export async function runCopilotTool(input: {
     case 'approve_and_post':
       return approveAndPostDraft(input.companyId, String(input.args.draftId), input.userId)
     case 'get_company_summary':
-      return getCompanySummary(input.companyId, input.args.dateRange as any)
+      return getCompanySummary(input.companyId, input.args.dateRange as DateRangeArg | undefined)
     default:
       throw new Error(`Unsupported tool: ${input.toolName}`)
   }

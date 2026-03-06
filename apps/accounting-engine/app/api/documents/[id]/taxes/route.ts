@@ -17,7 +17,7 @@ type ZohoTax = {
   tax_type?: string
 }
 
-export async function GET(_request: NextRequest, context: TaxRouteContext) {
+export async function GET(_request: NextRequest, context: TaxRouteContext): Promise<Response> {
   const { id } = await context.params
 
   try {
@@ -97,8 +97,8 @@ export async function GET(_request: NextRequest, context: TaxRouteContext) {
         taxes,
       },
     })
-  } catch (error: any) {
-    const raw = String(error?.message || 'Failed to fetch Zoho taxes.')
+  } catch (error: unknown) {
+    const raw = error instanceof Error ? error.message : 'Failed to fetch Zoho taxes.'
     const friendly = /not authorized|forbidden|permission|scope/i.test(raw)
       ? 'Tax list unavailable for this Zoho connection. You can continue and choose tax mapping later.'
       : raw

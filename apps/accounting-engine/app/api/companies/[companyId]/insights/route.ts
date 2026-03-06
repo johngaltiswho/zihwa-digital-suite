@@ -5,7 +5,7 @@ import { requireCompanyPermission } from '@/lib/authz'
 export async function GET(
   _request: NextRequest,
   context: { params: Promise<{ companyId: string }> }
-) {
+): Promise<Response> {
   const { companyId } = await context.params
   const auth = await requireCompanyPermission(companyId, 'company.read')
   if (!('user' in auth)) return auth.error
@@ -25,7 +25,7 @@ export async function GET(
 
   const vendorCounts = new Map<string, number>()
   for (const draft of drafts) {
-    const payload = draft.payload as any
+    const payload = (draft.payload ?? {}) as { vendorName?: unknown; merchant?: unknown }
     const vendor = payload.vendorName || payload.merchant
     if (typeof vendor === 'string' && vendor.trim()) {
       vendorCounts.set(vendor, (vendorCounts.get(vendor) ?? 0) + 1)

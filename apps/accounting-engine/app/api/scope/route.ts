@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getActiveScope, setActiveScope } from '@/lib/active-scope'
 import { requireUser } from '@/lib/authz'
 
-export async function GET() {
+export async function GET(): Promise<Response> {
   const auth = await requireUser()
   if (!('user' in auth)) return auth.error
 
@@ -10,7 +10,7 @@ export async function GET() {
   return NextResponse.json({ success: true, data: scope })
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<Response> {
   const auth = await requireUser()
   if (!('user' in auth)) return auth.error
 

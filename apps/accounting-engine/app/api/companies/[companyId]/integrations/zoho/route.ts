@@ -5,7 +5,7 @@ import { requireCompanyPermission } from '@/lib/authz'
 export async function GET(
   _request: NextRequest,
   context: { params: Promise<{ companyId: string }> }
-) {
+): Promise<Response> {
   const { companyId } = await context.params
   const auth = await requireCompanyPermission(companyId, 'integration.manage')
   if (!('user' in auth)) return auth.error
@@ -25,7 +25,7 @@ export async function GET(
 export async function POST(
   request: NextRequest,
   context: { params: Promise<{ companyId: string }> }
-) {
+): Promise<Response> {
   const { companyId } = await context.params
   const auth = await requireCompanyPermission(companyId, 'integration.manage')
   if (!('user' in auth)) return auth.error

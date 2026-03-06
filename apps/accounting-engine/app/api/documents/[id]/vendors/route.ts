@@ -44,7 +44,7 @@ function scoreVendorMatch(parsedName: string, candidateName: string): number {
   return union > 0 ? overlap / union : 0
 }
 
-export async function GET(request: NextRequest, context: VendorRouteContext) {
+export async function GET(request: NextRequest, context: VendorRouteContext): Promise<Response> {
   const { id } = await context.params
 
   try {
@@ -157,8 +157,8 @@ export async function GET(request: NextRequest, context: VendorRouteContext) {
         vendors,
       },
     })
-  } catch (error: any) {
-    const rawMessage = error?.message || 'Failed to fetch vendors from Zoho.'
+  } catch (error: unknown) {
+    const rawMessage = error instanceof Error ? error.message : 'Failed to fetch vendors from Zoho.'
     const message =
       typeof rawMessage === 'string' &&
       rawMessage.toLowerCase().includes('not authorized')

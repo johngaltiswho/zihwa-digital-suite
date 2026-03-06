@@ -5,7 +5,7 @@ import { requireOrgAccess } from '@/lib/authz'
 export async function GET(
   _request: NextRequest,
   context: { params: Promise<{ orgId: string }> }
-) {
+): Promise<Response> {
   const { orgId } = await context.params
   const auth = await requireOrgAccess(orgId)
   if (!('user' in auth)) return auth.error
@@ -17,7 +17,7 @@ export async function GET(
 export async function POST(
   request: NextRequest,
   context: { params: Promise<{ orgId: string }> }
-) {
+): Promise<Response> {
   const { orgId } = await context.params
   const auth = await requireOrgAccess(orgId)
   if (!('user' in auth)) return auth.error

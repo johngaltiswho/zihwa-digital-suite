@@ -20,7 +20,7 @@ type UploadDocumentType =
   | 'invoice'
   | 'credit_note'
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<Response> {
   try {
     const auth = await requireUser()
     if (!('user' in auth)) return auth.error
@@ -166,25 +166,27 @@ export async function POST(request: NextRequest) {
           status: 'EXTRACTED',
         },
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to extract document data'
       await updateDocument(documentId, {
         status: 'FAILED',
-        error: error.message || 'Failed to extract document data',
+        error: message,
       })
 
       return NextResponse.json(
         {
           success: false,
-          error: `Extraction failed: ${error.message}`,
+          error: `Extraction failed: ${message}`,
           documentId,
         },
         { status: 500 }
       )
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Internal server error'
     console.error('Upload endpoint error:', error)
     return NextResponse.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: message },
       { status: 500 }
     )
   }

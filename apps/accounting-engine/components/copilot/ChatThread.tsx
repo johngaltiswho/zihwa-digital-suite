@@ -7,7 +7,28 @@ type Message = {
   id: string
   role: 'USER' | 'ASSISTANT' | 'SYSTEM'
   content: string
-  metadata?: Record<string, any> | null
+  metadata?: Record<string, unknown> | null
+}
+
+type DraftPreview = {
+  id: string
+  status?: string
+  payload?: {
+    type?: string
+    vendorName?: string
+    merchant?: string
+    amount?: number
+    currency?: string
+    date?: string
+    billNumber?: string
+  }
+}
+
+function getDraftFromMetadata(metadata: Record<string, unknown> | null | undefined) {
+  const result = metadata?.result
+  if (!result || typeof result !== 'object') return null
+  const withId = result as { id?: unknown }
+  return typeof withId.id === 'string' ? (result as DraftPreview) : null
 }
 
 const tools = [
@@ -58,8 +79,8 @@ export default function ChatThread({ companyId }: { companyId: string }) {
         setMessages(json.data.messages)
       }
       setMessage('')
-    } catch (err: any) {
-      setError(err.message || 'Copilot action failed')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Copilot action failed')
     } finally {
       setBusy(false)
     }
@@ -74,13 +95,20 @@ export default function ChatThread({ companyId }: { companyId: string }) {
               Start with plain text or choose a tool call to create and move drafts through approval.
             </p>
           )}
-          {messages.map((msg) => (
-            <div key={msg.id} className={`rounded-lg px-3 py-2 text-sm ${msg.role === 'USER' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-900'}`}>
-              <p className="mb-1 text-xs opacity-70">{msg.role}</p>
-              <p>{msg.content}</p>
-              {msg.metadata?.result?.id && <div className="mt-2"><DraftCard draft={msg.metadata.result} /></div>}
-            </div>
-          ))}
+          {messages.map((msg) => {
+            const draft = getDraftFromMetadata(msg.metadata)
+            return (
+              <div key={msg.id} className={`rounded-lg px-3 py-2 text-sm ${msg.role === 'USER' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-900'}`}>
+                <p className="mb-1 text-xs opacity-70">{msg.role}</p>
+                <p>{msg.content}</p>
+                {draft && (
+                  <div className="mt-2">
+                    <DraftCard draft={draft} />
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       </section>
 

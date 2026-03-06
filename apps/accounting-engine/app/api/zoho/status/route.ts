@@ -8,7 +8,7 @@ import { hasTokens, getTokens, listConnectedOrgs } from '@repo/db'
  * Query params:
  * - orgId: Zoho organization ID to check (optional, shows all if omitted)
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<Response> {
   try {
     const searchParams = request.nextUrl.searchParams
     const orgId = searchParams.get('orgId')

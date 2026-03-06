@@ -386,11 +386,11 @@ export default function DocumentDetailPage() {
         body: JSON.stringify(body),
       })
       const raw = await response.text()
-      let data: any = null
+      let data: { success?: boolean; error?: string } = {}
       try {
-        data = raw ? JSON.parse(raw) : null
+        data = raw ? JSON.parse(raw) : {}
       } catch {
-        data = { error: raw || null }
+        data = { error: raw || undefined }
       }
       if (!response.ok || !data.success) {
         throw new Error(data.error || 'Failed to post document')

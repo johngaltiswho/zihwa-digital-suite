@@ -5,8 +5,41 @@ import { useEffect, useMemo, useState } from 'react'
 type ContextVersion = {
   id: string
   status: 'DRAFT' | 'ACTIVE' | 'ARCHIVED'
-  context: Record<string, any>
+  context: Record<string, unknown>
   createdAt: string
+}
+
+type WizardContext = {
+  baseCurrency?: string
+  timezone?: string
+  posting?: {
+    allowAutoPost?: boolean
+    autoPostConfidence?: number
+    manualReviewConfidence?: number
+    roundingPolicy?: string
+    attachmentPolicy?: string
+    autoVendorCreate?: boolean
+  }
+  allocation?: {
+    useProjects?: boolean
+    rules?: unknown[]
+  }
+  gst?: {
+    registered?: boolean
+    requireGstin?: boolean
+    defaultTreatment?: string
+    exemptVendorIds?: string[]
+    manualRateVendors?: string[]
+  }
+  risk?: {
+    tolerancePercent?: number
+    duplicateDetectionPolicy?: string
+    blockedVendors?: string[]
+    holdKeywords?: string[]
+  }
+  vendorRules?: unknown[]
+  ledgerRules?: unknown[]
+  [key: string]: unknown
 }
 
 type ApiResponse = {
@@ -52,7 +85,7 @@ const defaultContext = {
 }
 
 export default function ContextWizard({ companyId }: { companyId: string }) {
-  const [context, setContext] = useState<Record<string, any>>(defaultContext)
+  const [context, setContext] = useState<WizardContext>(defaultContext)
   const [versions, setVersions] = useState<ContextVersion[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -131,8 +164,8 @@ export default function ContextWizard({ companyId }: { companyId: string }) {
       )
 
       await fetchContext()
-    } catch (error: any) {
-      setMessage(error.message || 'Failed to save context')
+    } catch (error: unknown) {
+      setMessage(error instanceof Error ? error.message : 'Failed to save context')
     } finally {
       setSaving(false)
     }

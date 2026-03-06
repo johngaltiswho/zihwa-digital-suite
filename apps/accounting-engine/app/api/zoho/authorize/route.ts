@@ -8,7 +8,7 @@ import { generateAuthorizationUrl } from '@repo/db'
  * Query params:
  * - orgId (optional): Zoho organization ID to reconnect
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<Response> {
   try {
     const searchParams = request.nextUrl.searchParams
     const orgId = searchParams.get('orgId')
