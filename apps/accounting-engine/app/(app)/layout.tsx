@@ -9,13 +9,13 @@ export default async function ProtectedLayout({
 }: {
   children: ReactNode
 }) {
-  const { session } = await getServerSession()
+  const { user } = await getServerSession()
 
-  if (!session) {
+  if (!user) {
     redirect('/login')
   }
 
-  const orgs = await listOrganizationsForUser(session.user.id)
+  const orgs = await listOrganizationsForUser(user.id)
   // Do not force a server redirect here; onboarding lives inside this layout
   // and redirecting from /onboarding -> /onboarding can create a client loop.
 

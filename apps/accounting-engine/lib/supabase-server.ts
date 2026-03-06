@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
+import type { User } from '@supabase/supabase-js'
 
 export async function createServerSupabaseClient() {
   const cookieStore = await cookies()
@@ -26,7 +27,7 @@ export async function createServerSupabaseClient() {
 export async function getServerSession() {
   const supabase = await createServerSupabaseClient()
   const {
-    data: { session },
-  } = await supabase.auth.getSession()
-  return { supabase, session }
+    data: { user },
+  } = await supabase.auth.getUser()
+  return { supabase, user: (user as User | null) ?? null }
 }

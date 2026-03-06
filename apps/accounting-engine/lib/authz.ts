@@ -63,8 +63,8 @@ type DocumentPermissionResult =
     } & { document: ScopedDocument })
 
 export async function requireUser(): Promise<UserAuthResult> {
-  const { session } = await getServerSession()
-  const userId = session?.user?.id
+  const { user } = await getServerSession()
+  const userId = user?.id
   if (!userId) {
     return { error: NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }) }
   }
