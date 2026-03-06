@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 3008",
-    "prebuild": "pnpm --filter @repo/db exec prisma generate",
+    "prebuild": "pnpm --filter @repo/db exec prisma generate && mkdir -p prisma/generated/client && cp ../../packages/db/prisma/generated/client/libquery_engine-rhel-openssl-3.0.x.so.node prisma/generated/client/",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
