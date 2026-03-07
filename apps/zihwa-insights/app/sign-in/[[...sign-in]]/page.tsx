@@ -17,7 +17,7 @@ export default function SignInPage() {
   const [inviteProcessed, setInviteProcessed] = useState(false)
   const nextRoute = searchParams?.get('redirectedFrom') || '/dashboard'
   const redirectTo = useMemo(
-    () => (typeof window !== 'undefined' ? `${window.location.origin}/dashboard` : undefined),
+    () => (typeof window !== 'undefined' ? `${window.location.origin}/reset-password` : undefined),
     [],
   )
 

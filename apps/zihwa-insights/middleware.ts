@@ -36,7 +36,7 @@ export async function middleware(request: NextRequest) {
   ) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
- const response = NextResponse.next()
+  const response = NextResponse.next()
 
 
   if (hasValidSession && pathname.startsWith('/dashboard')) {
@@ -77,9 +77,8 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  return NextResponse.next()
+  return response
 }
-const response = NextResponse.next()
 
 export const config = {
   matcher: [
