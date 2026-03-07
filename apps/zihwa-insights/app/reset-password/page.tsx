@@ -10,6 +10,7 @@ export default function ResetPasswordPage() {
   const supabase = useSupabase()
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
+  const [readyForPasswordUpdate, setReadyForPasswordUpdate] = useState(false)
 
   const redirectTo = useMemo(
     () => (typeof window !== 'undefined' ? `${window.location.origin}/dashboard` : undefined),
@@ -44,9 +45,22 @@ export default function ResetPasswordPage() {
 
       const queryParams = new URLSearchParams(window.location.search)
       const code = queryParams.get('code')
+      const tokenHash = queryParams.get('token_hash')
+      const queryType = queryParams.get('type')
+
       if (code) {
         const { error: codeError } = await supabase.auth.exchangeCodeForSession(code)
         if (codeError) {
+          setError('This reset link is invalid or has expired. Please request a new one.')
+          return
+        }
+      } else if (tokenHash && queryType === 'recovery') {
+        const { error: otpError } = await supabase.auth.verifyOtp({
+          type: 'recovery',
+          token_hash: tokenHash,
+        })
+
+        if (otpError) {
           setError('This reset link is invalid or has expired. Please request a new one.')
           return
         }
@@ -55,7 +69,10 @@ export default function ResetPasswordPage() {
       const { data: userData } = await supabase.auth.getUser()
       if (!userData.user) {
         setError('This reset link is invalid or has expired. Please request a new one.')
+        return
       }
+
+      setReadyForPasswordUpdate(true)
     }
 
     bootstrapRecoverySession()
@@ -88,29 +105,35 @@ export default function ResetPasswordPage() {
           </div>
         )}
 
-        <Auth
-          supabaseClient={supabase}
-          view="update_password"
-          redirectTo={redirectTo}
-          providers={[]}
-          magicLink={false}
-          showLinks={false}
-          appearance={{
-            theme: ThemeSupa,
-            variables: {
-              default: {
-                colors: {
-                  brand: '#111827',
-                  brandAccent: '#0f172a',
+        {readyForPasswordUpdate ? (
+          <Auth
+            supabaseClient={supabase}
+            view="update_password"
+            redirectTo={redirectTo}
+            providers={[]}
+            magicLink={false}
+            showLinks={false}
+            appearance={{
+              theme: ThemeSupa,
+              variables: {
+                default: {
+                  colors: {
+                    brand: '#111827',
+                    brandAccent: '#0f172a',
+                  },
                 },
               },
-            },
-            className: {
-              button: 'bg-gray-900 hover:bg-gray-800 text-white',
-              input: 'rounded-lg border-gray-200 focus:border-gray-900 focus:ring-0',
-            },
-          }}
-        />
+              className: {
+                button: 'bg-gray-900 hover:bg-gray-800 text-white',
+                input: 'rounded-lg border-gray-200 focus:border-gray-900 focus:ring-0',
+              },
+            }}
+          />
+        ) : (
+          <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+            Validating reset link...
+          </div>
+        )}
       </div>
     </div>
   )
