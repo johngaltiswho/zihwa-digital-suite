@@ -13,10 +13,7 @@ const nextConfig = {
   outputFileTracingIncludes: {
     '/*': [
       './prisma/generated/client/**',
-      '../../packages/db/prisma/generated/client/**',
-      '../../node_modules/.pnpm/@prisma+client*/node_modules/@prisma/client/**',
-      '../../node_modules/.pnpm/prisma@*/node_modules/prisma/**',
-      '../../node_modules/.pnpm/@prisma+engines@*/node_modules/@prisma/engines/**',
+      '../../packages/db/prisma/generated/client/libquery_engine-rhel-openssl-3.0.x.so.node',
     ],
   },
   outputFileTracingRoot: path.join(__dirname, '../../'),
