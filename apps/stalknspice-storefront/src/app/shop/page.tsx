@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Zap, ChevronDown, Loader2 } from "lucide-react";
-import { useEffect, useMemo, useState, Suspense } from "react";
+import { useEffect, useMemo, useRef, useState, Suspense } from "react";
 import { UnifiedProductCard } from "@/components/UnifiedProductCard";
 import { CategorySidebar } from "@/components/CategorySidebar";
 import { useInfiniteProducts } from "@/hooks/useInfiniteProducts";
@@ -65,8 +65,12 @@ function getDiscountPercent(product: Product) {
 }
 
 function isOutOfStock(product: Product) {
-  const stock = getPrimaryVariant(product)?.stockLevel;
-  return stock === "OUT_OF_STOCK" || stock === "0";
+  const variants = product.variants || [];
+  if (variants.length === 0) return true;
+  return variants.every((variant) => {
+    const stock = variant.stockLevel;
+    return stock === "OUT_OF_STOCK" || stock === "0" || stock === 0;
+  });
 }
 
 function ShopPageContent() {
@@ -80,10 +84,19 @@ function ShopPageContent() {
   const searchFromUrl = searchParams.get("search");
   const selectedSearchTerm = searchFromUrl && searchFromUrl.trim() !== "" ? searchFromUrl.trim() : null;
 
-  const { products, loading, hasMore, error, sentinelRef, totalItems } = useInfiniteProducts({
+  const { products, loading, hasMore, loadMore, error, sentinelRef, totalItems } = useInfiniteProducts({
     pageSize: 20,
     collectionSlug: selectedCollection || undefined,
     searchTerm: selectedSearchTerm || undefined,
+  });
+  const stockAutoLoadRef = useRef<{
+    key: string;
+    attempts: number;
+    timer: ReturnType<typeof setTimeout> | null;
+  }>({
+    key: "",
+    attempts: 0,
+    timer: null,
   });
 
   const activeCategoryName = selectedSearchTerm
@@ -199,6 +212,39 @@ function ShopPageContent() {
   }, [products, filters]);
 
   const hasActiveFilters = Object.values(filters).some((v) => v !== "all");
+
+  useEffect(() => {
+    const stockFilterActive = filters.stockType !== "all";
+    if (!stockFilterActive) return;
+    if (loading) return;
+    if (!hasMore) return;
+    if (filteredProducts.length > 0) return;
+
+    const key = `${filters.stockType}|${selectedCollection ?? ""}|${selectedSearchTerm ?? ""}`;
+    if (stockAutoLoadRef.current.key !== key) {
+      stockAutoLoadRef.current.key = key;
+      stockAutoLoadRef.current.attempts = 0;
+      if (stockAutoLoadRef.current.timer) {
+        clearTimeout(stockAutoLoadRef.current.timer);
+        stockAutoLoadRef.current.timer = null;
+      }
+    }
+
+    // Controlled scan to find matching in-stock/out-of-stock products.
+    if (stockAutoLoadRef.current.attempts >= 8) return;
+    if (stockAutoLoadRef.current.timer) return;
+
+    const timerId = setTimeout(() => {
+      stockAutoLoadRef.current.timer = null;
+      stockAutoLoadRef.current.attempts += 1;
+      loadMore();
+    }, 500);
+    stockAutoLoadRef.current.timer = timerId;
+
+    return () => {
+      clearTimeout(timerId);
+    };
+  }, [filters.stockType, filteredProducts.length, hasMore, loading, loadMore, selectedCollection, selectedSearchTerm]);
 
   const handleCollectionClick = (slug: string | null) => {
     if (slug) {

@@ -1,69 +1,78 @@
-'use client';
+import { Metadata } from 'next'
+import { Inter } from "next/font/google"
+import "./globals.css"
+import ClientProviders from './ClientProviders'
 
-import { Inter } from "next/font/google";
-import "./globals.css";
-import { StalknSpiceFooter } from "@repo/ui";
-import { AuthProvider } from "@/lib/vendure/auth-context";
-import { CartProvider } from "@/lib/vendure/cart-context";
-import { CollectionsProvider, useCollections } from "@/lib/vendure/collections-context";
-import HeaderWrapper from "@/components/HeaderWrapper";
-import { WishlistProvider } from "@/lib/vendure/wishlist-context";
-import { useMemo } from "react";
+const inter = Inter({ subsets: ["latin"] })
 
-const inter = Inter({ subsets: ["latin"] });
-
-function LayoutContent({ children }: { children: React.ReactNode }) {
-  const { topLevelCollections, isLoading } = useCollections();
-
-  // Transform collections to navigation items
-  const navItems = useMemo(() => {
-    if (isLoading || topLevelCollections.length === 0) {
-      return [];
-    }
-    // Filter out collections without valid slugs and map to nav items
-    return topLevelCollections
-      .filter(collection => collection.slug && collection.slug.trim() !== '')
-      .map(collection => ({
-        label: collection.name,
-        href: `/shop?collection=${collection.slug}`,
-      }));
-  }, [topLevelCollections, isLoading]);
-
-  return (
-    <>
-      <HeaderWrapper
-        navItems={navItems}
-        logoSrc="/images/sns-logo.png"
-        isEcommerce={true}
-        collections={topLevelCollections}
-      />
-
-      <main className="min-h-screen">
-        {children}
-      </main>
-      <StalknSpiceFooter />
-    </>
-  );
+export const metadata: Metadata = {
+  metadataBase: new URL('https://stalknspice.com'),
+  title: {
+    default: 'Stalks N Spice - Premium Food Ingredients Bangalore | B2B & Retail',
+    template: '%s | Stalks N Spice'
+  },
+  description: 'Premium food distributor in Bangalore since 1997. Sauces, syrups, crushes & specialty ingredients for restaurants, cafes & home chefs. Wholesale & retail. Express delivery HSR Layout, Karnataka.',
+  keywords: [
+    'food ingredients Bangalore',
+    'restaurant suppliers Bangalore',
+    'wholesale food distributors',
+    'specialty ingredients Bangalore',
+    'sauces syrups Bangalore',
+    'HORECA suppliers Karnataka',
+    'bulk food orders Bangalore',
+    'cafe suppliers HSR Layout',
+    'gourmet ingredients India',
+    'food distributor Karnataka'
+  ],
+  authors: [{ name: 'Stalks N Spice' }],
+  openGraph: {
+    type: 'website',
+    locale: 'en_IN',
+    url: 'https://stalknspice.com',
+    siteName: 'Stalks N Spice',
+    title: 'Stalks N Spice - Premium Food Ingredients Bangalore | B2B & Retail',
+    description: 'Premium food distributor in Bangalore since 1997. Serving restaurants, cafes & home chefs with specialty ingredients, sauces & syrups.',
+    images: [{
+      url: '/images/sns-logo.png',
+      width: 1200,
+      height: 630,
+      alt: 'Stalks N Spice Logo'
+    }]
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Stalks N Spice - Premium Food Ingredients Bangalore',
+    description: 'Premium food distributor in Bangalore since 1997. Serving restaurants & home chefs.',
+    images: ['/images/sns-logo.png']
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  alternates: {
+    canonical: 'https://stalknspice.com'
+  }
 }
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
     <html lang="en">
       <body className={inter.className}>
-        <AuthProvider>
-          <CollectionsProvider>
-            <CartProvider>
-              <WishlistProvider>
-              <LayoutContent>{children}</LayoutContent>
-              </WishlistProvider>
-            </CartProvider>
-          </CollectionsProvider>
-        </AuthProvider>
+        <ClientProviders>
+          {children}
+        </ClientProviders>
       </body>
     </html>
-  );
+  )
 }

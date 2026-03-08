@@ -175,7 +175,7 @@ importers:
         version: 2.87.0
       next:
         specifier: ^15.3.3
-        version: 15.5.9(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 15.5.9(@babel/core@7.28.6)(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       react:
         specifier: ^19.0.0
         version: 19.2.4
@@ -209,7 +209,7 @@ importers:
         version: 9.28.0(jiti@2.6.1)
       eslint-config-next:
         specifier: 16.0.1
-        version: 16.0.1(@typescript-eslint/parser@8.46.4(eslint@9.28.0(jiti@2.6.1))(typescript@5.8.2))(eslint@9.28.0(jiti@2.6.1))(typescript@5.8.2)
+        version: 16.0.1(eslint@9.28.0(jiti@2.6.1))(typescript@5.8.2)
       tailwindcss:
         specifier: ^4
         version: 4.1.18
@@ -335,6 +335,100 @@ importers:
       tailwindcss:
         specifier: ^4
         version: 4.1.8
+      typescript:
+        specifier: ^5
+        version: 5.8.2
+
+  apps/hr-app:
+    dependencies:
+      '@prisma/client':
+        specifier: ^6.0.1
+        version: 6.19.0(prisma@6.19.0(typescript@5.8.2))(typescript@5.8.2)
+      '@repo/types':
+        specifier: workspace:*
+        version: link:../../packages/types
+      '@repo/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@supabase/auth-ui-react':
+        specifier: ^0.4.7
+        version: 0.4.7(@supabase/supabase-js@2.98.0)
+      '@supabase/auth-ui-shared':
+        specifier: ^0.1.8
+        version: 0.1.8(@supabase/supabase-js@2.98.0)
+      '@supabase/ssr':
+        specifier: ^0.5.2
+        version: 0.5.2(@supabase/supabase-js@2.98.0)
+      '@supabase/storage-js':
+        specifier: ^2.7.1
+        version: 2.98.0
+      '@supabase/supabase-js':
+        specifier: ^2.81.1
+        version: 2.98.0
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      csv-parse:
+        specifier: ^6.1.0
+        version: 6.1.0
+      date-fns:
+        specifier: ^4.1.0
+        version: 4.1.0
+      lucide-react:
+        specifier: ^0.462.0
+        version: 0.462.0(react@19.2.4)
+      next:
+        specifier: ^15.3.3
+        version: 15.5.9(@babel/core@7.28.6)(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.4
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.4(react@19.2.4)
+      react-hot-toast:
+        specifier: ^2.6.0
+        version: 2.6.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      react-phone-number-input:
+        specifier: ^3.4.16
+        version: 3.4.16(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      xlsx:
+        specifier: ^0.18.5
+        version: 0.18.5
+      zod:
+        specifier: ^4.1.12
+        version: 4.1.12
+    devDependencies:
+      '@repo/eslint-config':
+        specifier: workspace:*
+        version: link:../../packages/eslint-config
+      '@repo/typescript-config':
+        specifier: workspace:*
+        version: link:../../packages/typescript-config
+      '@tailwindcss/postcss':
+        specifier: ^4
+        version: 4.1.8
+      '@types/node':
+        specifier: ^20
+        version: 20.19.0
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.3(@types/react@19.2.14)
+      eslint:
+        specifier: ^9
+        version: 9.28.0(jiti@2.6.1)
+      eslint-config-next:
+        specifier: 16.0.1
+        version: 16.0.1(@typescript-eslint/parser@8.46.4(eslint@9.28.0(jiti@2.6.1))(typescript@5.8.2))(eslint@9.28.0(jiti@2.6.1))(typescript@5.8.2)
+      prisma:
+        specifier: ^6.0.1
+        version: 6.19.0(typescript@5.8.2)
+      tailwindcss:
+        specifier: ^4
+        version: 4.1.18
       typescript:
         specifier: ^5
         version: 5.8.2
@@ -552,14 +646,14 @@ importers:
         specifier: ^6.4.1
         version: 6.4.1(@types/node@22.15.31)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)(yaml@2.8.0)
 
-  apps/web:
+  apps/zihwa-insights-webapp:
     dependencies:
       '@repo/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       next:
         specifier: ^15.3.0
-        version: 15.3.2(@babel/core@7.28.6)(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 15.5.9(@babel/core@7.28.6)(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       react:
         specifier: ^19.0.0
         version: 19.2.4
@@ -587,100 +681,6 @@ importers:
         version: 9.28.0(jiti@2.6.1)
       typescript:
         specifier: 5.8.2
-        version: 5.8.2
-
-  apps/zihwa-insights:
-    dependencies:
-      '@prisma/client':
-        specifier: ^6.0.1
-        version: 6.19.0(prisma@6.19.0(typescript@5.8.2))(typescript@5.8.2)
-      '@repo/types':
-        specifier: workspace:*
-        version: link:../../packages/types
-      '@repo/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
-      '@supabase/auth-ui-react':
-        specifier: ^0.4.7
-        version: 0.4.7(@supabase/supabase-js@2.87.0)
-      '@supabase/auth-ui-shared':
-        specifier: ^0.1.8
-        version: 0.1.8(@supabase/supabase-js@2.87.0)
-      '@supabase/ssr':
-        specifier: ^0.5.2
-        version: 0.5.2(@supabase/supabase-js@2.87.0)
-      '@supabase/storage-js':
-        specifier: ^2.7.1
-        version: 2.81.0
-      '@supabase/supabase-js':
-        specifier: ^2.81.1
-        version: 2.87.0
-      clsx:
-        specifier: ^2.1.1
-        version: 2.1.1
-      csv-parse:
-        specifier: ^6.1.0
-        version: 6.1.0
-      date-fns:
-        specifier: ^4.1.0
-        version: 4.1.0
-      lucide-react:
-        specifier: ^0.462.0
-        version: 0.462.0(react@19.2.4)
-      next:
-        specifier: ^15.3.3
-        version: 15.5.9(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      react:
-        specifier: ^19.0.0
-        version: 19.2.4
-      react-dom:
-        specifier: ^19.0.0
-        version: 19.2.4(react@19.2.4)
-      react-hot-toast:
-        specifier: ^2.6.0
-        version: 2.6.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      react-phone-number-input:
-        specifier: ^3.4.16
-        version: 3.4.16(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      xlsx:
-        specifier: ^0.18.5
-        version: 0.18.5
-      zod:
-        specifier: ^4.1.12
-        version: 4.1.12
-    devDependencies:
-      '@repo/eslint-config':
-        specifier: workspace:*
-        version: link:../../packages/eslint-config
-      '@repo/typescript-config':
-        specifier: workspace:*
-        version: link:../../packages/typescript-config
-      '@tailwindcss/postcss':
-        specifier: ^4
-        version: 4.1.8
-      '@types/node':
-        specifier: ^20
-        version: 20.19.0
-      '@types/react':
-        specifier: ^19.0.0
-        version: 19.2.14
-      '@types/react-dom':
-        specifier: ^19.0.0
-        version: 19.2.3(@types/react@19.2.14)
-      eslint:
-        specifier: ^9
-        version: 9.28.0(jiti@2.6.1)
-      eslint-config-next:
-        specifier: 16.0.1
-        version: 16.0.1(eslint@9.28.0(jiti@2.6.1))(typescript@5.8.2)
-      prisma:
-        specifier: ^6.0.1
-        version: 6.19.0(typescript@5.8.2)
-      tailwindcss:
-        specifier: ^4
-        version: 4.1.8
-      typescript:
-        specifier: ^5
         version: 5.8.2
 
   apps/zihwafoods-site:
@@ -4588,10 +4588,6 @@ packages:
     resolution: {integrity: sha512-n3plRhr2Bs8Xun1o4S3k1CDv17iH5QY9YcoEvXX3bxV1/5XSasA0mNXYycFmADIdtdE6BG9MRjP5CGIs8qxC8A==}
     peerDependencies:
       '@supabase/supabase-js': ^2.43.4
-
-  '@supabase/storage-js@2.81.0':
-    resolution: {integrity: sha512-gj9u+EyEVLgDA9jW8JOsAgEc8H79zg01STK5KLv9EU45kf5Qh7kAoCmG090Jkp/YEGvSiaR/Ta7Xs/gUTLqflw==}
-    engines: {node: '>=20.0.0'}
 
   '@supabase/storage-js@2.87.0':
     resolution: {integrity: sha512-luTghajY3IrrKglP5bjf2/51ASg5xaZUALsZuzR23RmuMg4lc4pzq4TxEgnkLoUGDT7Ppr9+uSgvIhf1snXbAw==}
@@ -15476,9 +15472,22 @@ snapshots:
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
 
+  '@supabase/auth-ui-react@0.4.7(@supabase/supabase-js@2.98.0)':
+    dependencies:
+      '@stitches/core': 1.2.8
+      '@supabase/auth-ui-shared': 0.1.8(@supabase/supabase-js@2.98.0)
+      '@supabase/supabase-js': 2.98.0
+      prop-types: 15.8.1
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+
   '@supabase/auth-ui-shared@0.1.8(@supabase/supabase-js@2.87.0)':
     dependencies:
       '@supabase/supabase-js': 2.87.0
+
+  '@supabase/auth-ui-shared@0.1.8(@supabase/supabase-js@2.98.0)':
+    dependencies:
+      '@supabase/supabase-js': 2.98.0
 
   '@supabase/functions-js@2.87.0':
     dependencies:
@@ -15522,9 +15531,11 @@ snapshots:
       '@types/cookie': 0.6.0
       cookie: 0.7.2
 
-  '@supabase/storage-js@2.81.0':
+  '@supabase/ssr@0.5.2(@supabase/supabase-js@2.98.0)':
     dependencies:
-      tslib: 2.8.1
+      '@supabase/supabase-js': 2.98.0
+      '@types/cookie': 0.6.0
+      cookie: 0.7.2
 
   '@supabase/storage-js@2.87.0':
     dependencies:
@@ -18480,7 +18491,7 @@ snapshots:
       eslint: 9.28.0(jiti@2.6.1)
       eslint-import-resolver-node: 0.3.9
       eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.46.4(eslint@9.28.0(jiti@2.6.1))(typescript@5.8.2))(eslint@9.28.0(jiti@2.6.1)))(eslint@9.28.0(jiti@2.6.1))
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.46.4(eslint@9.28.0(jiti@2.6.1))(typescript@5.8.2))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.46.4(eslint@9.28.0(jiti@2.6.1))(typescript@5.8.2))(eslint@9.28.0(jiti@2.6.1)))(eslint@9.28.0(jiti@2.6.1)))(eslint@9.28.0(jiti@2.6.1))
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.46.4(eslint@9.28.0(jiti@2.6.1))(typescript@5.8.2))(eslint-import-resolver-typescript@3.10.1)(eslint@9.28.0(jiti@2.6.1))
       eslint-plugin-jsx-a11y: 6.10.2(eslint@9.28.0(jiti@2.6.1))
       eslint-plugin-react: 7.37.5(eslint@9.28.0(jiti@2.6.1))
       eslint-plugin-react-hooks: 7.0.1(eslint@9.28.0(jiti@2.6.1))
@@ -18552,7 +18563,7 @@ snapshots:
       tinyglobby: 0.2.14
       unrs-resolver: 1.7.12
     optionalDependencies:
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.46.4(eslint@9.28.0(jiti@2.6.1))(typescript@5.8.2))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.46.4(eslint@9.28.0(jiti@2.6.1))(typescript@5.8.2))(eslint@9.28.0(jiti@2.6.1)))(eslint@9.28.0(jiti@2.6.1)))(eslint@9.28.0(jiti@2.6.1))
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.46.4(eslint@9.28.0(jiti@2.6.1))(typescript@5.8.2))(eslint-import-resolver-typescript@3.10.1)(eslint@9.28.0(jiti@2.6.1))
     transitivePeerDependencies:
       - supports-color
 
@@ -18632,7 +18643,7 @@ snapshots:
       - eslint-import-resolver-webpack
       - supports-color
 
-  eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.46.4(eslint@9.28.0(jiti@2.6.1))(typescript@5.8.2))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.46.4(eslint@9.28.0(jiti@2.6.1))(typescript@5.8.2))(eslint@9.28.0(jiti@2.6.1)))(eslint@9.28.0(jiti@2.6.1)))(eslint@9.28.0(jiti@2.6.1)):
+  eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.46.4(eslint@9.28.0(jiti@2.6.1))(typescript@5.8.2))(eslint-import-resolver-typescript@3.10.1)(eslint@9.28.0(jiti@2.6.1)):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.9
@@ -21168,7 +21179,7 @@ snapshots:
       - '@babel/core'
       - babel-plugin-macros
 
-  next@15.5.9(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+  next@15.5.9(@babel/core@7.28.6)(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
       '@next/env': 15.5.9
       '@swc/helpers': 0.5.15

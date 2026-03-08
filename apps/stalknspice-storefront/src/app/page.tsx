@@ -14,6 +14,7 @@ import { motion, AnimatePresence} from "framer-motion";
 import type { Product } from "@/lib/vendure/types";
 import { CategoryProductShelves } from "@/components/CategoryProductShelves";
 import { fetchHomeCategoryShelves, type CategoryShelf } from "@/lib/vendure/home-shelves";
+import LocalBusinessSchema from "@/components/LocalBusinessSchema";
 
 const HOME_SHELVES_CACHE_KEY = "stalks_home_category_shelves_v1";
 
@@ -230,9 +231,11 @@ export default function Home() {
   }, [reviews.length]);
   
   return (
-    <main className="bg-white min-h-screen font-sans">
-      
-      {/* 1. HERO SLIDER SECTION (Using Common Component) */}
+    <>
+      <LocalBusinessSchema />
+      <main className="bg-white min-h-screen font-sans">
+
+        {/* 1. HERO SLIDER SECTION (Using Common Component) */}
       <section className="bg-white pt-0 pb-1 md:py-1">
         <div className="max-w-[1440px] mx-auto md:px-12">
           {/* This one line replaces all the manual state/timer logic */}
@@ -434,6 +437,7 @@ export default function Home() {
 </div>
         <Newsletter />
       </div>
-    </main>
+      </main>
+    </>
   );
 }

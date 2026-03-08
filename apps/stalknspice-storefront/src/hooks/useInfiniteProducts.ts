@@ -77,29 +77,37 @@ export function useInfiniteProducts(options: UseInfiniteProductsOptions = {}): U
             },
           });
 
-          // Extract unique products from productVariants
+          // Extract unique products from productVariants and preserve all variants per product
           const productMap = new Map<string, Product>();
           (data.collection?.productVariants?.items || []).forEach((pv: any) => {
-            if (pv.product && !productMap.has(pv.product.id)) {
-              // Add variant info to the product
-              const product = { ...pv.product };
-              if (!product.variants) {
-                product.variants = [];
+            if (!pv.product) return;
+
+            const existing = productMap.get(pv.product.id);
+            const variant = {
+              id: pv.id,
+              name: pv.name,
+              price: pv.price,
+              priceWithTax: pv.priceWithTax,
+              stockLevel: pv.stockLevel,
+              featuredAsset: pv.featuredAsset,
+            };
+
+            if (existing) {
+              if (!existing.variants) {
+                existing.variants = [];
               }
-              // Ensure this variant is in the variants array
-              const variantExists = product.variants.some((v: any) => v.id === pv.id);
+              const variantExists = existing.variants.some((v: any) => v.id === pv.id);
               if (!variantExists) {
-                product.variants.push({
-                  id: pv.id,
-                  name: pv.name,
-                  price: pv.price,
-                  priceWithTax: pv.priceWithTax,
-                  stockLevel: pv.stockLevel,
-                  featuredAsset: pv.featuredAsset,
-                });
+                existing.variants.push(variant as any);
               }
-              productMap.set(product.id, product);
+              return;
             }
+
+            const product = {
+              ...pv.product,
+              variants: [variant],
+            } as Product;
+            productMap.set(product.id, product);
           });
 
           newProducts = Array.from(productMap.values());
@@ -117,7 +125,16 @@ export function useInfiniteProducts(options: UseInfiniteProductsOptions = {}): U
           total = data.products.totalItems || 0;
         }
 
-        setProducts(prev => append ? [...prev, ...newProducts] : newProducts);
+        setProducts(prev => {
+          const merged = append ? [...prev, ...newProducts] : newProducts;
+          const deduped = new Map<string, Product>();
+          for (const product of merged) {
+            if (!deduped.has(product.id)) {
+              deduped.set(product.id, product);
+            }
+          }
+          return Array.from(deduped.values());
+        });
         setTotalItems(total);
         setHasMore(currentOffset + newProducts.length < total);
       } catch (err: any) {

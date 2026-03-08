@@ -14,14 +14,14 @@ This document defines the port assignments for all applications and services in 
 
 | Application | Port | Description |
 |------------|------|-------------|
-| web | 3000 | Main marketing/landing site |
+| zihwa-insights-webapp | 3000 | Main marketing/landing site |
 | docs | 3001 | Documentation site |
 | aacpinfra-site | 3002 | AACP Infrastructure website |
 | parsoptima | 3003 | Parsoptima e-commerce storefront |
 | stalknspice-storefront | 3004 | StalknSpice e-commerce storefront |
 | zihwafoods-site | 3005 | Zihwa Foods website |
 | fluvium-site | 3006 | Fluvium website |
-| zihwa-insights | 3007 | Zihwa Insights analytics platform |
+| hr-app | 3007 | Zihwa Insights HR operations app |
 | accounting-engine | 3008 | Accounting & document management app |
 
 ### Backend Services

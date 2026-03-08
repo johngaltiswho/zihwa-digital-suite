@@ -1,180 +1,164 @@
-"use client";
+import { Metadata } from 'next'
+import CuisinePageClient from './CuisinePageClient'
 
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
-import Image from "next/image";
-import Link from "next/link";
-import { ArrowLeft, Clock } from "lucide-react";
-import { vendureClient } from "@/lib/vendure/client";
-import { GET_PRODUCTS } from "@/lib/vendure/queries/products";
-import { getAssetUrl } from "@/lib/vendure/asset-utils";
-import type { Product } from "@/lib/vendure/types";
-
-// Sidebar Data for Cuisines
-const CUISINES = [
-  { name: "Italian", slug: "italian", img: "/images/italian-food.png" },
-  { name: "American", slug: "american", img: "/images/american-food.png" },
-  { name: "Indian", slug: "indian", img: "/images/indian-food.png" },
-  { name: "Chinese", slug: "chinese", img: "/images/chinese-food.png" },
-  { name: "Thai", slug: "thai", img: "/images/thai-food.png" },
-  { name: "European", slug: "european", img: "/images/european-food.png" },
-  { name: "Japanese", slug: "japanese", img: "/images/japanese-food.png" },
-  { name: "Korean", slug: "korean", img: "/images/korean-food.jpg" },
-];
-
-export default function CuisinePage() {
-  const params = useParams();
-  const currentCuisineSlug = params.cuisine as string;
-  
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        const data = await vendureClient.request(GET_PRODUCTS, {
-          options: { take: 30 } 
-        });
-        setProducts(data.products.items);
-      } catch (error) {
-        console.error('Failed to fetch products:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProducts();
-  }, [currentCuisineSlug]);
-
-  return (
-    <main className="bg-white min-h-screen flex flex-col">
-      {/* 1. STICKY TOP HEADER */}
-      <div className="bg-white border-b border-gray-100 sticky top-0 z-30">
-        <div className="max-w-[1440px] mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-              <ArrowLeft size={20} className="text-gray-700" />
-            </Link>
-            <h1 className="text-lg font-bold text-gray-900 capitalize">
-              {currentCuisineSlug} Cuisine
-            </h1>
-          </div>
-          {/* Delivery Badge */}
-          <div className="hidden md:flex items-center gap-2 bg-red-50 px-3 py-1 rounded-full border border-red-100">
-             <Clock size={14} className="text-red-700" />
-             <span className="text-[10px] font-bold text-red-800 uppercase tracking-tight">Delivery in 45 Mins</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex flex-1 max-w-[1440px] mx-auto w-full">
-        {/* 2. LEFT SIDEBAR NAVIGATION */}
-        <aside className="w-[85px] md:w-[215px] border-r border-gray-100 sticky top-16 h-[calc(100vh-64px)] overflow-y-auto bg-gray-50/30">
-          {CUISINES.map((item) => (
-            <Link 
-              key={item.slug}
-              href={`/cuisine/${item.slug}`}
-              className={`flex flex-col md:flex-row items-center gap-3 p-3 md:p-4 transition-all border-l-4 ${
-                currentCuisineSlug === item.slug 
-                ? "bg-white border-red-800" 
-                : "border-transparent hover:bg-white text-gray-500"
-              }`}
-            >
-              <div className={`w-10 h-12 md:w-12 md:h-12 relative flex-shrink-0 bg-white rounded-lg shadow-sm p-1 border ${
-                 currentCuisineSlug === item.slug ? "border-red-100" : "border-gray-50"
-              }`}>
-                <Image src={item.img} alt={item.name} fill className="object-contain" />
-              </div>
-              <span className={`text-[10px] md:text-sm font-bold text-center md:text-left leading-tight ${
-                currentCuisineSlug === item.slug ? "text-red-800" : "text-gray-600"
-              }`}>
-                {item.name}
-              </span>
-            </Link>
-          ))}
-        </aside>
-
-        {/* 3. PRODUCT GRID CONTENT */}
-        <section className="flex-1 p-4 md:p-6 bg-white">
-          <div className="mb-6 flex justify-between items-end">
-            <div>
-               <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1">Cuisine Store</p>
-               <h2 className="text-xl font-black text-gray-900 capitalize">
-                Best of {currentCuisineSlug}
-              </h2>
-            </div>
-            <p className="text-xs font-bold text-gray-400">{products.length} Products</p>
-          </div>
-
-          {loading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {[...Array(10)].map((_, i) => (
-                <div key={i} className="aspect-[3/4] bg-gray-50 animate-pulse rounded-xl" />
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
-              {products.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
-    </main>
-  );
+// Cuisine metadata configuration with B2C/B2B dual messaging and local SEO
+const CUISINE_META: Record<string, {
+  title: string
+  description: string
+  keywords: string[]
+}> = {
+  'italian': {
+    title: 'Italian Ingredients & Products Bangalore | Restaurant Suppliers',
+    description: 'Authentic Italian ingredients, pasta, sauces & specialty products for restaurants & home chefs in Bangalore. Barilla, De Cecco, imported olive oils. Wholesale & retail. Express delivery Karnataka.',
+    keywords: [
+      'Italian ingredients Bangalore',
+      'Italian pasta suppliers',
+      'authentic Italian products India',
+      'restaurant Italian supplies',
+      'wholesale Italian food Karnataka',
+      'Barilla pasta Bangalore',
+      'De Cecco products HSR Layout',
+      'buy Italian ingredients online'
+    ]
+  },
+  'chinese': {
+    title: 'Chinese Ingredients & Sauces Bangalore | Asian Food Suppliers',
+    description: 'Premium Chinese ingredients, sauces, noodles & condiments for restaurants & home cooking in Bangalore. Lee Kum Kee, authentic imports. Bulk orders available. Fast delivery Karnataka.',
+    keywords: [
+      'Chinese ingredients Bangalore',
+      'Chinese sauces suppliers',
+      'Asian food products India',
+      'restaurant Chinese supplies',
+      'wholesale Chinese ingredients Karnataka',
+      'Lee Kum Kee Bangalore',
+      'authentic Chinese sauces HSR Layout',
+      'buy Chinese products online'
+    ]
+  },
+  'indian': {
+    title: 'Indian Specialty Ingredients Bangalore | Restaurant Suppliers',
+    description: 'Premium Indian ingredients, spices, chutneys & specialty products for restaurants, cafes & home chefs in Bangalore. Authentic regional flavors. Wholesale pricing available. Express delivery Karnataka.',
+    keywords: [
+      'Indian ingredients Bangalore',
+      'Indian spices suppliers',
+      'specialty Indian products',
+      'restaurant Indian supplies',
+      'wholesale Indian ingredients Karnataka',
+      'regional Indian flavors',
+      'authentic Indian products HSR Layout',
+      'buy Indian ingredients online'
+    ]
+  },
+  'thai': {
+    title: 'Thai Ingredients & Curry Pastes Bangalore | Asian Food Suppliers',
+    description: 'Authentic Thai ingredients, curry pastes, coconut milk & specialty sauces for restaurants in Bangalore. Blue Elephant, imported brands. Bulk orders available. Express delivery Karnataka.',
+    keywords: [
+      'Thai ingredients Bangalore',
+      'Thai curry pastes suppliers',
+      'authentic Thai products India',
+      'restaurant Thai supplies',
+      'wholesale Thai ingredients Karnataka',
+      'Blue Elephant products Bangalore',
+      'Thai coconut milk HSR Layout',
+      'buy Thai ingredients online'
+    ]
+  },
+  'american': {
+    title: 'American Food Products Bangalore | Imported Ingredients',
+    description: 'Import American food products, sauces, syrups & ingredients for cafes & restaurants in Bangalore. Hersheys, Kraft, imported brands. Wholesale & retail. Fast delivery Karnataka.',
+    keywords: [
+      'American food products Bangalore',
+      'imported American ingredients',
+      'American sauces suppliers India',
+      'restaurant American supplies',
+      'wholesale American products Karnataka',
+      'Hersheys Bangalore',
+      'Kraft products HSR Layout',
+      'buy American ingredients online'
+    ]
+  },
+  'japanese': {
+    title: 'Japanese Ingredients Bangalore | Sushi & Asian Food Suppliers',
+    description: 'Premium Japanese ingredients, sauces, noodles & specialty products for restaurants in Bangalore. Sushi ingredients, ramen supplies, authentic imports. Bulk orders available. Fast delivery.',
+    keywords: [
+      'Japanese ingredients Bangalore',
+      'sushi supplies Bangalore',
+      'Japanese sauces suppliers',
+      'restaurant Japanese supplies',
+      'wholesale Japanese ingredients Karnataka',
+      'ramen noodles Bangalore',
+      'authentic Japanese products HSR Layout',
+      'buy Japanese ingredients online'
+    ]
+  },
+  'korean': {
+    title: 'Korean Ingredients Bangalore | K-Food Suppliers India',
+    description: 'Authentic Korean ingredients, gochujang, kimchi & specialty products for restaurants & home chefs in Bangalore. Imported Korean brands. Wholesale & retail. Fast delivery Karnataka.',
+    keywords: [
+      'Korean ingredients Bangalore',
+      'gochujang suppliers India',
+      'Korean food products Bangalore',
+      'restaurant Korean supplies',
+      'wholesale Korean ingredients Karnataka',
+      'kimchi Bangalore',
+      'authentic Korean products HSR Layout',
+      'buy Korean ingredients online'
+    ]
+  },
+  'european': {
+    title: 'European Ingredients Bangalore | Imported Food Suppliers',
+    description: 'Premium European ingredients, cheeses, sauces & specialty products for restaurants & cafes in Bangalore. French, Spanish, Italian imports. Wholesale pricing available. Fast delivery Karnataka.',
+    keywords: [
+      'European ingredients Bangalore',
+      'imported European products',
+      'European cheeses suppliers India',
+      'restaurant European supplies',
+      'wholesale European ingredients Karnataka',
+      'French products Bangalore',
+      'Spanish ingredients HSR Layout',
+      'buy European ingredients online'
+    ]
+  }
 }
 
-function ProductCard({ product }: { product: Product }) {
-  const [selectedVariantId, setSelectedVariantId] = useState(product.variants[0]?.id);
-  const currentVariant = product.variants.find((v) => v.id === selectedVariantId) || product.variants[0];
+export async function generateMetadata({ params }: { params: Promise<{ cuisine: string }> }): Promise<Metadata> {
+  const { cuisine } = await params
+  const meta = CUISINE_META[cuisine] || {
+    title: `${cuisine.charAt(0).toUpperCase() + cuisine.slice(1)} Cuisine Ingredients | Stalks N Spice`,
+    description: `Shop premium ${cuisine} ingredients and products in Bangalore. Wholesale & retail for restaurants, cafes & home chefs. Express delivery Karnataka.`,
+    keywords: [`${cuisine} ingredients`, 'Bangalore', 'wholesale', 'restaurant suppliers']
+  }
 
-  return (
-    <div className="group flex flex-col bg-white border border-gray-100 rounded-xl p-3 hover:shadow-md transition-all duration-300 h-full">
-      <Link href={`/product/${product.slug}?variant=${selectedVariantId}`} className="flex-1">
-        <div className="relative aspect-square w-full bg-[#fcfcfc] rounded-lg overflow-hidden mb-3">
-          <Image
-            src={getAssetUrl(currentVariant?.featuredAsset?.preview || product.featuredAsset?.preview)}
-            alt={product.name}
-            fill
-            className="object-contain p-2 group-hover:scale-105 transition-transform duration-500"
-          />
-        </div>
+  return {
+    title: meta.title,
+    description: meta.description,
+    keywords: meta.keywords,
+    openGraph: {
+      type: 'website',
+      url: `https://stalknspice.com/cuisine/${cuisine}`,
+      title: meta.title,
+      description: meta.description,
+      siteName: 'Stalks N Spice',
+      images: [{
+        url: '/images/sns-logo.png',
+        width: 1200,
+        height: 630,
+        alt: 'Stalks N Spice'
+      }]
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: meta.title,
+      description: meta.description,
+      images: ['/images/sns-logo.png']
+    },
+    alternates: {
+      canonical: `https://stalknspice.com/cuisine/${cuisine}`
+    }
+  }
+}
 
-        <h3 className="text-[12px] md:text-[13px] font-bold text-gray-800 line-clamp-2 leading-tight h-8 mb-1">
-          {product.name}
-        </h3>
-        
-        {/* Variant Dropdown styled for density */}
-        {product.variants.length > 1 ? (
-          <select
-            value={selectedVariantId}
-            onChange={(e) => {
-              e.preventDefault();
-              setSelectedVariantId(e.target.value);
-            }}
-            className="w-full mb-2 text-[10px] p-1 border border-gray-200 font-bold rounded bg-gray-50 outline-none cursor-pointer text-gray-500"
-          >
-            {product.variants.map((v) => (
-              <option key={v.id} value={v.id}>
-                {v.name.split(' - ').pop()}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <p className="text-[11px] text-gray-400 font-medium mb-2">1 unit</p>
-        )}
-      </Link>
-
-      <div className="mt-auto pt-2 flex items-center justify-between">
-        <span className="text-[14px] md:text-[15px] font-black text-gray-900">
-          ₹{((currentVariant?.price || 0) / 100).toFixed(0)}
-        </span>
-
-        <button className="px-4 py-1.5 border border-red-700 text-red-700 font-bold text-[11px] rounded-lg bg-red-50 hover:bg-red-800 hover:text-white transition-all uppercase tracking-tighter">
-          Add
-        </button>
-      </div>
-    </div>
-  );
+export default async function CuisinePage({ params }: { params: Promise<{ cuisine: string }> }) {
+  const { cuisine } = await params
+  return <CuisinePageClient currentCuisineSlug={cuisine} />
 }

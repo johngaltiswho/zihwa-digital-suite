@@ -1,22 +1,123 @@
-import Image from "next/image";
-import { notFound } from "next/navigation";
-import { recipes } from "../data/recipesData";
-import Newsletter from "@/components/NewsLetter"; // 1. Import the Newsletter
+import { Metadata } from 'next'
+import Image from "next/image"
+import { notFound } from "next/navigation"
+import { recipes } from "../data/recipesData"
+import Newsletter from "@/components/NewsLetter"
 
 export async function generateStaticParams() {
   return recipes.map((recipe) => ({
-    slug: recipe.id, 
-  }));
+    slug: recipe.id,
+  }))
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  const recipe = recipes.find((r) => r.id === slug)
+
+  if (!recipe) {
+    return { title: 'Recipe Not Found | Stalks N Spice' }
+  }
+
+  const description = `${recipe.description} Ready in ${recipe.time}. Perfect for ${recipe.category.toLowerCase()}. Step-by-step recipe with ingredients: ${recipe.ingredients.slice(0, 3).join(', ')}${recipe.ingredients.length > 3 ? ' and more' : ''}.`
+
+  return {
+    title: `${recipe.title} Recipe | ${recipe.time}`,
+    description,
+    keywords: [
+      recipe.title,
+      `${recipe.title} recipe`,
+      recipe.category,
+      `${recipe.category} recipes`,
+      `quick ${recipe.category.toLowerCase()} recipes`,
+      ...recipe.ingredients.slice(0, 3),
+      'easy recipes',
+      'home cooking',
+      'Bangalore recipes',
+      'Stalks N Spice recipes'
+    ],
+    authors: [{ name: recipe.author }],
+    openGraph: {
+      type: 'article',
+      url: `https://stalknspice.com/recipes/${slug}`,
+      title: `${recipe.title} Recipe | ${recipe.time}`,
+      description,
+      images: [{
+        url: recipe.image,
+        width: 1200,
+        height: 630,
+        alt: recipe.title
+      }],
+      siteName: 'Stalks N Spice',
+      publishedTime: new Date().toISOString(),
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${recipe.title} Recipe`,
+      description,
+      images: [recipe.image],
+    },
+    alternates: {
+      canonical: `https://stalknspice.com/recipes/${slug}`
+    }
+  }
+}
+
+// Recipe Schema structured data for rich results
+function RecipeStructuredData({ recipe }: { recipe: typeof recipes[0] }) {
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'Recipe',
+    name: recipe.title,
+    image: recipe.image,
+    description: recipe.description,
+    author: {
+      '@type': 'Person',
+      name: recipe.author
+    },
+    prepTime: `PT${recipe.time.replace(' min', 'M')}`,
+    totalTime: `PT${recipe.time.replace(' min', 'M')}`,
+    recipeCategory: recipe.category,
+    recipeCuisine: recipe.category.includes('Thai') ? 'Thai' : recipe.category.includes('Italian') ? 'Italian' : 'International',
+    recipeIngredient: recipe.ingredients,
+    recipeInstructions: recipe.instructions.map((step, index) => ({
+      '@type': 'HowToStep',
+      position: index + 1,
+      text: step
+    })),
+    keywords: `${recipe.title}, ${recipe.category}, quick recipes, easy cooking, home chef recipes`,
+    recipeYield: '2-4 servings',
+    nutrition: {
+      '@type': 'NutritionInformation'
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Stalks N Spice',
+      url: 'https://stalknspice.com',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://stalknspice.com/images/sns-logo.png'
+      }
+    }
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+    />
+  )
 }
 
 export default async function RecipeDetailPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  const recipe = recipes.find((r) => r.id === slug);
+  const { slug } = await params
+  const recipe = recipes.find((r) => r.id === slug)
 
-  if (!recipe) return notFound();
+  if (!recipe) return notFound()
 
   return (
-    <div className="bg-white min-h-screen">
+    <>
+      <RecipeStructuredData recipe={recipe} />
+      <div className="bg-white min-h-screen">
       {/* --- Recipe Header Section --- */}
       <div className="max-w-7xl mx-auto pt-6 px-6 text-center">
         <span className="text-red-700 font-bold uppercase tracking-widest text-sm mb-2 block">
@@ -86,6 +187,7 @@ export default async function RecipeDetailPage({ params }: { params: Promise<{ s
         </div>
       </div>
 
-    </div>
-  );
+      </div>
+    </>
+  )
 }
