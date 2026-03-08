@@ -7,9 +7,11 @@ import OrgCompanySwitcher from './OrgCompanySwitcher'
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const [scope, setScope] = useState<{ organizationId?: string | null; companyId?: string | null }>({})
   const [scopeError, setScopeError] = useState<string | null>(null)
+  const [scopeLoading, setScopeLoading] = useState(true)
 
   useEffect(() => {
     const run = async () => {
+      setScopeLoading(true)
       try {
         const res = await fetch('/api/scope')
         const json = await res.json()
@@ -21,6 +23,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         }
       } catch {
         setScopeError('Failed to load scope')
+      } finally {
+        setScopeLoading(false)
       }
     }
     run()
@@ -59,6 +63,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto mt-3 max-w-7xl px-4">
           <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
             {scopeError}
+          </div>
+        </div>
+      )}
+      {scopeLoading && !scopeError && (
+        <div className="mx-auto mt-3 max-w-7xl px-4">
+          <div className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
+            Loading workspace...
           </div>
         </div>
       )}

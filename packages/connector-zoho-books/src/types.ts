@@ -61,6 +61,8 @@ export interface ZohoPurchaseOptions {
   currencyCode?: string
   /** Payment terms in days */
   paymentTerms?: number
+  /** Create voucher in draft mode in Zoho (if supported by endpoint/org settings) */
+  asDraft?: boolean
 }
 
 /**
@@ -137,6 +139,7 @@ export interface ZohoBillRequest {
   notes?: string
   terms?: string
   payment_terms?: number
+  status?: 'draft'
 }
 
 /**

@@ -73,6 +73,10 @@ function transformPurchaseData(
     bill.payment_terms = options.paymentTerms
   }
 
+  if (options.asDraft) {
+    bill.status = 'draft'
+  }
+
   return bill
 }
 

@@ -19,9 +19,13 @@ export default function OrgCompanySwitcher() {
   const [organizationId, setOrganizationId] = useState('')
   const [companyId, setCompanyId] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [isLoadingOrganizations, setIsLoadingOrganizations] = useState(true)
+  const [isLoadingCompanies, setIsLoadingCompanies] = useState(false)
+  const [scopeReady, setScopeReady] = useState(false)
 
   useEffect(() => {
     const run = async () => {
+      setIsLoadingOrganizations(true)
       try {
         const [scopeRes, orgsRes] = await Promise.all([
           fetch('/api/scope'),
@@ -40,11 +44,14 @@ export default function OrgCompanySwitcher() {
         if (scopeJson.success) {
           if (scopeJson.data.organizationId) setOrganizationId(scopeJson.data.organizationId)
           if (scopeJson.data.companyId) setCompanyId(scopeJson.data.companyId)
+          setScopeReady(true)
         } else {
           setError(scopeJson.error || 'Failed to load scope')
         }
       } catch {
         setError('Failed to load organizations')
+      } finally {
+        setIsLoadingOrganizations(false)
       }
     }
 
@@ -56,9 +63,11 @@ export default function OrgCompanySwitcher() {
       if (!organizationId) {
         setCompanies([])
         setCompanyId('')
+        setIsLoadingCompanies(false)
         return
       }
 
+      setIsLoadingCompanies(true)
       try {
         const res = await fetch(`/api/orgs/${organizationId}/companies`)
         const json = await res.json()
@@ -81,6 +90,8 @@ export default function OrgCompanySwitcher() {
         }
       } catch {
         setError('Failed to load companies')
+      } finally {
+        setIsLoadingCompanies(false)
       }
     }
 
@@ -111,8 +122,11 @@ export default function OrgCompanySwitcher() {
           await setScope({ organizationId: value || '', companyId: '' })
         }}
         className="rounded-md border border-slate-200 bg-white px-2 py-1 text-sm text-slate-900"
+        disabled={isLoadingOrganizations}
       >
-        <option value="">Select org</option>
+        <option value="">
+          {isLoadingOrganizations ? 'Loading organizations...' : 'Select org'}
+        </option>
         {organizations.map((org) => (
           <option key={org.id} value={org.id}>
             {org.name}
@@ -128,16 +142,27 @@ export default function OrgCompanySwitcher() {
           await setScope({ organizationId: organizationId || '', companyId: value || '' })
         }}
         className="rounded-md border border-slate-200 bg-white px-2 py-1 text-sm text-slate-900"
-        disabled={!organizationId}
+        disabled={!organizationId || isLoadingCompanies || !scopeReady}
       >
-        <option value="">Select company</option>
+        <option value="">
+          {isLoadingCompanies
+            ? 'Loading companies...'
+            : organizationId
+              ? 'Select company'
+              : 'Select org first'}
+        </option>
         {companies.map((company) => (
           <option key={company.id} value={company.id}>
             {company.name}
           </option>
         ))}
       </select>
-      {error && <span className="text-xs text-rose-600">{error}</span>}
+      {(isLoadingOrganizations || isLoadingCompanies) && (
+        <span className="text-xs text-slate-500">Loading scope...</span>
+      )}
+      {error && !isLoadingOrganizations && !isLoadingCompanies && (
+        <span className="text-xs text-rose-600">{error}</span>
+      )}
     </div>
   )
 }

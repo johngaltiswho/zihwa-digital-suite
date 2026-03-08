@@ -1,6 +1,8 @@
 import {
   searchVendors,
   createExpenseDraft,
+  ingestExpenseList,
+  postDraftsAsZohoDrafts,
   attachDocumentToDraft,
   validateDraft,
   submitDraftForApproval,
@@ -11,6 +13,8 @@ import {
 export type CopilotToolName =
   | 'search_vendors'
   | 'create_expense_draft'
+  | 'ingest_expense_list'
+  | 'post_drafts_as_zoho_drafts'
   | 'attach_document_to_draft'
   | 'validate_draft'
   | 'submit_for_approval'
@@ -38,6 +42,23 @@ export async function runCopilotTool(input: {
         companyId: input.companyId,
         userId: input.userId,
         payload: (input.args.payload as Record<string, unknown>) ?? {},
+      })
+    case 'ingest_expense_list':
+      return ingestExpenseList({
+        organizationId: input.organizationId,
+        companyId: input.companyId,
+        userId: input.userId,
+        text: String(input.args.text ?? ''),
+        postToZohoDraft: Boolean(input.args.postToZohoDraft ?? true),
+        currency: typeof input.args.currency === 'string' ? input.args.currency : undefined,
+      })
+    case 'post_drafts_as_zoho_drafts':
+      return postDraftsAsZohoDrafts({
+        companyId: input.companyId,
+        draftIds: Array.isArray(input.args.draftIds)
+          ? input.args.draftIds.map((id) => String(id))
+          : [],
+        userId: input.userId,
       })
     case 'attach_document_to_draft':
       return attachDocumentToDraft(input.companyId, String(input.args.draftId), String(input.args.documentId))
