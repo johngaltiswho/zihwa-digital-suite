@@ -1,9 +1,13 @@
+'use client';
+
+import Link from 'next/link';
 import HumilityDBClient from '@/components/HumilityDBClient';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { useAuth } from '@/lib/vendure/auth-context';
 
-export default async function HumilityDB() {
-  const customer = null; // TODO: Replace with Vendure customer authentication
+export default function HumilityDB() {
+  const { customer, isAuthenticated, isLoading } = useAuth();
   const isLoaded = true; // For now, just set this to true
   
   const tabs = [
@@ -31,8 +35,21 @@ export default async function HumilityDB() {
             </p>
           </div>
 
-          {/* Client Component */}
-          <HumilityDBClient customer={customer} tabs={tabs} />
+          {!isLoading && !isAuthenticated ? (
+            <div className="max-w-xl mx-auto text-center bg-gray-800/40 border border-gray-700/50 rounded-xl p-8">
+              <p className="text-gray-300 mb-6">
+                Sign in to access your Humility DB dashboard, upload videos, and track progress.
+              </p>
+              <Link
+                href="/account"
+                className="inline-block bg-gradient-to-r from-cyan-400 to-purple-500 text-black px-6 py-3 rounded-lg font-medium tracking-wide hover:from-cyan-500 hover:to-purple-600 transition-all duration-300"
+              >
+                Sign In
+              </Link>
+            </div>
+          ) : (
+            <HumilityDBClient customer={customer} tabs={tabs} />
+          )}
         </div>
       </div>
       <Footer />

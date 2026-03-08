@@ -4,19 +4,12 @@ import { useState, useEffect } from 'react';
 import { apiService, type Technique, type FlowSession, type MindsetModule, getDifficultyColor, formatDuration } from '@/lib/api';
 import { TechniqueVideoPreview } from '@/components/YouTubePlayer';
 import TechniqueModal from '@/components/TechniqueModal';
+import type { Customer } from '@/lib/vendure/types';
 
 interface Tab {
   id: string;
   name: string;
   icon: string;
-}
-
-// TODO: Replace with Vendure customer type
-interface Customer {
-  id: string;
-  email: string;
-  first_name?: string;
-  last_name?: string;
 }
 
 interface HumilityDBClientProps {
@@ -96,19 +89,19 @@ function DashboardTab({ customer }: { customer: Customer | null }) {
   // Get user's display name
   const getUserName = () => {
     if (!customer) return 'Warrior';
-    return customer.first_name || customer.email?.split('@')[0] || 'Warrior';
+    return customer.firstName || customer.emailAddress?.split('@')[0] || 'Warrior';
   };
 
   // Get user's initials for avatar
   const getUserInitials = () => {
     if (!customer) return 'W';
-    const firstName = customer.first_name || '';
-    const lastName = customer.last_name || '';
+    const firstName = customer.firstName || '';
+    const lastName = customer.lastName || '';
     if (firstName && lastName) {
       return `${firstName[0]}${lastName[0]}`;
     }
     if (firstName) return firstName[0];
-    if (customer.email && customer.email.length > 0) return customer.email[0]?.toUpperCase() || 'W';
+    if (customer.emailAddress && customer.emailAddress.length > 0) return customer.emailAddress[0]?.toUpperCase() || 'W';
     return 'W';
   };
 

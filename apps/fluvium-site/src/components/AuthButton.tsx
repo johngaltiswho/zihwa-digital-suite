@@ -1,32 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
-
-// TODO: Replace with Vendure customer type
-interface Customer {
-  id: string;
-  email: string;
-  first_name?: string;
-  last_name?: string;
-}
+import { useAuth } from '@/lib/vendure/auth-context';
 
 export default function AuthButton() {
-  const [customer, setCustomer] = useState<Customer | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  // TODO: Replace with Vendure authentication
-  useEffect(() => {
-    setLoading(false);
-  }, []);
+  const { customer, isLoading, logout } = useAuth();
 
   const handleSignOut = async () => {
-    // TODO: Implement Vendure sign out
-    setCustomer(null);
-    window.location.reload();
+    await logout();
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="neon-border bg-transparent text-white px-6 py-2 text-sm font-light tracking-wider">
         Loading...
@@ -38,7 +22,7 @@ export default function AuthButton() {
     return (
       <div className="flex items-center space-x-4">
         <span className="text-gray-300 text-sm">
-          Welcome, {customer.first_name || customer.email}
+          Welcome, {customer.firstName || customer.emailAddress}
         </span>
         <button
           onClick={handleSignOut}

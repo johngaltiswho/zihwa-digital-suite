@@ -75,10 +75,17 @@ interface CustomerOrdersResponse {
   } | null;
 }
 
-export async function checkSubscription(customerId: string): Promise<SubscriptionInfo> {
+export async function checkSubscription(
+  customerId: string,
+  headers?: Record<string, string>
+): Promise<SubscriptionInfo> {
   try {
     // Query Vendure for customer orders
-    const data = await vendureClient.request(GET_CUSTOMER_ORDERS, { customerId }) as CustomerOrdersResponse;
+    const data = (await vendureClient.request(
+      GET_CUSTOMER_ORDERS,
+      { customerId },
+      headers
+    )) as CustomerOrdersResponse;
 
     if (!data.customer || !data.customer.orders || data.customer.orders.items.length === 0) {
       return {

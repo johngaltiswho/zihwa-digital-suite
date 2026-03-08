@@ -22,6 +22,7 @@
   - Upload limit enforcement (FREE: 1/month, BASIC: 3/month, PREMIUM: unlimited)
   - File validation (100MB max, mp4/mov/avi)
 - ✅ Video status API route (`/api/videos/[id]/status`)
+- ✅ Video processing route (`/api/videos/process`) and processor service
 
 ---
 
@@ -56,6 +57,9 @@ Create `/apps/fluvium-site/.env.local`:
 # Vendure Shop API
 NEXT_PUBLIC_VENDURE_API_URL=http://localhost:3100/shop-api
 NEXT_PUBLIC_VENDURE_CHANNEL_TOKEN=fluvium
+
+# Temporary backward-compatible fallback also supported:
+# NEXT_PUBLIC_VENDURE_SHOP_API_URL=http://localhost:3100/shop-api
 
 # Supabase (use same credentials as vendure-backend)
 NEXT_PUBLIC_SUPABASE_URL=https://fbflxwzygztakprsrmpc.supabase.co
@@ -154,20 +158,20 @@ curl http://localhost:3006/api/videos/[video-id]/status \
    - Save VideoAnalysis records
 
 3. **Async Processing**
-   - Simple approach: `setTimeout` after upload
-   - Better approach: BullMQ with Redis queue
-   - Update VideoUpload status: UPLOADED → PROCESSING → COMPLETED
+   - ✅ Implemented MVP processor with status transitions:
+     - `UPLOADED → PROCESSING → COMPLETED|FAILED`
+   - ⏭️ Next: move from in-process trigger to queue-based worker (BullMQ/Redis)
 
 ### Implementation Files Needed:
 
 ```
 /apps/fluvium-site/src/lib/video/
-  ├─ frame-extractor.ts    (FFmpeg frame extraction)
-  ├─ analyzer.ts           (OpenAI Vision API)
-  └─ processor.ts          (Orchestrate: extract → analyze → save)
+  ├─ processor.ts          (MVP orchestrator: status + analysis persistence)
+  ├─ frame-extractor.ts    (Future: FFmpeg frame extraction)
+  └─ analyzer.ts           (Future: OpenAI Vision API)
 
 /apps/fluvium-site/src/app/api/videos/
-  └─ process/route.ts      (Trigger processing job)
+  └─ process/route.ts      (Trigger processing on-demand)
 ```
 
 ---
@@ -234,7 +238,32 @@ curl http://localhost:3006/api/videos/[video-id]/status \
 - [ ] Verify Vendure channel
 - [ ] Test authentication flow
 - [ ] Test video upload
+- [ ] Validate Vercel preview
 - [ ] Deploy to production
+
+## ✅ Vercel Preview Smoke Checklist
+
+1. Home page and policy pages render without runtime errors
+2. `/account` login works against Vendure Shop API
+3. `/humility-db` shows sign-in gate when logged out
+4. Authenticated upload to `/api/videos/upload` succeeds
+5. Video status transitions through `PROCESSING` to `COMPLETED|FAILED`
+6. `/api/videos/[id]/status` only returns data for owner
+
+## 🧭 Operator Runbook (Fresh Preview)
+
+1. Set env vars in Vercel project:
+   - `NEXT_PUBLIC_VENDURE_API_URL`
+   - `NEXT_PUBLIC_VENDURE_CHANNEL_TOKEN`
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+2. Trigger preview deploy from latest branch commit
+3. Validate CI/local gates:
+   - `pnpm -C apps/fluvium-site check-types`
+   - `pnpm -C apps/fluvium-site lint`
+   - `pnpm -C apps/fluvium-site build`
+4. Run the smoke checklist above on preview URL
+5. Promote only after one full clean pass
 
 ---
 
@@ -244,4 +273,3 @@ curl http://localhost:3006/api/videos/[video-id]/status \
 - **Channel Isolation**: fluvium channel completely separate from stalknspice
 - **Data Ownership**: All Humility DB data in separate schema
 - **Scalability**: Ready to add Vendure products when needed
-

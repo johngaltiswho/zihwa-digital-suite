@@ -9,7 +9,13 @@ import {
   useCallback,
 } from 'react';
 import { vendureClient, handleGraphQLError } from './client';
-import { LOGIN, LOGOUT, REGISTER_CUSTOMER } from './mutations/auth';
+import {
+  LOGIN,
+  LOGOUT,
+  REGISTER_CUSTOMER,
+  REQUEST_PASSWORD_RESET,
+  RESET_PASSWORD,
+} from './mutations/auth';
 import { GET_ACTIVE_CUSTOMER } from './queries/customer';
 import type { Customer, RegisterCustomerInput } from './types';
 
@@ -27,6 +33,24 @@ interface RegisterResponse {
   };
 }
 
+interface RequestPasswordResetResponse {
+  requestPasswordReset: {
+    __typename: 'Success' | 'NativeAuthStrategyError';
+    message?: string;
+  };
+}
+
+interface ResetPasswordResponse {
+  resetPassword: {
+    __typename:
+      | 'CurrentUser'
+      | 'PasswordResetTokenInvalidError'
+      | 'PasswordResetTokenExpiredError'
+      | 'NativeAuthStrategyError';
+    message?: string;
+  };
+}
+
 interface AuthContextType {
   customer: Customer | null;
   isLoading: boolean;
@@ -35,6 +59,8 @@ interface AuthContextType {
   login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   logout: () => Promise<void>;
   register: (input: RegisterCustomerInput) => Promise<void>;
+  requestPasswordReset: (emailAddress: string) => Promise<void>;
+  resetPassword: (token: string, password: string) => Promise<void>;
   refreshCustomer: () => Promise<void>;
   clearError: () => void;
 }
@@ -135,6 +161,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const requestPasswordReset = async (emailAddress: string) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const data = (await vendureClient.request(REQUEST_PASSWORD_RESET, {
+        emailAddress,
+      })) as RequestPasswordResetResponse;
+
+      if (data.requestPasswordReset.__typename !== 'Success') {
+        const errorMessage = data.requestPasswordReset.message || 'Failed to request password reset';
+        setError(errorMessage);
+        throw new Error(errorMessage);
+      }
+    } catch (err) {
+      const errorMessage = handleGraphQLError(err);
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resetPassword = async (token: string, password: string) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const data = (await vendureClient.request(RESET_PASSWORD, {
+        token,
+        password,
+      })) as ResetPasswordResponse;
+
+      if (data.resetPassword.__typename !== 'CurrentUser') {
+        const errorMessage = data.resetPassword.message || 'Failed to reset password';
+        setError(errorMessage);
+        throw new Error(errorMessage);
+      }
+
+      await refreshCustomer();
+    } catch (err) {
+      const errorMessage = handleGraphQLError(err);
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const clearError = () => {
     setError(null);
   };
@@ -147,6 +222,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login,
     logout,
     register,
+    requestPasswordReset,
+    resetPassword,
     refreshCustomer,
     clearError,
   };

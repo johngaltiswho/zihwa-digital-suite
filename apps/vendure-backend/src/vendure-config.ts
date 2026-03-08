@@ -37,6 +37,28 @@ const DEV_URLS = [
   'http://localhost:3006',  // Fluvium site (Humility DB)
 ];
 
+const PASSWORD_RESET_URL =
+  process.env.PASSWORD_RESET_URL || 'http://localhost:3006/account/reset-password';
+const VERIFY_EMAIL_URL = process.env.VERIFY_EMAIL_URL || 'http://localhost:3003/verify';
+const CHANGE_EMAIL_ADDRESS_URL =
+  process.env.CHANGE_EMAIL_ADDRESS_URL || 'http://localhost:3003/verify-email-address-change';
+const EMAIL_FROM_ADDRESS =
+  process.env.EMAIL_FROM_ADDRESS || '"Stalks N Spice" <noreply@stalksnspice.com>';
+
+const EMAIL_DEV_MODE =
+  (process.env.EMAIL_DEV_MODE ?? (IS_DEV ? 'true' : 'false')).toLowerCase() === 'true';
+const SMTP_HOST = process.env.SMTP_HOST;
+const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
+const SMTP_SECURE = (process.env.SMTP_SECURE || 'false').toLowerCase() === 'true';
+const SMTP_USER = process.env.SMTP_USER;
+const SMTP_PASS = process.env.SMTP_PASS;
+
+if (!EMAIL_DEV_MODE && (!SMTP_HOST || !SMTP_USER || !SMTP_PASS)) {
+  throw new Error(
+    'Email is configured for SMTP (EMAIL_DEV_MODE=false), but SMTP_HOST/SMTP_USER/SMTP_PASS are missing'
+  );
+}
+
 export const config: VendureConfig = {
   apiOptions: {
     port: serverPort,
@@ -152,22 +174,44 @@ AssetServerPlugin.init({
       indexStockStatus: true,
     }),
 
-    EmailPlugin.init({
-      devMode: true,
-      outputPath: path.join(__dirname, '../static/email/test-emails'),
-      route: 'mailbox',
-      handlers: defaultEmailHandlers,
-      templateLoader: new FileBasedTemplateLoader(
-        path.join(__dirname, '../static/email/templates')
-      ),
-      globalTemplateVars: {
-        fromAddress: '"Stalks N Spice" <noreply@stalksnspice.com>',
-        verifyEmailAddressUrl: 'http://localhost:3003/verify',
-        passwordResetUrl: 'http://localhost:3003/password-reset',
-        changeEmailAddressUrl:
-          'http://localhost:3003/verify-email-address-change',
-      },
-    }),
+    EMAIL_DEV_MODE
+      ? EmailPlugin.init({
+          devMode: true,
+          outputPath: path.join(__dirname, '../static/email/test-emails'),
+          route: 'mailbox',
+          handlers: defaultEmailHandlers,
+          templateLoader: new FileBasedTemplateLoader(
+            path.join(__dirname, '../static/email/templates')
+          ),
+          globalTemplateVars: {
+            fromAddress: EMAIL_FROM_ADDRESS,
+            verifyEmailAddressUrl: VERIFY_EMAIL_URL,
+            passwordResetUrl: PASSWORD_RESET_URL,
+            changeEmailAddressUrl: CHANGE_EMAIL_ADDRESS_URL,
+          },
+        })
+      : EmailPlugin.init({
+          transport: {
+            type: 'smtp',
+            host: SMTP_HOST!,
+            port: SMTP_PORT,
+            secure: SMTP_SECURE,
+            auth: {
+              user: SMTP_USER!,
+              pass: SMTP_PASS!,
+            },
+          },
+          handlers: defaultEmailHandlers,
+          templateLoader: new FileBasedTemplateLoader(
+            path.join(__dirname, '../static/email/templates')
+          ),
+          globalTemplateVars: {
+            fromAddress: EMAIL_FROM_ADDRESS,
+            verifyEmailAddressUrl: VERIFY_EMAIL_URL,
+            passwordResetUrl: PASSWORD_RESET_URL,
+            changeEmailAddressUrl: CHANGE_EMAIL_ADDRESS_URL,
+          },
+        }),
 
     // Vendure 3.x Dashboard (Vite-based)
     DashboardPlugin.init({

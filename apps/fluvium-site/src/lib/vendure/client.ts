@@ -2,16 +2,16 @@ import { GraphQLClient } from 'graphql-request';
 
 /**
  * The Vendure Channel Token.
- * It is prioritized from the .env file, with a fallback to 'fluvium'.
+ * Use env-configured token; if omitted, Vendure default-channel routing is used.
  */
-const VENDURE_CHANNEL_TOKEN =
-  process.env.NEXT_PUBLIC_VENDURE_CHANNEL_TOKEN || 'fluvium';
+const VENDURE_CHANNEL_TOKEN = process.env.NEXT_PUBLIC_VENDURE_CHANNEL_TOKEN;
 
-// Get the Vendure Shop API URL from environment variables
+// Canonical env: NEXT_PUBLIC_VENDURE_API_URL.
+// Keep NEXT_PUBLIC_VENDURE_SHOP_API_URL as backward-compatible fallback.
 const VENDURE_SHOP_API_URL =
-  process.env.NEXT_PUBLIC_VENDURE_SHOP_API_URL || 'http://localhost:3100/shop-api';
-
-console.log('USING VENDURE CHANNEL TOKEN:', VENDURE_CHANNEL_TOKEN);
+  process.env.NEXT_PUBLIC_VENDURE_API_URL ||
+  process.env.NEXT_PUBLIC_VENDURE_SHOP_API_URL ||
+  'http://localhost:3100/shop-api';
 
 /**
  * Default GraphQL client for Vendure Shop API
@@ -21,7 +21,7 @@ export const vendureClient = new GraphQLClient(VENDURE_SHOP_API_URL, {
   credentials: 'include', // Important: Send cookies for session management
   headers: {
     'Content-Type': 'application/json',
-    'vendure-token': VENDURE_CHANNEL_TOKEN,
+    ...(VENDURE_CHANNEL_TOKEN ? { 'vendure-token': VENDURE_CHANNEL_TOKEN } : {}),
   },
 });
 
@@ -34,7 +34,7 @@ export const getAuthenticatedClient = (token?: string) => {
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      'vendure-token': VENDURE_CHANNEL_TOKEN,
+      ...(VENDURE_CHANNEL_TOKEN ? { 'vendure-token': VENDURE_CHANNEL_TOKEN } : {}),
       ...(token && { Authorization: `Bearer ${token}` }),
     },
   });

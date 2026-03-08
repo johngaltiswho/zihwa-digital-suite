@@ -1,5 +1,5 @@
 // API configuration and service functions for Humility DB
-const API_BASE_URL = process.env.NEXT_PUBLIC_VENDURE_API_URL || 'http://localhost:3000/shop-api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_VENDURE_API_URL || 'http://localhost:3100/shop-api';
 
 // Common headers for API requests
 const getHeaders = () => ({

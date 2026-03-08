@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import AuthButton from '@/components/AuthButton';
 
 export default function Header() {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -29,9 +30,7 @@ export default function Header() {
           <Link href="/humility-db" className="text-gray-300 hover:text-white transition-colors duration-300 font-light">Humility DB</Link>
           <Link href="/shop-maintenance" className="text-gray-300 hover:text-white transition-colors duration-300 font-light">Shop</Link>
           <Link href="/#founder" className="text-gray-300 hover:text-white transition-colors duration-300 font-light">Founder</Link>
-          <button className="neon-border bg-transparent text-white px-6 py-2 text-sm font-light tracking-wider hover:bg-cyan-400/10 transition-all duration-300">
-            Join the Tribe
-          </button>
+          <AuthButton />
         </nav>
 
         {/* Mobile Menu Button */}

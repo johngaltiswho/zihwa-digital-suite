@@ -119,6 +119,41 @@ Check processing status and get analysis results.
 
 ---
 
+### Process Video (On-Demand)
+
+**POST** `/api/videos/process`
+
+Trigger processing for an uploaded video.
+
+**Auth Required:** Yes
+**Ownership Check:** User must own the video
+
+**Request:**
+
+```json
+{
+  "videoId": "clx123abc"
+}
+```
+
+**Response (Success - 200):**
+
+```json
+{
+  "success": true,
+  "videoId": "clx123abc",
+  "status": "COMPLETED"
+}
+```
+
+**Error Responses:**
+- `400`: Missing videoId
+- `401`: Not authenticated
+- `403`: Not authorized (video belongs to another user)
+- `404`: Video not found
+
+---
+
 ## Future Endpoints (Not Yet Implemented)
 
 ### Copilot Chat
@@ -172,6 +207,7 @@ All endpoints follow consistent error response format:
 - `SUBSCRIPTION_REQUIRED`: Active subscription needed
 - `UPLOAD_LIMIT_REACHED`: Monthly video limit exceeded
 - `INVALID_FILE`: File validation failed
+- `INVALID_REQUEST`: Request payload is missing/invalid
 - `NOT_FOUND`: Resource doesn't exist
 - `UNAUTHORIZED`: User doesn't own the resource
 - `SERVER_ERROR`: Internal error occurred

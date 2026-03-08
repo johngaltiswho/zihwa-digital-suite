@@ -10,6 +10,8 @@ import { requireStudent } from '@/lib/student-sync';
 import { uploadVideo } from '@/lib/supabase';
 import { createVideoUpload, countVideoUploadsInMonth } from '@repo/db';
 import { checkSubscription, getVideoUploadLimit } from '@/lib/vendure/subscription';
+import { errorResponse } from '@/lib/api-error';
+import { processVideoUpload } from '@/lib/video/processor';
 
 interface ActiveCustomer {
   id: string;
@@ -21,26 +23,32 @@ interface ActiveCustomer {
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     // 1. Check authentication
-    const data = await vendureClient.request(GET_ACTIVE_CUSTOMER) as { activeCustomer: ActiveCustomer | null };
+    const data = (await vendureClient.request(
+      GET_ACTIVE_CUSTOMER,
+      {},
+      {
+        cookie: request.headers.get('cookie') ?? '',
+      }
+    )) as { activeCustomer: ActiveCustomer | null };
     const { activeCustomer } = data;
 
     if (!activeCustomer) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
+      return errorResponse(401, 'Authentication required', 'AUTH_REQUIRED');
     }
 
     // 2. Get or create student record
     const student = await requireStudent(activeCustomer);
 
     // 3. Check subscription and upload limits
-    const subscription = await checkSubscription(activeCustomer.id);
+    const subscription = await checkSubscription(activeCustomer.id, {
+      cookie: request.headers.get('cookie') ?? '',
+    });
 
     if (!subscription.isActive) {
-      return NextResponse.json(
-        { error: 'Active subscription required to upload videos' },
-        { status: 403 }
+      return errorResponse(
+        403,
+        'Active subscription required to upload videos',
+        'SUBSCRIPTION_REQUIRED'
       );
     }
 
@@ -60,13 +68,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
 
       if (uploadsThisMonth >= uploadLimit) {
-        return NextResponse.json(
+        return errorResponse(
+          403,
+          `Upload limit reached. ${subscription.tier} tier allows ${uploadLimit} video(s) per month.`,
+          'UPLOAD_LIMIT_REACHED',
           {
-            error: `Upload limit reached. ${subscription.tier} tier allows ${uploadLimit} video(s) per month.`,
             limit: uploadLimit,
             used: uploadsThisMonth,
-          },
-          { status: 403 }
+          }
         );
       }
     }
@@ -76,27 +85,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const file = formData.get('video') as File;
 
     if (!file) {
-      return NextResponse.json(
-        { error: 'No video file provided' },
-        { status: 400 }
-      );
+      return errorResponse(400, 'No video file provided', 'INVALID_REQUEST');
     }
 
     // 5. Validate file
     const maxSize = 100 * 1024 * 1024; // 100MB
     if (file.size > maxSize) {
-      return NextResponse.json(
-        { error: 'File size exceeds 100MB limit' },
-        { status: 400 }
-      );
+      return errorResponse(400, 'File size exceeds 100MB limit', 'INVALID_FILE');
     }
 
     const allowedTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo'];
     if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json(
-        { error: 'Invalid file type. Allowed: MP4, MOV, AVI' },
-        { status: 400 }
-      );
+      return errorResponse(400, 'Invalid file type. Allowed: MP4, MOV, AVI', 'INVALID_FILE');
     }
 
     // 6. Convert file to buffer
@@ -116,8 +116,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       status: 'UPLOADED',
     });
 
-    // 9. Trigger async processing (will implement next)
-    // TODO: Queue video processing job
+    // 9. Trigger best-effort async processing.
+    void processVideoUpload(videoUpload.id).catch((error) => {
+      console.error(`Video processing failed for ${videoUpload.id}:`, error);
+    });
 
     return NextResponse.json({
       success: true,
@@ -133,9 +135,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     });
   } catch (error) {
     console.error('Video upload error:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to upload video' },
-      { status: 500 }
+    return errorResponse(
+      500,
+      error instanceof Error ? error.message : 'Failed to upload video',
+      'SERVER_ERROR'
     );
   }
 }

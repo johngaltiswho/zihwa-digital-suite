@@ -8,6 +8,7 @@ import { vendureClient } from '@/lib/vendure/client';
 import { GET_ACTIVE_CUSTOMER } from '@/lib/vendure/queries/customer';
 import { requireStudent } from '@/lib/student-sync';
 import { getVideoUploadById, listVideoAnalyses, getAverageScores } from '@repo/db';
+import { errorResponse } from '@/lib/api-error';
 
 interface ActiveCustomer {
   id: string;
@@ -30,14 +31,17 @@ export async function GET(
     const { id } = await params;
 
     // 1. Check authentication
-    const data = await vendureClient.request(GET_ACTIVE_CUSTOMER) as { activeCustomer: ActiveCustomer | null };
+    const data = (await vendureClient.request(
+      GET_ACTIVE_CUSTOMER,
+      {},
+      {
+        cookie: request.headers.get('cookie') ?? '',
+      }
+    )) as { activeCustomer: ActiveCustomer | null };
     const { activeCustomer } = data;
 
     if (!activeCustomer) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
+      return errorResponse(401, 'Authentication required', 'AUTH_REQUIRED');
     }
 
     // 2. Get student
@@ -47,18 +51,12 @@ export async function GET(
     const video = await getVideoUploadById(id);
 
     if (!video) {
-      return NextResponse.json(
-        { error: 'Video not found' },
-        { status: 404 }
-      );
+      return errorResponse(404, 'Video not found', 'NOT_FOUND');
     }
 
     // 4. Verify ownership
     if (video.studentId !== student.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized access to this video' },
-        { status: 403 }
-      );
+      return errorResponse(403, 'Unauthorized access to this video', 'UNAUTHORIZED');
     }
 
     // 5. Get analyses if completed
@@ -96,9 +94,10 @@ export async function GET(
     });
   } catch (error) {
     console.error('Video status check error:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to check video status' },
-      { status: 500 }
+    return errorResponse(
+      500,
+      error instanceof Error ? error.message : 'Failed to check video status',
+      'SERVER_ERROR'
     );
   }
 }
