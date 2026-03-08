@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/vendure/auth-context";
 import { vendureClient } from "@/lib/vendure/client";
-import { UPDATE_CUSTOMER } from "@/lib/vendure/queries/customer";
+import { UPDATE_CUSTOMER } from "@/lib/vendure/mutations/auth";
 import Link from "next/link";
 import { ArrowLeft, Save, CheckCircle } from "lucide-react";
 

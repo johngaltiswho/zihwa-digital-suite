@@ -46,20 +46,51 @@ const CUISINES = [
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://stalknspice.com'
+  const pageSize = 100
+
+  async function fetchAllProductsForSitemap() {
+    let skip = 0
+    const allProducts: Array<{ id: string; slug: string; updatedAt?: string }> = []
+
+    while (true) {
+      const data = await vendureClient.request(GET_ALL_PRODUCTS_FOR_SITEMAP, {
+        options: { take: pageSize, skip }
+      })
+
+      const items = data?.products?.items || []
+      allProducts.push(...items)
+
+      if (items.length < pageSize) break
+      skip += items.length
+    }
+
+    return allProducts
+  }
+
+  async function fetchAllCollectionsForSitemap() {
+    let skip = 0
+    const allCollections: Array<{ id: string; slug: string; updatedAt?: string }> = []
+
+    while (true) {
+      const data = await vendureClient.request(GET_ALL_COLLECTIONS_FOR_SITEMAP, {
+        options: { take: pageSize, skip }
+      })
+
+      const items = data?.collections?.items || []
+      allCollections.push(...items)
+
+      if (items.length < pageSize) break
+      skip += items.length
+    }
+
+    return allCollections
+  }
 
   try {
-    // Fetch all products for sitemap
-    const productsData = await vendureClient.request(GET_ALL_PRODUCTS_FOR_SITEMAP, {
-      options: { take: 10000 } // Adjust based on catalog size
-    })
-
-    // Fetch collections
-    const collectionsData = await vendureClient.request(GET_ALL_COLLECTIONS_FOR_SITEMAP, {
-      options: { take: 100 }
-    })
-
-    const products = productsData?.products?.items || []
-    const collections = collectionsData?.collections?.items || []
+    const [products, collections] = await Promise.all([
+      fetchAllProductsForSitemap(),
+      fetchAllCollectionsForSitemap(),
+    ])
 
     // Static routes
     const staticRoutes: MetadataRoute.Sitemap = STATIC_ROUTES.map(route => ({
