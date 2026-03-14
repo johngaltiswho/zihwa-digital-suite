@@ -15,7 +15,7 @@ function toSlug(name: string) {
     .replace(/^-+|-+$/g, '')
 }
 
-export async function GET() {
+export async function GET(): Promise<NextResponse> {
   const auth = await requireUser()
   if (!('user' in auth)) return auth.error
   const userId = auth.user?.id
@@ -40,7 +40,7 @@ export async function GET() {
   })
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   const auth = await requireUser()
   if (!('user' in auth)) return auth.error
   const userId = auth.user?.id

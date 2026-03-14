@@ -5,7 +5,7 @@ import { requireCompanyPermission, requireOrgAccess, requireUser } from '@/lib/a
 
 type ProcessingStatus = 'UPLOADED' | 'PROCESSING' | 'EXTRACTED' | 'POSTED' | 'FAILED'
 
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const auth = await requireUser()
     if (!('user' in auth)) return auth.error

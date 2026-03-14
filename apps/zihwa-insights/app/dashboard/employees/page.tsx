@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo,useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { AttendanceStatus, EmployeeStatus, PayrollStatus } from '@prisma/client'
 import {
   AlertCircle,
@@ -14,13 +14,11 @@ import {
   Upload,
   UserPlus,
   Users,
-  HardHat,
   Trash2,
-  X,
-  Check,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { computeCTCBreakdown, computePF } from '@/lib/salary-utils'
 
 type CompanyOption = { id: string; name: string }
 type CompanyApiResponse = CompanyOption
@@ -45,8 +43,18 @@ type EmployeeRow = {
   elBalance?: number | null
   slBalance?: number | null
   coBalance?: number | null
-   labourId?: string | null 
-   dob?: string | Date | null // <--- Add this line
+  labourId?: string | null
+  dob?: string | Date | null
+  // ── CTC fields ──
+  basicSalary?:      number | null
+  hra?:              number | null
+  pfApplicable?:     boolean
+  pfAmount?:         number | null
+  ptAmount?:         number | null
+  totalDeductions?:  number | null
+  annualCTC?:        number | null
+  conveyance?:       number | null
+  specialAllowance?: number | null
   stats?: {
     attendance: number
     payrollRuns: number
@@ -123,7 +131,7 @@ type BulkFailedRow = {
   errors: string[]
 }
 
-type Tab = 'employees' | 'attendance' | 'payroll' |'labours'
+type Tab = 'employees' | 'attendance' | 'payroll'
 
 type HolidayRow = {
   id: string
@@ -131,6 +139,18 @@ type HolidayRow = {
   date: string | Date
   name: string
   isOptional: boolean
+}
+
+type MonthlySummaryRow = {
+  employeeId: string
+  paidDays: number
+  presentDays: number
+  hdCount: number
+  woffCount: number
+  leaveCount: number
+  lGiven: number
+  cOffGiven: number
+  compOffEarned: number
 }
 
 const ATTENDANCE_OPTIONS: AttendanceStatus[] = ['PRESENT', 'ABSENT', 'REMOTE', 'LEAVE', 'EL', 'SL', 'HALF_DAY', 'CO']
@@ -188,8 +208,7 @@ const generateMonthOptions = () => {
   const currentDate = new Date()
   const currentYear = currentDate.getFullYear()
   const currentMonth = currentDate.getMonth()
-  
-  // Generate options for the last 12 months and next 12 months
+
   for (let i = -12; i <= 12; i++) {
     const targetDate = new Date(currentYear, currentMonth + i, 1)
     const year = targetDate.getFullYear()
@@ -198,7 +217,7 @@ const generateMonthOptions = () => {
     const label = targetDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
     options.push({ value, label })
   }
-  
+
   return options
 }
 
@@ -214,17 +233,103 @@ const formatMonthFilterLabel = (value: string) => {
   return getMonthLabel(year, month)
 }
 
+// ─── CTCBreakdownPopover component ───────────────────────────────────────────
+function CTCBreakdownPopover({ employee }: { employee: EmployeeRow }) {
+  const [open, setOpen] = useState(false)
+  const bd = computeCTCBreakdown({
+    grossSalary:             employee.grossSalary,
+    basicSalary:             employee.basicSalary,
+    hra:                     employee.hra,
+    pfApplicable:            employee.pfApplicable ?? true,
+    pfAmount:                employee.pfAmount,
+    ptAmount:                employee.ptAmount,
+    totalDeductionsOverride: employee.totalDeductions,
+    annualCTCOverride:       employee.annualCTC,
+    conveyance:              employee.conveyance,
+    specialAllowance:        employee.specialAllowance,
+  })
+  const fmt = formatCurrency
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((p) => !p)}
+        className="text-xs text-blue-600 underline underline-offset-2 hover:text-blue-800 whitespace-nowrap"
+      >
+        {fmt(bd.annualCTC)}
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute z-50 right-0 top-7 w-72 rounded-xl border border-gray-200 bg-white p-4 shadow-2xl text-xs">
+            <div className="font-semibold text-gray-900 mb-3 text-sm">CTC Breakdown</div>
+            <div className="space-y-1.5">
+              <BRow label="Basic Salary"      value={fmt(bd.basic)} />
+              <BRow label="HRA"               value={fmt(bd.hra)} />
+              <BRow label="Allowances"        value={fmt(bd.allowances)} />
+              <BRow label="Conveyance"        value={fmt(bd.conveyance)} />
+              <BRow label="Special Allowance" value={fmt(bd.specialAllowance)} />
+              <div className="border-t border-gray-100 my-2" />
+              <BRow label="Gross Salary"      value={fmt(employee.grossSalary)} bold />
+              <div className="border-t border-gray-100 my-2" />
+              <BRow label="Employee PF (12% of basic, max ₹1,800)" value={fmt(bd.employeePF)} red />
+              <BRow label="Professional Tax"  value={fmt(bd.professionalTax)} red />
+              <BRow label="Total Deductions"  value={fmt(bd.totalDeductions)} red bold />
+              <div className="border-t border-gray-100 my-2" />
+              <BRow label="Net Salary"        value={fmt(bd.netSalary)} bold />
+              <div className="border-t border-gray-100 my-2" />
+              <BRow label="Employer PF"       value={fmt(bd.employerPF)} />
+              <BRow label="Annual CTC"        value={fmt(bd.annualCTC)} bold />
+            </div>
+            <button
+              onClick={() => setOpen(false)}
+              className="mt-3 w-full text-center text-gray-400 hover:text-gray-600 text-[11px]"
+            >
+              Close ×
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+function BRow({ label, value, bold, red }: { label: string; value: string; bold?: boolean; red?: boolean }) {
+  return (
+    <div className={`flex justify-between gap-2 ${bold ? 'font-semibold' : ''} ${red ? 'text-red-600' : 'text-gray-700'}`}>
+      <span className="text-gray-500 font-normal truncate">{label}</span>
+      <span className="shrink-0">{value}</span>
+    </div>
+  )
+}
+
+// ─── Field row helper for slide-over ─────────────────────────────────────────
+function FormField({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1">
+      <label className="text-sm font-medium text-gray-700">
+        {label}
+        {hint && <span className="ml-1 text-xs font-normal text-gray-400">{hint}</span>}
+      </label>
+      {children}
+    </div>
+  )
+}
+
 export default function EmployeesPage() {
   const [userRole, setUserRole] = useState<string | null>(null)
-  
- useEffect(() => {
+
+  // ── Monthly summaries state ──
+  const [monthlySummaries, setMonthlySummaries] = useState<MonthlySummaryRow[]>([])
+
+  useEffect(() => {
     fetch('/api/users/user')
       .then((r) => r.json())
       .then((d) => { if (d.role) setUserRole(d.role) })
       .catch(() => {})
   }, [])
 
-  const isAccountant = userRole === 'ACCOUNTANT'
+  const isAccountant = userRole === 'ACCOUNTANT' || userRole === 'CONSULTANT'
   const canManageHolidays = userRole === 'ADMIN'
   const today = useMemo(() => new Date(), [])
   const defaultMonth = useMemo(() => getMonthInputValue(today), [today])
@@ -240,16 +345,8 @@ export default function EmployeesPage() {
   const [companies, setCompanies] = useState<CompanyOption[]>([])
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecordWithEmployee[]>([])
   const [payrollRecords, setPayrollRecords] = useState<PayrollRecordWithEmployee[]>([])
-   const [attendanceUploading, setAttendanceUploading] = useState(false);
-  const attendanceFileInputRef = useRef<HTMLInputElement>(null);																
-																
-
-  const [labours, setLabours] = useState<EmployeeRow[]>([])
-  const [labourLoading, setLabourLoading] = useState(false)
-  const [showAddLabourModal, setShowAddLabourModal] = useState(false)
-  const [savingLabour, setSavingLabour] = useState(false)
-  const [deletingLabourId, setDeletingLabourId] = useState<string | null>(null)
-
+  const [attendanceUploading, setAttendanceUploading] = useState(false)
+  const attendanceFileInputRef = useRef<HTMLInputElement>(null)
 
   const [attendanceMonth, setAttendanceMonth] = useState(defaultMonth)
   const [attendanceCompanyFilter, setAttendanceCompanyFilter] = useState('all')
@@ -271,29 +368,6 @@ export default function EmployeesPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | EmployeeStatus>('all')
   const [companyFilter, setCompanyFilter] = useState('all')
-  const [editingLabourId, setEditingLabourId] = useState<string | null>(null)
-  const [editLabourForm, setEditLabourForm] = useState({
-    firstName: '',
-    lastName: '',
-    designation: '',
-    phone: '',
-    dob: '',
-    netSalary: '',
-    status: 'ACTIVE',
-  })
-
-  const [newLabour, setNewLabour] = useState({
-    companyId: '',
-    labourId: '',
-    firstName: '',
-    lastName: '',
-    designation: '',
-    phone: '', // Mobile Number
-    dob: '',   // Date of Birth
-    netSalary: '',
-    grossSalary: '',
-    status: 'ACTIVE' as EmployeeStatus,
-  })
   const [newEmployee, setNewEmployee] = useState({
     companyId: '',
     employeeId: '',
@@ -308,14 +382,16 @@ export default function EmployeesPage() {
     status: 'ACTIVE' as EmployeeStatus,
   })
   const [savingEmployee, setSavingEmployee] = useState(false)
-  
 
   const [bulkCompanyId, setBulkCompanyId] = useState('')
   const [bulkFile, setBulkFile] = useState<File | null>(null)
   const [bulkUploading, setBulkUploading] = useState(false)
   const [bulkResult, setBulkResult] = useState<{ summary: BulkUploadSummary; failed: BulkFailedRow[] } | null>(null)
   const [fileInputKey, setFileInputKey] = useState(0)
+
+  // ── Edit state ──
   const [editingEmployeeId, setEditingEmployeeId] = useState<string | null>(null)
+  const [editPanelOpen, setEditPanelOpen] = useState(false)
   const [editForm, setEditForm] = useState({
     firstName: '',
     lastName: '',
@@ -328,6 +404,16 @@ export default function EmployeesPage() {
     status: 'ACTIVE' as EmployeeStatus,
     elBalance: '',
     slBalance: '',
+    // ── CTC fields ──
+    basicSalary:      '',
+    hra:              '',
+    pfApplicable:     true,
+    pfAmount:         '',
+    ptAmount:         '',
+    totalDeductions:  '',
+    annualCTC:        '',
+    conveyance:       '',
+    specialAllowance: '',   // ← FIXED: was "sepecialAllowance" (typo)
   })
   const [savingRow, setSavingRow] = useState(false)
   const [deletingRow, setDeletingRow] = useState<string | null>(null)
@@ -353,21 +439,7 @@ export default function EmployeesPage() {
       setEmployeeLoading(false)
     }
   }
-   // NEW FETCH FUNCTION FOR LABOURS
-  const fetchLabours = async () => {
-    setLabourLoading(true)
-    try {
-      const res = await fetch('/api/employees/labours')
-      const data = await res.json()
-      if (data.success) {
-        setLabours(data.data)
-      }
-    } catch (error) {
-      console.error(error)
-    } finally {
-      setLabourLoading(false)
-    }
-  }
+
   const fetchCompanies = async () => {
     try {
       const res = await fetch('/api/companies')
@@ -379,41 +451,6 @@ export default function EmployeesPage() {
       console.error('Failed to load companies', error)
     }
   }
-  const startEditingLabour = (labour: EmployeeRow) => {
-    setEditingLabourId(labour.id)
-    setEditLabourForm({
-      firstName: labour.firstName,
-      lastName: labour.lastName,
-      designation: labour.designation || '',
-      phone: labour.phone || '',
-      dob: labour.dob ? new Date(labour.dob).toISOString().split('T')[0] : '',
-      netSalary: labour.netSalary ? String(labour.netSalary) : '',
-      status: labour.status,
-    })
-  }
-
-  const saveEditingLabour = async () => {
-    if (!editingLabourId) return
-    setSavingLabour(true)
-    try {
-      const res = await fetch('/api/employees/labours', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: editingLabourId, ...editLabourForm }),
-      })
-      const data = await res.json()
-      if (data.success) {
-        await fetchLabours()
-        setEditingLabourId(null)
-      } else {
-        throw new Error(data.error || 'Failed to update')
-      }
-    } catch {
-      alert('Update failed')
-    } finally {
-      setSavingLabour(false)
-    }
-  }
 
   const fetchAttendance = async (monthValue = attendanceMonth) => {
     setAttendanceLoading(true)
@@ -423,13 +460,16 @@ export default function EmployeesPage() {
 
       if (res.ok && data?.success) {
         setAttendanceRecords(data.data.records || [])
+        setMonthlySummaries(data.data.summaries || [])
       } else {
         console.warn('Attendance API unavailable, falling back to empty data')
         setAttendanceRecords([])
+        setMonthlySummaries([])
       }
     } catch (error) {
       console.error('Failed to load attendance', error)
       setAttendanceRecords([])
+      setMonthlySummaries([])
     } finally {
       setAttendanceLoading(false)
     }
@@ -544,7 +584,6 @@ export default function EmployeesPage() {
         fetchAttendance(defaultMonth),
         fetchHolidays(defaultMonth, 'all'),
         fetchPayroll(defaultMonth),
-        fetchLabours(),
       ])
       setLoading(false)
     }
@@ -553,16 +592,15 @@ export default function EmployeesPage() {
   }, [])
 
   const refreshAll = async () => {
-  setLoading(true)
-  await Promise.all([
-    fetchEmployees(), 
-    fetchAttendance(attendanceMonth), 
-    fetchHolidays(attendanceMonth, attendanceCompanyFilter),
-    fetchPayroll(payrollMonth),
-    fetchLabours() // <--- ADD THIS LINE
-  ])
-  setLoading(false)
-}
+    setLoading(true)
+    await Promise.all([
+      fetchEmployees(),
+      fetchAttendance(attendanceMonth),
+      fetchHolidays(attendanceMonth, attendanceCompanyFilter),
+      fetchPayroll(payrollMonth),
+    ])
+    setLoading(false)
+  }
 
   const handleBulkUpload = async () => {
     if (!bulkCompanyId) {
@@ -600,36 +638,36 @@ export default function EmployeesPage() {
     }
   }
 
-	const handleAttendanceExcelUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-  const file = event.target.files?.[0];
-  if (!file) return;
+  const handleAttendanceExcelUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
 
-  setAttendanceUploading(true);
-  const formData = new FormData();
-  formData.append('file', file);
-  // We send the month selected in the dropdown
-  formData.append('month', attendanceMonth); 
+    setAttendanceUploading(true)
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('month', attendanceMonth)
 
-  try {
-    const response = await fetch('/api/employees/attendance/import', {
-      method: 'POST',
-      body: formData,
-    });
-    
-    const data = await response.json();
-    if (data.success) {
-      alert(`Import successful! Updated ${data.count} records for all employees.`);
-      await fetchAttendance(attendanceMonth); 
-    } else {
-      throw new Error(data.error || 'Failed to import');
+    try {
+      const response = await fetch('/api/employees/attendance/import', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        alert(`Import successful! Updated ${data.count} records for all employees.`)
+        await fetchAttendance(attendanceMonth)
+      } else {
+        throw new Error(data.error || 'Failed to import')
+      }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Upload failed')
+    } finally {
+      setAttendanceUploading(false)
+      if (event.target) event.target.value = ''
     }
-  } catch (error) {
-    alert(error instanceof Error ? error.message : 'Upload failed');
-  } finally {
-    setAttendanceUploading(false);
-    if (event.target) event.target.value = '';
   }
-};																					 
+
   const downloadTemplate = () => {
     const headers = [
       'Sno',
@@ -651,57 +689,41 @@ export default function EmployeesPage() {
     link.remove()
     URL.revokeObjectURL(url)
   }
-  const handleLabourImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-  const file = event.target.files?.[0]
-  if (!file) return
-
-  const reader = new FileReader()
-  reader.onload = async (e) => {
-    const text = e.target?.result as string
-    setLabourLoading(true)
-    try {
-      const res = await fetch('/api/employees/labours/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ csvData: text }),
-      })
-      const data = await res.json()
-      if (data.success) {
-        alert(`Successfully imported ${data.count} labourers!`)
-        fetchLabours()
-      }
-    } catch {
-  alert('Import failed')
-    } finally {
-      setLabourLoading(false)
-    }
-  }
-  reader.readAsText(file)
-}
 
   const startEditingEmployee = (employee: EmployeeRow) => {
     setEditingEmployeeId(employee.id)
+    setEditPanelOpen(true)
     setEditForm({
-      firstName: employee.firstName,
-      lastName: employee.lastName,
-      designation: employee.designation || '',
-      department: employee.department || '',
-      netSalary: employee.netSalary ? String(employee.netSalary) : '',
-      grossSalary: employee.grossSalary ? String(employee.grossSalary) : '',
+      firstName:        employee.firstName,
+      lastName:         employee.lastName,
+      designation:      employee.designation || '',
+      department:       employee.department || '',
+      netSalary:        employee.netSalary        ? String(employee.netSalary)        : '',
+      grossSalary:      employee.grossSalary       ? String(employee.grossSalary)       : '',
       bankAccountNumber: employee.bankAccountNumber || '',
-      ifscCode: employee.ifscCode || '',
-      status: employee.status,
-      elBalance: employee.elBalance !== undefined && employee.elBalance !== null ? String(employee.elBalance) : '',
-      slBalance: employee.slBalance !== undefined && employee.slBalance !== null ? String(employee.slBalance) : '',
+      ifscCode:         employee.ifscCode          || '',
+      status:           employee.status,
+      elBalance:        employee.elBalance  != null ? String(employee.elBalance)  : '',
+      slBalance:        employee.slBalance  != null ? String(employee.slBalance)  : '',
+      basicSalary:      employee.basicSalary      != null ? String(employee.basicSalary)      : '',
+      hra:              employee.hra              != null ? String(employee.hra)              : '',
+      pfApplicable:     employee.pfApplicable      ?? true,
+      pfAmount:         employee.pfAmount          != null ? String(employee.pfAmount)          : '',
+      ptAmount:         employee.ptAmount          != null ? String(employee.ptAmount)          : '',
+      totalDeductions:  employee.totalDeductions   != null ? String(employee.totalDeductions)   : '',
+      annualCTC:        employee.annualCTC         != null ? String(employee.annualCTC)         : '',
+      conveyance:       employee.conveyance        != null ? String(employee.conveyance)        : '',
+      specialAllowance: employee.specialAllowance  != null ? String(employee.specialAllowance)  : '',
     })
   }
 
-  const handleEditChange = (field: keyof typeof editForm, value: string) => {
+  const handleEditChange = (field: keyof typeof editForm, value: string | boolean) => {
     setEditForm((prev) => ({ ...prev, [field]: value }))
   }
 
   const cancelEditingEmployee = () => {
     setEditingEmployeeId(null)
+    setEditPanelOpen(false)
     setSavingRow(false)
   }
 
@@ -710,18 +732,27 @@ export default function EmployeesPage() {
     setSavingRow(true)
     try {
       const payload = {
-        id: editingEmployeeId,
-        firstName: editForm.firstName,
-        lastName: editForm.lastName,
-        designation: editForm.designation,
-        department: editForm.department,
-        netSalary: editForm.netSalary ? Number(editForm.netSalary) : null,
-        grossSalary: editForm.grossSalary ? Number(editForm.grossSalary) : null,
+        id:               editingEmployeeId,
+        firstName:        editForm.firstName,
+        lastName:         editForm.lastName,
+        designation:      editForm.designation,
+        department:       editForm.department,
+        netSalary:        editForm.netSalary        ? Number(editForm.netSalary)        : null,
+        grossSalary:      editForm.grossSalary       ? Number(editForm.grossSalary)       : null,
         bankAccountNumber: editForm.bankAccountNumber,
-        ifscCode: editForm.ifscCode,
-        status: editForm.status,
-        elBalance: editForm.elBalance === '' ? undefined : Number(editForm.elBalance),
-        slBalance: editForm.slBalance === '' ? undefined : Number(editForm.slBalance),
+        ifscCode:         editForm.ifscCode,
+        status:           editForm.status,
+        elBalance:        editForm.elBalance  === '' ? undefined : Number(editForm.elBalance),
+        slBalance:        editForm.slBalance  === '' ? undefined : Number(editForm.slBalance),
+        basicSalary:      editForm.basicSalary      ? Number(editForm.basicSalary)      : null,
+        hra:              editForm.hra              ? Number(editForm.hra)              : null,
+        pfApplicable:     editForm.pfApplicable,
+        pfAmount:         editForm.pfAmount         ? Number(editForm.pfAmount)         : null,
+        ptAmount:         editForm.ptAmount         ? Number(editForm.ptAmount)         : null,
+        totalDeductions:  editForm.totalDeductions  ? Number(editForm.totalDeductions)  : null,
+        annualCTC:        editForm.annualCTC        ? Number(editForm.annualCTC)        : null,
+        conveyance:       editForm.conveyance       ? Number(editForm.conveyance)       : null,
+        specialAllowance: editForm.specialAllowance ? Number(editForm.specialAllowance) : null,
       }
       const response = await fetch('/api/employees', {
         method: 'PATCH',
@@ -732,24 +763,30 @@ export default function EmployeesPage() {
       if (!response.ok || !data.success) {
         throw new Error(data.error || 'Failed to update employee')
       }
+      // ── Update local state with all returned fields ──
       setEmployees((prev) =>
         prev.map((employee) =>
           employee.id === editingEmployeeId
             ? {
                 ...employee,
                 ...data.data,
-                netSalary: data.data.netSalary,
-                grossSalary: data.data.grossSalary,
-                designation: data.data.designation,
-                department: data.data.department,
+                netSalary:        data.data.netSalary,
+                grossSalary:      data.data.grossSalary,
+                designation:      data.data.designation,
+                department:       data.data.department,
+                basicSalary:      data.data.basicSalary      ?? employee.basicSalary,
+                hra:              data.data.hra              ?? employee.hra,
+                pfApplicable:     data.data.pfApplicable     ?? employee.pfApplicable,
+                pfAmount:         data.data.pfAmount         ?? employee.pfAmount,
+                ptAmount:         data.data.ptAmount         ?? employee.ptAmount,
+                totalDeductions:  data.data.totalDeductions  ?? employee.totalDeductions,
+                annualCTC:        data.data.annualCTC        ?? employee.annualCTC,
+                conveyance:       data.data.conveyance       ?? employee.conveyance,
+                specialAllowance: data.data.specialAllowance ?? employee.specialAllowance,
                 elBalance:
-                  data.data.elBalance !== undefined && data.data.elBalance !== null
-                    ? data.data.elBalance
-                    : employee.elBalance,
+                  data.data.elBalance != null ? data.data.elBalance : employee.elBalance,
                 slBalance:
-                  data.data.slBalance !== undefined && data.data.slBalance !== null
-                    ? data.data.slBalance
-                    : employee.slBalance,
+                  data.data.slBalance != null ? data.data.slBalance : employee.slBalance,
               }
             : employee
         )
@@ -830,6 +867,7 @@ export default function EmployeesPage() {
     }
   }
 
+  // ── Memos ──
   const filteredEmployees = useMemo(() => {
     const term = searchTerm.trim().toLowerCase()
     return employees
@@ -849,6 +887,11 @@ export default function EmployeesPage() {
       .sort((a, b) => a.fullName.localeCompare(b.fullName))
   }, [employees, searchTerm, statusFilter, companyFilter])
 
+  // const summaryMap = useMemo(() => {
+  //   const map = new Map<string, MonthlySummaryRow>()
+  //   monthlySummaries.forEach((s) => map.set(s.employeeId, s))
+  //   return map
+  // }, [monthlySummaries])
 
   const attendanceSummary = useMemo(() => {
     return ATTENDANCE_OPTIONS.reduce<Record<AttendanceStatus, number>>((acc, status) => {
@@ -897,6 +940,7 @@ export default function EmployeesPage() {
     if (attendanceCompanyFilter === 'all') return filteredEmployees
     return filteredEmployees.filter((employee) => employee.company?.id === attendanceCompanyFilter)
   }, [attendanceCompanyFilter, filteredEmployees])
+
   const filteredPayrollRecords = useMemo(() => {
     if (payrollCompanyFilter === 'all') return payrollRecords
     return payrollRecords.filter((record) => record.employee?.companyId === payrollCompanyFilter)
@@ -1026,87 +1070,7 @@ export default function EmployeesPage() {
       alert(error instanceof Error ? error.message : 'Failed to save attendance changes')
     }
   }
- // --- LABOUR ACTIONS ---
-  const handleAddLabour = async () => {
-    if (!newLabour.companyId || !newLabour.labourId || !newLabour.firstName || !newLabour.lastName) {
-      alert('Company, Labour ID, and Names are required')
-      return
-    }
-    setSavingLabour(true)
-    try {
-      const res = await fetch('/api/employees/labours', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...newLabour,
-          salary: newLabour.netSalary ? Number(newLabour.netSalary) : undefined,
-          grossSalary: newLabour.grossSalary ? Number(newLabour.grossSalary) : undefined,
-        // The phone and dob are already in newLabour, but being explicit:
-        phone: newLabour.phone,
-        dob: newLabour.dob || undefined, 
-        }),
-      })
-      const data = await res.json()
-      if (!data.success) throw new Error(data.error)
-      
-      await fetchLabours()
-      setShowAddLabourModal(false)
-      // Reset form
-      setNewLabour({ companyId: '', labourId: '', firstName: '', lastName: '', designation: '', phone: '', dob: '', netSalary: '', grossSalary: '', status: 'ACTIVE' })
-    } catch (error: unknown) {
-  alert(error instanceof Error ? error.message : 'Failed to add labourer')
-    } finally { 
-      setSavingLabour(false) 
-    }
-  }
- const handleDeleteLabour = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this labourer?')) return
-    setDeletingLabourId(id)
-    try {
-      const res = await fetch('/api/employees/labours', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
-      })
-      const data = await res.json()
-      if (data.success) {
-        setLabours(prev => prev.filter(l => l.id !== id))
-      } else {
-        throw new Error(data.error)
-      }
-    } catch (error: unknown) {
-  alert(error instanceof Error ? error.message : 'Delete failed')
-    } finally { 
-      setDeletingLabourId(null) 
-    }
-  }
 
-  const getfilteredLabours = useMemo(() => {
-    const term = searchTerm.toLowerCase().trim()
-    return labours.filter(l => {
-      // Use 'l' as the variable name, not '1'
-      const nameMatch = l.fullName.toLowerCase().includes(term)
-      // Note: Ensure your backend maps 'labourId' to 'employeeId' for this row type to work
-      const idMatch = (l.employeeId || '').toLowerCase().includes(term)
-      return nameMatch || idMatch
-    })
-  // ADD THIS SORT BLOCK
-      .sort((a, b) => {
-        const idA = a.labourId || a.employeeId || ''
-        const idB = b.labourId || b.employeeId || ''
-        return idA.localeCompare(idB, undefined, { numeric: true, sensitivity: 'base' })
-      })
-  }, [labours, searchTerm])
-
-  // Single statusBadge function to handle both Employees and Labours
-  const getStatusBadgeClass = (status: string) => {
-    const map: Record<string, string> = {
-      ACTIVE: 'bg-green-50 text-green-700',
-      INACTIVE: 'bg-gray-100 text-gray-600',
-      TERMINATED: 'bg-red-50 text-red-600',
-    }
-    return map[status] || 'bg-gray-100 text-gray-600'
-  }
   const handleGeneratePayroll = async () => {
     if (!payrollMonth) {
       alert('Select a month before generating payroll.')
@@ -1284,6 +1248,20 @@ export default function EmployeesPage() {
     XLSX.writeFile(workbook, `bulk-payment-transfer-${suffix}.xlsx`)
   }
 
+  const getEmployeeCTC = (emp: EmployeeRow) =>
+    computeCTCBreakdown({
+      grossSalary:             emp.grossSalary,
+      basicSalary:             emp.basicSalary,
+      hra:                     emp.hra,
+      pfApplicable:            emp.pfApplicable ?? true,
+      pfAmount:                emp.pfAmount,
+      ptAmount:                emp.ptAmount,
+      totalDeductionsOverride: emp.totalDeductions,
+      annualCTCOverride:       emp.annualCTC,
+      conveyance:              emp.conveyance,
+      specialAllowance:        emp.specialAllowance,
+    })
+
   if (loading && employees.length === 0) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -1295,8 +1273,11 @@ export default function EmployeesPage() {
     )
   }
 
+  // ── Employee being edited (for the slide-over) ──
+  const editingEmployee = employees.find((e) => e.id === editingEmployeeId) ?? null
+
   return (
-    <div className=" -mt-5 space-y-4">
+    <div className="-mt-5 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 text-sm text-gray-500 mb-1">
@@ -1321,16 +1302,16 @@ export default function EmployeesPage() {
             )}
           </Button>
           {!isAccountant && (
-  <Button
-    onClick={() => {
-      setTab('employees')
-      setShowAddModal(true)
-    }}
-  >
-    <UserPlus className="h-4 w-4 mr-2" />
-    Add Employee
-  </Button>
-)}
+            <Button
+              onClick={() => {
+                setTab('employees')
+                setShowAddModal(true)
+              }}
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              Add Employee
+            </Button>
+          )}
         </div>
       </div>
 
@@ -1391,7 +1372,6 @@ export default function EmployeesPage() {
           { id: 'employees', label: 'Employees', icon: Users },
           { id: 'attendance', label: 'Attendance', icon: Calendar },
           { id: 'payroll', label: 'Payroll', icon: CreditCard },
-          { id: 'labours', label: 'Labours', icon: HardHat }, 
         ].map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -1406,9 +1386,11 @@ export default function EmployeesPage() {
         ))}
       </div>
 
+      {/* ── EMPLOYEES TAB ── */}
       {tab === 'employees' && (
         <section className="space-y-6">
           <div className="space-y-4 text-gray-900">
+            {/* Filters */}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-1 items-center gap-3">
                 <div className="relative w-full max-w-sm">
@@ -1416,46 +1398,35 @@ export default function EmployeesPage() {
                   <Input
                     placeholder="Search by name, department, company..."
                     value={searchTerm}
-                    onChange={(event) => setSearchTerm(event.target.value)}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-9"
                   />
                 </div>
                 <select
                   value={companyFilter}
-                  onChange={(event) => setCompanyFilter(event.target.value)}
+                  onChange={(e) => setCompanyFilter(e.target.value)}
                   className="h-10 rounded-md border border-gray-200 px-3 text-sm text-gray-700 focus:border-gray-300 focus:outline-none"
                 >
                   <option value="all">All companies</option>
-                  {companies.map((company) => (
-                    <option key={company.id} value={company.id}>
-                      {company.name}
-                    </option>
-                  ))}
+                  {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
                 <select
                   value={statusFilter}
-                  onChange={(event) => setStatusFilter(event.target.value as 'all' | EmployeeStatus)}
+                  onChange={(e) => setStatusFilter(e.target.value as 'all' | EmployeeStatus)}
                   className="h-10 rounded-md border border-gray-200 px-3 text-sm text-gray-700 focus:border-gray-300 focus:outline-none"
                 >
                   <option value="all">All statuses</option>
-                  {EMPLOYEE_STATUSES.map((status) => (
-                    <option key={status} value={status}>
-                      {status.charAt(0) + status.slice(1).toLowerCase()}
-                    </option>
-                  ))}
+                  {EMPLOYEE_STATUSES.map((s) => <option key={s} value={s}>{s.charAt(0) + s.slice(1).toLowerCase()}</option>)}
                 </select>
-			   
               </div>
-              <span className="text-sm text-gray-500">
-                Showing <strong>{filteredEmployees.length}</strong> of {employees.length}
-              </span>
+              <span className="text-sm text-gray-500">Showing <strong>{filteredEmployees.length}</strong> of {employees.length}</span>
             </div>
 
+            {/* Table */}
             <div className="overflow-auto rounded-xl border border-gray-100 bg-white shadow-sm">
               {employeeLoading ? (
                 <div className="flex items-center justify-center py-12 text-gray-500">
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Loading employees
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />Loading employees
                 </div>
               ) : filteredEmployees.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center text-gray-500">
@@ -1467,199 +1438,99 @@ export default function EmployeesPage() {
                 <table className="min-w-full text-sm">
                   <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
                     <tr>
-                      <th className="px-4 py-2 text-left">Employee</th>
-                      <th className="px-4 py-2 text-left">Company</th>
-                      <th className="px-4 py-2 text-left">Designation</th>
-                      <th className="px-4 py-2 text-left">Net salary</th>
-                      <th className="px-4 py-2 text-left">Gross salary</th>
-                      <th className="px-4 py-2 text-left">Bank account</th>
-                      <th className="px-4 py-2 text-left">IFSC
-                      </th>
-                      <th className="px-4 py-2 text-left">Status</th>
-                    {!isAccountant && <th className="px-4 py-2 text-right">Actions</th>}
+                      <th className="px-4 py-3 text-left">Employee</th>
+                      <th className="px-4 py-3 text-left">Company</th>
+                      <th className="px-4 py-3 text-left">Designation</th>
+                      <th className="px-4 py-3 text-left">Net Salary</th>
+                      <th className="px-4 py-3 text-left">Gross Salary</th>
+                      <th className="px-4 py-3 text-left">Basic</th>
+                      <th className="px-4 py-3 text-left">HRA</th>
+                      <th className="px-4 py-3 text-left">Emp PF</th>
+                      <th className="px-4 py-3 text-left">Prof Tax</th>
+                      <th className="px-4 py-3 text-left">Deductions</th>
+                      <th className="px-4 py-3 text-left">Annual CTC</th>
+                      <th className="px-4 py-3 text-left">Bank Account</th>
+                      <th className="px-4 py-3 text-left">IFSC</th>
+                      <th className="px-4 py-3 text-left">Status</th>
+                      {!isAccountant && <th className="px-4 py-3 text-right">Actions</th>}
                     </tr>
                   </thead>
                   <tbody>
                     {filteredEmployees.map((employee) => {
-                      const isEditing = editingEmployeeId === employee.id
+                      const ctc = getEmployeeCTC(employee)
                       return (
-                        <tr key={employee.id} className="border-t border-gray-50 hover:bg-gray-50/50">
+                        <tr key={employee.id} className="border-t border-gray-50 hover:bg-gray-50/50 transition-colors">
                           <td className="px-4 py-3 align-top">
-                              {isEditing ? (
-                                <div className="space-y-2">
-                                  <div className="flex gap-2">
-                                    <Input
-                                      value={editForm.firstName}
-                                    onChange={(event) => handleEditChange('firstName', event.target.value)}
-                                    className="h-8"
-                                  />
-                                  <Input
-                                    value={editForm.lastName}
-                                    onChange={(event) => handleEditChange('lastName', event.target.value)}
-                                    className="h-8"
-                                  />
-                                </div>
-                                <div className="flex gap-2">
-                                    <Input
-                                      value={editForm.department}
-                                      onChange={(event) => handleEditChange('department', event.target.value)}
-                                      placeholder="Department"
-                                      className="h-8"
-                                    />
-                                  </div>
-                                  <div className="flex gap-2">
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      step="0.5"
-                                      value={editForm.elBalance}
-                                      onChange={(event) => handleEditChange('elBalance', event.target.value)}
-                                      placeholder="EL balance"
-                                      className="h-8"
-                                    />
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      step="0.5"
-                                      value={editForm.slBalance}
-                                      onChange={(event) => handleEditChange('slBalance', event.target.value)}
-                                      placeholder="SL balance"
-                                      className="h-8"
-                                    />
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="space-y-1">
-                                  <div className="font-medium text-gray-900">{employee.fullName}</div>
-                                  <div className="text-xs text-gray-500">#{employee.employeeId}</div>
-                                  <div className="text-xs text-gray-400">{formatDate(employee.joiningDate)}</div>
-                                  <div className="text-[11px] text-gray-500">
-                                    EL {formatLeaveBalance(employee.elBalance)} · SL {formatLeaveBalance(employee.slBalance)}
-                                  </div>
-                                </div>
-                              )}
-                            </td>
+                            <div className="space-y-0.5">
+                              <div className="font-medium text-gray-900">{employee.fullName}</div>
+                              <div className="text-xs text-gray-500">#{employee.employeeId}</div>
+                              <div className="text-xs text-gray-400">{formatDate(employee.joiningDate)}</div>
+                              <div className="text-[11px] text-gray-500">
+                                EL {formatLeaveBalance(employee.elBalance)} · SL {formatLeaveBalance(employee.slBalance)}
+                              </div>
+                            </div>
+                          </td>
                           <td className="px-4 py-3 align-top text-sm text-gray-600">
                             {employee.company?.name || 'Unassigned'}
                           </td>
                           <td className="px-4 py-3 align-top text-sm text-gray-600">
-                            {isEditing ? (
-                              <Input
-                                value={editForm.designation}
-                                onChange={(event) => handleEditChange('designation', event.target.value)}
-                                placeholder="Designation"
-                                className="h-8"
-                              />
-                            ) : (
-                              employee.designation || '—'
-                            )}
+                            {employee.designation || '—'}
+                          </td>
+                          <td className="px-4 py-3 align-top text-sm text-gray-900 whitespace-nowrap">
+                            {formatCurrency(employee.netSalary)}
+                          </td>
+                          <td className="px-4 py-3 align-top text-sm text-gray-900 whitespace-nowrap">
+                            {formatCurrency(employee.grossSalary)}
+                          </td>
+                          <td className="px-4 py-3 align-top text-sm text-gray-900 whitespace-nowrap">
+                            {formatCurrency(employee.basicSalary)}
+                          </td>
+                          <td className="px-4 py-3 align-top text-sm text-gray-900 whitespace-nowrap">
+                            {formatCurrency(employee.hra)}
+                          </td>
+                          <td className="px-4 py-3 align-top text-sm text-gray-900 whitespace-nowrap">
+                            <span className={ctc.employeePF === 0 ? 'text-gray-400 text-xs' : ''}>
+                              {ctc.employeePF === 0 && !(employee.pfApplicable ?? true) ? 'N/A' : formatCurrency(ctc.employeePF)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 align-top text-sm text-gray-900 whitespace-nowrap">
+                            {formatCurrency(ctc.professionalTax)}
+                          </td>
+                          <td className="px-4 py-3 align-top text-sm font-medium text-red-600 whitespace-nowrap">
+                            {formatCurrency(ctc.totalDeductions)}
+                          </td>
+                          <td className="px-4 py-3 align-top text-sm font-medium text-gray-900">
+                            <CTCBreakdownPopover employee={employee} />
                           </td>
                           <td className="px-4 py-3 align-top text-sm text-gray-900">
-                            {isEditing ? (
-                              <Input
-                                type="number"
-                                value={editForm.netSalary}
-                                onChange={(event) => handleEditChange('netSalary', event.target.value)}
-                                placeholder="Net"
-                                className="h-8"
-                              />
-                            ) : (
-                              formatCurrency(employee.netSalary)
-                            )}
+                            {employee.bankAccountNumber || '—'}
                           </td>
                           <td className="px-4 py-3 align-top text-sm text-gray-900">
-                            {isEditing ? (
-                              <Input
-                                type="number"
-                                value={editForm.grossSalary}
-                                onChange={(event) => handleEditChange('grossSalary', event.target.value)}
-                                placeholder="Gross"
-                                className="h-8"
-                              />
-                            ) : (
-                              formatCurrency(employee.grossSalary)
-                            )}
-                          </td>
-                          <td className="px-4 py-3 align-top text-sm text-gray-900">
-                            {isEditing ? (
-                              <Input
-                                value={editForm.bankAccountNumber}
-                                onChange={(event) => handleEditChange('bankAccountNumber', event.target.value)}
-                                placeholder="Account #"
-                                className="h-8"
-                              />
-                            ) : (
-                              employee.bankAccountNumber || '—'
-                            )}
-                          </td>
-                          <td className="px-4 py-3 align-top text-sm text-gray-900">
-                            {isEditing ? (
-                              <Input
-                                value={editForm.ifscCode}
-                                onChange={(event) => handleEditChange('ifscCode', event.target.value)}
-                                placeholder="IFSC"
-                                className="h-8"
-                              />
-                            ) : (
-                              employee.ifscCode || '—'
-                            )}
+                            {employee.ifscCode || '—'}
                           </td>
                           <td className="px-4 py-3 align-top">
-                            {isEditing ? (
-                              <select
-                                value={editForm.status}
-                                onChange={(event) => handleEditChange('status', event.target.value as EmployeeStatus)}
-                                className="h-8 w-full rounded-md border border-gray-200 px-2 text-xs text-gray-700 focus:border-gray-300 focus:outline-none"
-                              >
-                                {EMPLOYEE_STATUSES.map((statusOption) => (
-                                  <option key={statusOption} value={statusOption}>
-                                    {statusOption}
-                                  </option>
-                                ))}
-                              </select>
-                            ) : (
-                              <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusBadge(employee.status)}`}>
-                                {employee.status}
-                              </span>
-                            )}
+                            <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusBadge(employee.status)}`}>
+                              {employee.status}
+                            </span>
                           </td>
-                          {/* ── ACCOUNTANT: no edit/delete ── */}
                           {!isAccountant && (
-                          <td className="px-4 py-3 align-top text-right text-xs">
-                            {isEditing ? (
-                              <div className="flex justify-end gap-2">
-                                <button
-                                  onClick={saveEditingEmployee}
-                                  disabled={savingRow}
-                                  className="rounded border border-gray-200 px-2 py-1 font-medium text-gray-900 hover:bg-gray-100 disabled:opacity-50"
-                                >
-                                  {savingRow ? 'Saving…' : 'Save'}
-                                </button>
-                                <button
-                                  onClick={cancelEditingEmployee}
-                                  className="rounded border border-transparent px-2 py-1 text-gray-500 hover:text-gray-900"
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            ) : (
+                            <td className="px-4 py-3 align-top text-right">
                               <div className="flex justify-end gap-2">
                                 <button
                                   onClick={() => startEditingEmployee(employee)}
-                                  className="rounded border border-gray-200 px-2 py-1 text-gray-600 hover:bg-gray-100"
+                                  className="rounded border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100 transition-colors"
                                 >
                                   Edit
                                 </button>
                                 <button
                                   onClick={() => handleDeleteEmployee(employee.id)}
                                   disabled={deletingRow === employee.id}
-                                  className="rounded border border-transparent px-2 py-1 text-red-600 hover:bg-red-50 disabled:opacity-50"
+                                  className="rounded border border-transparent px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50 transition-colors"
                                 >
                                   {deletingRow === employee.id ? 'Deleting…' : 'Delete'}
                                 </button>
                               </div>
-                            )}
-                          </td>
+                            </td>
                           )}
                         </tr>
                       )
@@ -1669,107 +1540,71 @@ export default function EmployeesPage() {
               )}
             </div>
           </div>
-          {/* ── ACCOUNTANT: hide bulk upload entirely ── */}
+
+          {/* Bulk upload */}
           {!isAccountant && (
-          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-                  <Upload className="h-4 w-4 text-gray-500" />
-                  Bulk upload
-                </div>
-                <p className="mt-1 text-sm text-gray-500">
-                  Upload a CSV and we will assign employees to the selected company automatically.
-                </p>
-              </div>
-              <button
-                onClick={downloadTemplate}
-                className="text-sm text-blue-600 hover:text-blue-700 underline underline-offset-4"
-              >
-                Download template
-              </button>
-            </div>
-
-            <div className="mt-4 space-y-4">
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">Company</label>
-                <select
-                  value={bulkCompanyId}
-                  onChange={(event) => setBulkCompanyId(event.target.value)}
-                  className="h-10 w-full rounded-md border border-gray-200 px-3 text-sm text-gray-700 focus:border-gray-300 focus:outline-none"
-                >
-                  <option value="">Select company</option>
-                  {companies.map((company) => (
-                    <option key={company.id} value={company.id}>
-                      {company.name}
-                    </option>
-                  ))}
-                </select>
-				
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">CSV file</label>
-                <input
-                  key={fileInputKey}
-                  type="file"
-                  accept=".csv"
-                  onChange={(event) => {
-                    const nextFile = event.target.files?.[0] || null
-                    setBulkFile(nextFile)
-                  }}
-                  className="block w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-gray-300 focus:outline-none"
-                />
-                <p className="text-xs text-gray-500">Use UTF-8 CSV with the headers from the template.</p>
-              </div>
-            </div>
-
-            <Button
-              onClick={handleBulkUpload}
-              className="mt-4 w-full"
-              disabled={bulkUploading || !bulkCompanyId || !bulkFile}
-            >
-              {bulkUploading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Uploading
-                </>
-              ) : (
-                'Upload employees'
-              )}
-            </Button>
-
-            {bulkResult && (
-              <div className="mt-4 rounded-lg border border-gray-100 bg-gray-50/80 p-4 text-sm">
-                <p className="font-medium text-gray-900">Upload summary</p>
-                <div className="mt-2 grid grid-cols-2 gap-2 text-gray-700">
-                  <span>Total rows: {bulkResult.summary.totalRows}</span>
-                  <span>Processed: {bulkResult.summary.processedRows}</span>
-                  <span>Created: {bulkResult.summary.created}</span>
-                  <span>Updated: {bulkResult.summary.updated}</span>
-                  <span>Failed: {bulkResult.summary.failed}</span>
-                </div>
-                {bulkResult.failed.length > 0 && (
-                  <div className="mt-3 space-y-2">
-                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                      <AlertCircle className="h-4 w-4 text-amber-500" />
-                      Rows with issues
-                    </div>
-                    <div className="space-y-1 text-xs text-gray-600 max-h-40 overflow-auto">
-                      {bulkResult.failed.map((row) => (
-                        <div key={row.rowNumber} className="rounded border border-amber-100 bg-white p-2">
-                          <span className="font-medium text-gray-900">Row {row.rowNumber}:</span>{' '}
-                          {row.errors.join(', ')}
-                        </div>
-                      ))}
-                    </div>
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                    <Upload className="h-4 w-4 text-gray-500" />Bulk upload
                   </div>
-                )}
+                  <p className="mt-1 text-sm text-gray-500">Upload a CSV and we will assign employees to the selected company automatically.</p>
+                </div>
+                <button onClick={downloadTemplate} className="text-sm text-blue-600 hover:text-blue-700 underline underline-offset-4">
+                  Download template
+                </button>
               </div>
-            )}
-          </div>
+              <div className="mt-4 space-y-4">
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700">Company</label>
+                  <select value={bulkCompanyId} onChange={(e) => setBulkCompanyId(e.target.value)} className="h-10 w-full rounded-md border border-gray-200 px-3 text-sm text-gray-700 focus:border-gray-300 focus:outline-none">
+                    <option value="">Select company</option>
+                    <option value="all">All Companies</option>
+                    {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700">CSV file</label>
+                  <input key={fileInputKey} type="file" accept=".csv" onChange={(e) => setBulkFile(e.target.files?.[0] || null)} className="block w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-gray-300 focus:outline-none" />
+                  <p className="text-xs text-gray-500">Use UTF-8 CSV with the headers from the template.</p>
+                </div>
+              </div>
+              <Button onClick={handleBulkUpload} className="mt-4 w-full" disabled={bulkUploading || (!bulkCompanyId && bulkCompanyId !== 'all') || !bulkFile}>
+                {bulkUploading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Uploading</> : 'Upload employees'}
+              </Button>
+              {bulkResult && (
+                <div className="mt-4 rounded-lg border border-gray-100 bg-gray-50/80 p-4 text-sm">
+                  <p className="font-medium text-gray-900">Upload summary</p>
+                  <div className="mt-2 grid grid-cols-2 gap-2 text-gray-700">
+                    <span>Total rows: {bulkResult.summary.totalRows}</span>
+                    <span>Processed: {bulkResult.summary.processedRows}</span>
+                    <span>Created: {bulkResult.summary.created}</span>
+                    <span>Updated: {bulkResult.summary.updated}</span>
+                    <span>Failed: {bulkResult.summary.failed}</span>
+                  </div>
+                  {bulkResult.failed.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        <AlertCircle className="h-4 w-4 text-amber-500" />Rows with issues
+                      </div>
+                      <div className="space-y-1 text-xs text-gray-600 max-h-40 overflow-auto">
+                        {bulkResult.failed.map((row) => (
+                          <div key={row.rowNumber} className="rounded border border-amber-100 bg-white p-2">
+                            <span className="font-medium text-gray-900">Row {row.rowNumber}:</span> {row.errors.join(', ')}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           )}
         </section>
       )}
+
+      {/* ── ATTENDANCE TAB ── */}
       {tab === 'attendance' && (
         <section className="space-y-6">
           <div className="rounded-2xl border border-gray-100 bg-white shadow-sm w-full overflow-hidden">
@@ -1814,32 +1649,31 @@ export default function EmployeesPage() {
                       </option>
                     ))}
                   </select>
-    {/* ── ACCOUNTANT: hide import attendance ── */}
-    {!isAccountant && (
-    <div className="flex items-center">
-    <input
-      type="file"
-      ref={attendanceFileInputRef}
-      onChange={handleAttendanceExcelUpload}
-      accept=".xlsx, .xls, .csv"
-      className="hidden"
-    />
-    <Button
-     variant="ghost"
-     className="border border-gray-200 text-gray-600 h-10 ml-2" // Added some margin
-     onClick={() => attendanceFileInputRef.current?.click()}
-     disabled={attendanceUploading} // Removed company check
-     title="Import Excel sheet"
-    >
-  {attendanceUploading ? (
-    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-  ) : (
-    <Upload className="h-4 w-4 mr-2 text-green-600" />
-  )}
-  {attendanceUploading ? 'Importing...' : 'Import Attendance'}
-</Button>
-  </div>		
-                  )}						  
+                  {!isAccountant && (
+                    <div className="flex items-center">
+                      <input
+                        type="file"
+                        ref={attendanceFileInputRef}
+                        onChange={handleAttendanceExcelUpload}
+                        accept=".xlsx, .xls, .csv"
+                        className="hidden"
+                      />
+                      <Button
+                        variant="ghost"
+                        className="border border-gray-200 text-gray-600 h-10 ml-2"
+                        onClick={() => attendanceFileInputRef.current?.click()}
+                        disabled={attendanceUploading}
+                        title="Import Excel sheet"
+                      >
+                        {attendanceUploading ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        ) : (
+                          <Upload className="h-4 w-4 mr-2 text-green-600" />
+                        )}
+                        {attendanceUploading ? 'Importing...' : 'Import Attendance'}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1896,7 +1730,7 @@ export default function EmployeesPage() {
                     holidays.map((holiday) => (
                       <span key={holiday.id} className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-800">
                         {new Date(holiday.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} {holiday.name}
-                        {holiday.isOptional ? '(Optional)' : ''}
+                        {holiday.isOptional ? ' (Optional)' : ''}
                         {canManageHolidays && (
                           <button
                             onClick={() => removeHoliday(holiday.id)}
@@ -1928,15 +1762,9 @@ export default function EmployeesPage() {
                           <th className="sticky left-0 bg-gray-50 px-3 py-2 text-left text-[11px] font-semibold text-gray-500">
                             Employee
                           </th>
-                          <th className="bg-gray-50 px-2 py-2 text-center text-[11px] font-semibold text-gray-500">
-                            EL
-                          </th>
-                          <th className="bg-gray-50 px-2 py-2 text-center text-[11px] font-semibold text-gray-500">
-                            SL
-                          </th>
-                          <th className="bg-gray-50 px-2 py-2 text-center text-[11px] font-semibold text-gray-500">
-                            CO
-                          </th>
+                          <th className="bg-gray-50 px-2 py-2 text-center text-[11px] font-semibold text-gray-500">EL</th>
+                          <th className="bg-gray-50 px-2 py-2 text-center text-[11px] font-semibold text-gray-500">SL</th>
+                          <th className="bg-gray-50 px-2 py-2 text-center text-[11px] font-semibold text-gray-500">CO</th>
                           {attendanceDays.map((day) => (
                             <th key={day} className="px-1 py-2 text-[11px] font-semibold text-gray-500">
                               <div className="flex flex-col items-center gap-0.5">
@@ -1947,7 +1775,7 @@ export default function EmployeesPage() {
                               </div>
                             </th>
                           ))}
-                        {!isAccountant && <th className="px-2 py-2 text-right text-[11px] font-semibold text-gray-500">Actions</th>}
+                          {!isAccountant && <th className="px-2 py-2 text-right text-[11px] font-semibold text-gray-500">Actions</th>}
                         </tr>
                       </thead>
                       <tbody>
@@ -1970,9 +1798,9 @@ export default function EmployeesPage() {
                               {attendanceDays.map((day) => {
                                 const { year, month } = attendanceMonthParts
                                 const date = new Date(Date.UTC(year, month - 1, day)).toISOString().split('T')[0]
-                            const key = buildAttendanceKey(employee.id, date)
-                            const draft = pendingAttendance.get(key)
-                            const existing = attendanceStatusMap.get(key)
+                                const key = buildAttendanceKey(employee.id, date)
+                                const draft = pendingAttendance.get(key)
+                                const existing = attendanceStatusMap.get(key)
                                 const status = draft || existing
                                 return (
                                   <td key={`${employee.id}-${day}`} className="px-1 py-1 text-center align-middle">
@@ -2000,31 +1828,31 @@ export default function EmployeesPage() {
                                 )
                               })}
                               {!isAccountant && (
-                              <td className="px-2 py-1 text-right text-[11px]">
-                                {isEditingAttendance ? (
-                                  <div className="flex justify-end gap-2">
+                                <td className="px-2 py-1 text-right text-[11px]">
+                                  {isEditingAttendance ? (
+                                    <div className="flex justify-end gap-2">
+                                      <button
+                                        onClick={() => saveAttendanceRow(employee.id)}
+                                        className="rounded border border-gray-200 px-2 py-1 font-medium text-gray-900 hover:bg-gray-100"
+                                      >
+                                        Save
+                                      </button>
+                                      <button
+                                        onClick={cancelEditingAttendance}
+                                        className="rounded border border-transparent px-2 py-1 text-gray-500 hover:text-gray-900"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  ) : (
                                     <button
-                                      onClick={() => saveAttendanceRow(employee.id)}
-                                      className="rounded border border-gray-200 px-2 py-1 font-medium text-gray-900 hover:bg-gray-100"
+                                      onClick={() => startEditingAttendance(employee.id)}
+                                      className="rounded border border-gray-200 px-2 py-1 text-gray-600 hover:bg-gray-100"
                                     >
-                                      Save
+                                      Edit
                                     </button>
-                                    <button
-                                      onClick={cancelEditingAttendance}
-                                      className="rounded border border-transparent px-2 py-1 text-gray-500 hover:text-gray-900"
-                                    >
-                                      Cancel
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <button
-                                    onClick={() => startEditingAttendance(employee.id)}
-                                    className="rounded border border-gray-200 px-2 py-1 text-gray-600 hover:bg-gray-100"
-                                  >
-                                    Edit
-                                  </button>
-                                )}
-                              </td>
+                                  )}
+                                </td>
                               )}
                             </tr>
                           )
@@ -2048,6 +1876,8 @@ export default function EmployeesPage() {
           </div>
         </section>
       )}
+
+      {/* ── PAYROLL TAB ── */}
       {tab === 'payroll' && (
         <section className="space-y-6">
           {payrollRunOpen && (
@@ -2068,10 +1898,7 @@ export default function EmployeesPage() {
                   <p className="mt-1">{payrollRunMessage}</p>
                   {payrollRunProgress && <p className="mt-1 text-xs opacity-90">{payrollRunProgress}</p>}
                 </div>
-                <button
-                  onClick={() => setPayrollRunOpen(false)}
-                  className="text-xs font-medium underline underline-offset-2"
-                >
+                <button onClick={() => setPayrollRunOpen(false)} className="text-xs font-medium underline underline-offset-2">
                   Dismiss
                 </button>
               </div>
@@ -2079,333 +1906,177 @@ export default function EmployeesPage() {
           )}
 
           <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <div className="text-sm font-semibold text-gray-900">Payroll processing</div>
-                  <p className="text-sm text-gray-500">Track gross-to-net per cycle and payout readiness.</p>
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <select
-                    value={payrollMonth}
-                    onChange={async (event) => {
-                      const value = event.target.value
-                      setPayrollMonth(value)
-                      await fetchPayroll(value)
-                    }}
-                    className="h-10 rounded-md border border-gray-200 px-3 text-sm text-gray-700 focus:border-gray-300 focus:outline-none"
-                  >
-                    {monthOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={payrollCompanyFilter}
-                    onChange={(event) => setPayrollCompanyFilter(event.target.value)}
-                    className="h-10 rounded-md border border-gray-200 px-3 text-sm text-gray-700 focus:border-gray-300 focus:outline-none"
-                  >
-                    <option value="all">All companies</option>
-                    {companies.map((company) => (
-                      <option key={company.id} value={company.id}>
-                        {company.name}
-                      </option>
-                    ))}
-                  </select>
-                  <Button
-                    onClick={handleGeneratePayroll}
-                    disabled={generatingPayroll || markingPaid}
-                  >
-                    {generatingPayroll ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Generating
-                      </>
-                    ) : (
-                      'Generate payroll'
-                    )}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="border border-gray-200"
-                    onClick={handleMarkFilteredPaid}
-                    disabled={generatingPayroll || markingPaid || filteredPayrollRecords.length === 0}
-                  >
-                    {markingPaid ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Updating
-                      </>
-                    ) : (
-                      'Mark Filtered as PAID'
-                    )}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="border border-gray-200"
-                    onClick={handleExportSelectedPayroll}
-                    disabled={generatingPayroll || markingPaid || selectedFilteredPayrollRecords.length === 0}
-                  >
-                    Export Selected (Excel)
-                  </Button>
-                </div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-semibold text-gray-900">Payroll processing</div>
+                <p className="text-sm text-gray-500">Track gross-to-net per cycle and payout readiness.</p>
               </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-4">
-                  <p className="text-xs uppercase text-gray-400">Total gross</p>
-                  <p className="mt-1 text-2xl font-semibold text-gray-900">{formatCurrency(payrollSummary.totalGross)}</p>
-                </div>
-                <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-4">
-                  <p className="text-xs uppercase text-gray-400">Total net</p>
-                  <p className="mt-1 text-2xl font-semibold text-gray-900">{formatCurrency(payrollSummary.totalNet)}</p>
-                </div>
-                <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-4">
-                  <p className="text-xs uppercase text-gray-400">Paid employees</p>
-                  <p className="mt-1 text-2xl font-semibold text-gray-900">
-                    {payrollSummary.paid}/{filteredPayrollRecords.length}
-                  </p>
-                </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <select
+                  value={payrollMonth}
+                  onChange={async (event) => {
+                    const value = event.target.value
+                    setPayrollMonth(value)
+                    await fetchPayroll(value)
+                  }}
+                  className="h-10 rounded-md border border-gray-200 px-3 text-sm text-gray-700 focus:border-gray-300 focus:outline-none"
+                >
+                  {monthOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={payrollCompanyFilter}
+                  onChange={(event) => setPayrollCompanyFilter(event.target.value)}
+                  className="h-10 rounded-md border border-gray-200 px-3 text-sm text-gray-700 focus:border-gray-300 focus:outline-none"
+                >
+                  <option value="all">All companies</option>
+                  {companies.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.name}
+                    </option>
+                  ))}
+                </select>
+                <Button onClick={handleGeneratePayroll} disabled={generatingPayroll || markingPaid}>
+                  {generatingPayroll ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" />Generating</>
+                  ) : (
+                    'Generate payroll'
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="border border-gray-200"
+                  onClick={handleMarkFilteredPaid}
+                  disabled={generatingPayroll || markingPaid || filteredPayrollRecords.length === 0}
+                >
+                  {markingPaid ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" />Updating</>
+                  ) : (
+                    'Mark Filtered as PAID'
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="border border-gray-200"
+                  onClick={handleExportSelectedPayroll}
+                  disabled={generatingPayroll || markingPaid || selectedFilteredPayrollRecords.length === 0}
+                >
+                  Export Selected (Excel)
+                </Button>
               </div>
+            </div>
 
-              <div className="overflow-hidden rounded-xl border border-gray-100">
-                <div className="grid grid-cols-10 bg-gray-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={allFilteredSelected}
-                      onChange={toggleSelectAllFilteredPayroll}
-                      aria-label="Select all payroll rows"
-                    />
-                  </div>
-                  <div>Cycle</div>
-                  <div>Employee</div>
-                  <div className="text-right">Gross</div>
-                  <div className="text-right">Net</div>
-                  <div className="text-right">Payable</div>
-                  <div className="text-right">Unpaid</div>
-                  <div className="text-right">Sandwich</div>
-                  <div className="text-right">CO +/-</div>
-                  <div>Status</div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-4">
+                <p className="text-xs uppercase text-gray-400">Total gross</p>
+                <p className="mt-1 text-2xl font-semibold text-gray-900">{formatCurrency(payrollSummary.totalGross)}</p>
+              </div>
+              <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-4">
+                <p className="text-xs uppercase text-gray-400">Total net</p>
+                <p className="mt-1 text-2xl font-semibold text-gray-900">{formatCurrency(payrollSummary.totalNet)}</p>
+              </div>
+              <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-4">
+                <p className="text-xs uppercase text-gray-400">Paid employees</p>
+                <p className="mt-1 text-2xl font-semibold text-gray-900">
+                  {payrollSummary.paid}/{filteredPayrollRecords.length}
+                </p>
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-xl border border-gray-100">
+              <div className="grid grid-cols-10 bg-gray-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={allFilteredSelected}
+                    onChange={toggleSelectAllFilteredPayroll}
+                    aria-label="Select all payroll rows"
+                  />
                 </div>
-                {payrollLoading ? (
-                  <div className="flex items-center justify-center py-12 text-gray-500">
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Loading payroll
-                  </div>
-                ) : filteredPayrollRecords.length === 0 ? (
-                  <div className="py-12 text-center text-sm text-gray-500">No payroll records for this cycle.</div>
-                ) : (
-                  filteredPayrollRecords.map((record) => {
-                    const name = `${record.employee.firstName} ${record.employee.lastName}`
-                    return (
-                      <div key={record.id} className="grid grid-cols-10 border-t border-gray-50 px-4 py-3 text-sm">
-                        <div className="flex items-center">
-                          <input
-                            type="checkbox"
-                            checked={selectedPayrollIds.has(record.id)}
-                            onChange={() => togglePayrollSelection(record.id)}
-                            aria-label={`Select payroll row ${record.id}`}
-                          />
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{getMonthLabel(record.year, record.month)}</p>
-                          <p className="text-xs text-gray-500">#{record.employee.employeeId}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-900">{name}</p>
-                          <p className="text-xs text-gray-500">{record.employee.department || 'No department'}</p>
-                        </div>
-                        <div className="text-right font-medium text-gray-900">{formatCurrency(record.grossAmount)}</div>
-                        <div className="text-right font-medium text-gray-900">{formatCurrency(record.netAmount)}</div>
-                        <div className="text-right text-gray-700">{record.calculationBreakdown?.payableUnits ?? '—'}</div>
-                        <div className="text-right text-gray-700">{record.calculationBreakdown?.unpaidUnits ?? '—'}</div>
-                        <div className="text-right text-gray-700">{record.calculationBreakdown?.sandwichDays ?? '—'}</div>
-                        <div className="text-right text-gray-700">
-                          +{record.calculationBreakdown?.coEarned ?? 0} / -{record.calculationBreakdown?.coUsed ?? 0}
-                        </div>
-                        <div className="flex items-center">
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
-                                record.status === 'PAID'
-                                  ? 'bg-emerald-50 text-emerald-700'
-                                  : record.status === 'PROCESSING'
-                                    ? 'bg-amber-50 text-amber-700'
-                                    : 'bg-gray-100 text-gray-600'
-                              }`}
+                <div>Cycle</div>
+                <div>Employee</div>
+                <div className="text-right">Gross</div>
+                <div className="text-right">Net</div>
+                <div className="text-right">Payable</div>
+                <div className="text-right">Unpaid</div>
+                <div className="text-right">Sandwich</div>
+                <div className="text-right">CO +/-</div>
+                <div className="pl-5">Status</div>
+              </div>
+              {payrollLoading ? (
+                <div className="flex items-center justify-center py-12 text-gray-500">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Loading payroll
+                </div>
+              ) : filteredPayrollRecords.length === 0 ? (
+                <div className="py-12 text-center text-sm text-gray-500">No payroll records for this cycle.</div>
+              ) : (
+                filteredPayrollRecords.map((record) => {
+                  const name = `${record.employee.firstName} ${record.employee.lastName}`
+                  return (
+                    <div key={record.id} className="grid grid-cols-10 border-t border-gray-50 px-4 py-3 text-sm">
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedPayrollIds.has(record.id)}
+                          onChange={() => togglePayrollSelection(record.id)}
+                          aria-label={`Select payroll row ${record.id}`}
+                        />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{getMonthLabel(record.year, record.month)}</p>
+                        <p className="text-xs text-gray-500">#{record.employee.employeeId}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-900">{name}</p>
+                        <p className="text-xs text-gray-500">{record.employee.department || 'No department'}</p>
+                      </div>
+                      <div className="text-right font-medium text-gray-900">{formatCurrency(record.grossAmount)}</div>
+                      <div className="text-right font-medium text-gray-900">{formatCurrency(record.netAmount)}</div>
+                      <div className="text-right text-gray-700">{record.calculationBreakdown?.payableUnits ?? '—'}</div>
+                      <div className="text-right text-gray-700">{record.calculationBreakdown?.unpaidUnits ?? '—'}</div>
+                      <div className="text-right text-gray-700">{record.calculationBreakdown?.sandwichDays ?? '—'}</div>
+                      <div className="text-right text-gray-700">
+                        +{record.calculationBreakdown?.coEarned ?? 0} / -{record.calculationBreakdown?.coUsed ?? 0}
+                      </div>
+                      <div className="flex items-center pl-5">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
+                              record.status === 'PAID'
+                                ? 'bg-emerald-50 text-emerald-700'
+                                : record.status === 'PROCESSING'
+                                  ? 'bg-amber-50 text-amber-700'
+                                  : 'bg-gray-100 text-gray-600'
+                            }`}
+                          >
+                            {record.status === 'PAID' && <CheckCircle2 className="h-3.5 w-3.5" />}
+                            {record.status}
+                          </span>
+                          {record.status !== 'PAID' && (
+                            <button
+                              onClick={() => handleMarkRecordPaid(record)}
+                              disabled={markingPaid || generatingPayroll}
+                              className="rounded border border-gray-200 px-2 py-1 text-[11px] text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
                             >
-                              {record.status === 'PAID' && <CheckCircle2 className="h-3.5 w-3.5" />}
-                              {record.status}
-                            </span>
-                            {record.status !== 'PAID' && (
-                              <button
-                                onClick={() => handleMarkRecordPaid(record)}
-                                disabled={markingPaid || generatingPayroll}
-                                className="rounded border border-gray-200 px-2 py-1 text-[11px] text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
-                              >
-                                Mark PAID
-                              </button>
-                            )}
-                          </div>
+                              Mark PAID
+                            </button>
+                          )}
                         </div>
                       </div>
-                    )
-                  })
-                )}
-              </div>
-          </div>
-        </section>
-      )}
- {/* Labours Tab Content */}
-      {tab === 'labours' && (
-        <section className="space-y-6 text-gray-900">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="relative w-full max-w-sm">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input 
-                placeholder="Search labours..." 
-                value={searchTerm} 
-                onChange={(e) => setSearchTerm(e.target.value)} 
-                className="pl-9" 
-              />
+                    </div>
+                  )
+                })
+              )}
             </div>
-            {/* ── ACCOUNTANT: hide Add / Bulk Import ── */}
-            {!isAccountant && (
-            <div className="flex items-center gap-2">
-              <input type="file" id="labour-csv" className="hidden" accept=".csv" onChange={handleLabourImport} />
-              <Button variant="ghost" onClick={() => document.getElementById('labour-csv')?.click()} className="border border-dashed border-gray-300 h-10">
-                <Upload className="h-4 w-4 mr-2 text-blue-600" />
-                Bulk Import
-              </Button>
-              <Button className="h-10" onClick={() => setShowAddLabourModal(true)} variant="primary">
-                <HardHat className="h-4 w-4 mr-2" />
-                Add Labour
-              </Button>
-            </div>
-            )}
-          </div>
-
-          <div className="overflow-auto rounded-xl border border-gray-100 bg-white shadow-sm">
-            {labourLoading ? (
-              <div className="flex items-center justify-center py-12 text-gray-500">
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading...
-              </div>
-            ) : getfilteredLabours.length === 0 ? (
-              <div className="py-24 text-center text-gray-500">
-                <HardHat className="mx-auto mb-4 h-10 w-10 text-gray-200" />
-                <p className="font-medium text-gray-900">No labours found.</p>
-              </div>
-            ) : (
-              <table className="min-w-full text-sm">
-                <thead className="bg-gray-50 text-xs font-semibold uppercase text-gray-500">
-                  <tr>
-                    <th className="px-4 py-3 text-left">Labour Name / ID</th>
-                    <th className="px-4 py-3 text-left">Mobile / DOB</th>
-                    <th className="px-4 py-3 text-left">Company</th>
-                    <th className="px-4 py-3 text-left">Designation</th>
-                    <th className="px-4 py-3 text-left">Net Salary</th>
-                    <th className="px-4 py-3 text-left">Status</th>
-                    {!isAccountant && <th className="px-4 py-3 text-right">Actions</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {getfilteredLabours.map((labour) => {
-                    const isEditing = editingLabourId === labour.id
-                    return (
-                      <tr key={labour.id} className="border-t border-gray-50 hover:bg-gray-50/50">
-                        <td className="px-4 py-3 align-top">
-                          {isEditing ? (
-                            <div className="space-y-1">
-                              <Input className="h-8" value={editLabourForm.firstName} onChange={e => setEditLabourForm({...editLabourForm, firstName: e.target.value})} placeholder="First Name" />
-                              <Input className="h-8" value={editLabourForm.lastName} onChange={e => setEditLabourForm({...editLabourForm, lastName: e.target.value})} placeholder="Last Name" />
-                            </div>
-                          ) : (
-                            <div>
-                              <div className="font-medium text-gray-900">{labour.fullName}</div>
-                              <div className="text-xs text-gray-500">#{labour.labourId || labour.employeeId}</div>
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                          {isEditing ? (
-                            <div className="space-y-1">
-                              <Input className="h-8" value={editLabourForm.phone} onChange={e => setEditLabourForm({...editLabourForm, phone: e.target.value})} placeholder="Phone" />
-                              <Input type="date" className="h-8 text-[11px]" value={editLabourForm.dob} onChange={e => setEditLabourForm({...editLabourForm, dob: e.target.value})} />
-                            </div>
-                          ) : (
-                            <div className="text-gray-600">
-                              <div>{labour.phone || '—'}</div>
-                              <div className="text-xs">{formatDate(labour.dob)}</div>
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 align-top text-gray-600">
-                          {labour.company?.name || 'Unassigned'}
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                          {isEditing ? (
-                            <Input className="h-8" value={editLabourForm.designation} onChange={e => setEditLabourForm({...editLabourForm, designation: e.target.value})} />
-                          ) : (
-                            <span className="text-gray-600">{labour.designation || 'Labour'}</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                          {isEditing ? (
-                            <Input type="number" className="h-8" value={editLabourForm.netSalary} onChange={e => setEditLabourForm({...editLabourForm, netSalary: e.target.value})} />
-                          ) : (
-                            <span className="font-medium text-gray-900">{formatCurrency(labour.netSalary)}</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                          {isEditing ? (
-                            <select 
-                              className="h-8 w-full rounded border border-gray-200 text-xs px-1"
-                              value={editLabourForm.status}
-                              onChange={e => setEditLabourForm({...editLabourForm, status: e.target.value})}
-                            >
-                              <option value="ACTIVE">ACTIVE</option>
-                              <option value="INACTIVE">INACTIVE</option>
-                            </select>
-                          ) : (
-                            <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(labour.status)}`}>
-                              {labour.status}
-                            </span>
-                          )}
-                        </td>
-                         {/* ── ACCOUNTANT: no edit/delete ── */}
-                        {!isAccountant && (
-                        <td className="px-4 py-3 text-right align-top">
-                          {isEditing ? (
-                            <div className="flex justify-end gap-2">
-                              <button onClick={saveEditingLabour} disabled={savingLabour} className="text-blue-600 hover:text-blue-700">
-                                {savingLabour ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                              </button>
-                              <button onClick={() => setEditingLabourId(null)} className="text-gray-400 hover:text-gray-600">
-                                <X className="h-4 w-4" />
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex justify-end gap-3">
-                              <button onClick={() => startEditingLabour(labour)} className="text-xs text-gray-400 hover:text-blue-600 font-medium">Edit</button>
-                              <button onClick={() => handleDeleteLabour(labour.id)} disabled={deletingLabourId === labour.id} className="text-gray-400 hover:text-red-600">
-                                {deletingLabourId === labour.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                              </button>
-                            </div>
-                          )}
-                        </td>
-                        )}
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            )}
           </div>
         </section>
       )}
 
-
+      {/* ── ADD EMPLOYEE MODAL ── */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-8">
           <div className="max-w-3xl w-full rounded-2xl bg-white p-6 shadow-2xl">
@@ -2414,10 +2085,7 @@ export default function EmployeesPage() {
                 <h2 className="text-xl font-semibold text-gray-900">Add employee</h2>
                 <p className="text-sm text-gray-500">Capture contract data that powers payroll and compliance.</p>
               </div>
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="text-sm text-gray-500 hover:text-gray-900"
-              >
+              <button onClick={() => setShowAddModal(false)} className="text-sm text-gray-500 hover:text-gray-900">
                 Close
               </button>
             </div>
@@ -2433,9 +2101,7 @@ export default function EmployeesPage() {
                   >
                     <option value="">Select company</option>
                     {companies.map((company) => (
-                      <option key={company.id} value={company.id}>
-                        {company.name}
-                      </option>
+                      <option key={company.id} value={company.id}>{company.name}</option>
                     ))}
                   </select>
                 </div>
@@ -2464,7 +2130,6 @@ export default function EmployeesPage() {
                   />
                 </div>
               </div>
-              
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-1">
@@ -2531,24 +2196,17 @@ export default function EmployeesPage() {
                   className="h-10 w-full rounded-md border border-gray-200 px-3 text-sm text-gray-700 focus:border-gray-300 focus:outline-none"
                 >
                   {EMPLOYEE_STATUSES.map((statusOption) => (
-                    <option key={statusOption} value={statusOption}>
-                      {statusOption}
-                    </option>
+                    <option key={statusOption} value={statusOption}>{statusOption}</option>
                   ))}
                 </select>
               </div>
             </div>
 
             <div className="mt-6 flex items-center justify-end gap-3">
-              <Button variant="ghost" onClick={() => setShowAddModal(false)}>
-                Cancel
-              </Button>
+              <Button variant="ghost" onClick={() => setShowAddModal(false)}>Cancel</Button>
               <Button onClick={handleAddEmployee} disabled={savingEmployee}>
                 {savingEmployee ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving
-                  </>
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving</>
                 ) : (
                   'Save employee'
                 )}
@@ -2557,77 +2215,264 @@ export default function EmployeesPage() {
           </div>
         </div>
       )}
-       {/* Add Labour Modal */}
-      {showAddLabourModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-8">
-          <div className="max-w-2xl w-full rounded-2xl bg-white p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-between mb-6">
+
+      {/* ── EDIT EMPLOYEE SLIDE-OVER PANEL ── */}
+      {editPanelOpen && editingEmployee && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-40 bg-black/25 backdrop-blur-[1px]"
+            onClick={cancelEditingEmployee}
+          />
+
+          {/* Drawer */}
+          <div className="fixed right-0 top-0 z-50 flex h-full w-full max-w-2xl flex-col bg-white text-gray-900 shadow-2xl">
+            {/* Header */}
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white px-6 py-4">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">Add Labour</h2>
-                <p className="text-sm text-gray-500">Register a new worker for field operations.</p>
+                <h2 className="text-lg font-semibold text-gray-900">Edit Employee</h2>
+                <p className="text-sm text-gray-500">
+                  {editingEmployee.fullName}
+                  <span className="ml-2 text-gray-400">#{editingEmployee.employeeId}</span>
+                  {editingEmployee.company?.name && (
+                    <span className="ml-2 text-gray-400">· {editingEmployee.company.name}</span>
+                  )}
+                </p>
               </div>
-              <button onClick={() => setShowAddLabourModal(false)} className="text-sm text-gray-500">Close</button>
+              <button
+                onClick={cancelEditingEmployee}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors text-xl leading-none"
+              >
+                ×
+              </button>
             </div>
 
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Company</label>
-                  <select
-                    value={newLabour.companyId}
-                    onChange={(e) => setNewLabour(prev => ({ ...prev, companyId: e.target.value }))}
-                    className="h-10 w-full rounded-md border border-gray-200 px-3 text-sm text-gray-800 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  >
-                    <option value="">Select company</option>
-                    {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1 text-gray-800">
-                  <label className="text-sm font-medium text-gray-700">Labour ID</label>
-                  <Input placeholder="L-001" value={newLabour.labourId} onChange={(e) => setNewLabour(prev => ({ ...prev, labourId: e.target.value }))} />
+            {/* Scrollable body */}
+            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-8">
+
+              {/* ── Personal Info ── */}
+              <div>
+                <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-gray-400">Personal Info</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField label="First Name">
+                    <Input
+                      value={editForm.firstName}
+                      onChange={(e) => handleEditChange('firstName', e.target.value)}
+                      placeholder="First name"
+                    />
+                  </FormField>
+                  <FormField label="Last Name">
+                    <Input
+                      value={editForm.lastName}
+                      onChange={(e) => handleEditChange('lastName', e.target.value)}
+                      placeholder="Last name"
+                    />
+                  </FormField>
+                  <FormField label="Designation">
+                    <Input
+                      value={editForm.designation}
+                      onChange={(e) => handleEditChange('designation', e.target.value)}
+                      placeholder="e.g. Senior Accountant"
+                    />
+                  </FormField>
+                  <FormField label="Department">
+                    <Input
+                      value={editForm.department}
+                      onChange={(e) => handleEditChange('department', e.target.value)}
+                      placeholder="e.g. Finance"
+                    />
+                  </FormField>
+                  <FormField label="Status">
+                    <select
+                      value={editForm.status}
+                      onChange={(e) => handleEditChange('status', e.target.value as EmployeeStatus)}
+                      className="h-10 w-full rounded-md border border-gray-200 px-3 text-sm text-gray-700 focus:border-gray-300 focus:outline-none"
+                    >
+                      {EMPLOYEE_STATUSES.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </FormField>
                 </div>
               </div>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 text-gray-800">
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">First Name</label>
-                  <Input value={newLabour.firstName} onChange={(e) => setNewLabour(prev => ({ ...prev, firstName: e.target.value }))} />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700 text-gray-800">Last Name</label>
-                  <Input value={newLabour.lastName} onChange={(e) => setNewLabour(prev => ({ ...prev, lastName: e.target.value }))} />
+
+              {/* ── Leave Balances ── */}
+              <div>
+                <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-gray-400">Leave Balances</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField label="EL Balance">
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      value={editForm.elBalance}
+                      onChange={(e) => handleEditChange('elBalance', e.target.value)}
+                      placeholder="0"
+                    />
+                  </FormField>
+                  <FormField label="SL Balance">
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      value={editForm.slBalance}
+                      onChange={(e) => handleEditChange('slBalance', e.target.value)}
+                      placeholder="0"
+                    />
+                  </FormField>
                 </div>
               </div>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 text-gray-800">
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Designation / Trade</label>
-                  <Input placeholder="e.g. Electrician" value={newLabour.designation} onChange={(e) => setNewLabour(prev => ({ ...prev, designation: e.target.value }))} />
+
+              {/* ── Salary ── */}
+              <div>
+                <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-gray-400">Salary</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField label="Net Salary (₹)">
+                    <Input
+                      type="number"
+                      value={editForm.netSalary}
+                      onChange={(e) => handleEditChange('netSalary', e.target.value)}
+                      placeholder="e.g. 45000"
+                    />
+                  </FormField>
+                  <FormField label="Gross Salary (₹)">
+                    <Input
+                      type="number"
+                      value={editForm.grossSalary}
+                      onChange={(e) => handleEditChange('grossSalary', e.target.value)}
+                      placeholder="e.g. 50000"
+                    />
+                  </FormField>
+                  <FormField label="Basic Salary (₹)">
+                    <Input
+                      type="number"
+                      value={editForm.basicSalary}
+                      onChange={(e) => handleEditChange('basicSalary', e.target.value)}
+                      placeholder="e.g. 21000"
+                    />
+                  </FormField>
+                  <FormField label="HRA (₹)">
+                    <Input
+                      type="number"
+                      value={editForm.hra}
+                      onChange={(e) => handleEditChange('hra', e.target.value)}
+                      placeholder="e.g. 10500"
+                    />
+                  </FormField>
+                  <FormField label="Conveyance (₹)">
+                    <Input
+                      type="number"
+                      value={editForm.conveyance}
+                      onChange={(e) => handleEditChange('conveyance', e.target.value)}
+                      placeholder="e.g. 1600"
+                    />
+                  </FormField>
+                  <FormField label="Special Allowance (₹)">
+                    <Input
+                      type="number"
+                      value={editForm.specialAllowance}
+                      onChange={(e) => handleEditChange('specialAllowance', e.target.value)}
+                      placeholder="e.g. 5000"
+                    />
+                  </FormField>
                 </div>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-    <div className="space-y-1">
-      <label className="text-sm font-medium text-gray-700">Mobile Number</label>
-      <Input placeholder="+91 00000 00000" value={newLabour.phone} onChange={(e) => setNewLabour(prev => ({ ...prev, phone: e.target.value }))} />
-    </div>
-    <div className="space-y-1">
-      <label className="text-sm font-medium text-gray-700">Date of Birth</label>
-      <Input type="date" value={newLabour.dob} onChange={(e) => setNewLabour(prev => ({ ...prev, dob: e.target.value }))} />
-    </div>
-  </div>
-  
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Net Salary (INR)</label>
-                  <Input type="number" value={newLabour.netSalary} onChange={(e) => setNewLabour(prev => ({ ...prev, netSalary: e.target.value }))} />
+              </div>
+
+              {/* ── PF & Tax ── */}
+              <div>
+                <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-gray-400">PF & Tax</p>
+                <div className="space-y-4">
+                  <label className="flex cursor-pointer items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={editForm.pfApplicable}
+                      onChange={(e) => handleEditChange('pfApplicable', e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300"
+                    />
+                    <span className="text-sm font-medium text-gray-700">PF Applicable</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-4">
+                    {editForm.pfApplicable && (
+                      <FormField
+                        label="PF Amount (₹)"
+                        hint={`Auto: ₹${computePF(Number(editForm.basicSalary) || 0)}`}
+                      >
+                        <Input
+                          type="number"
+                          value={editForm.pfAmount}
+                          onChange={(e) => handleEditChange('pfAmount', e.target.value)}
+                          placeholder="Leave blank for auto"
+                        />
+                      </FormField>
+                    )}
+                    <FormField
+                      label="Professional Tax (₹)"
+                      hint="Leave blank for ₹0"
+                    >
+                      <Input
+                        type="number"
+                        value={editForm.ptAmount}
+                        onChange={(e) => handleEditChange('ptAmount', e.target.value)}
+                        placeholder="e.g. 150 or 200"
+                      />
+                    </FormField>
+                    <FormField label="Total Deductions Override (₹)">
+                      <Input
+                        type="number"
+                        value={editForm.totalDeductions}
+                        onChange={(e) => handleEditChange('totalDeductions', e.target.value)}
+                        placeholder="Leave blank for auto"
+                      />
+                    </FormField>
+                    <FormField label="Annual CTC Override (₹)">
+                      <Input
+                        type="number"
+                        value={editForm.annualCTC}
+                        onChange={(e) => handleEditChange('annualCTC', e.target.value)}
+                        placeholder="Leave blank for auto"
+                      />
+                    </FormField>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Bank Details ── */}
+              <div>
+                <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-gray-400">Bank Details</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField label="Account Number">
+                    <Input
+                      value={editForm.bankAccountNumber}
+                      onChange={(e) => handleEditChange('bankAccountNumber', e.target.value)}
+                      placeholder="e.g. 123456789012"
+                    />
+                  </FormField>
+                  <FormField label="IFSC Code">
+                    <Input
+                      value={editForm.ifscCode}
+                      onChange={(e) => handleEditChange('ifscCode', e.target.value)}
+                      placeholder="e.g. HDFC0001234"
+                    />
+                  </FormField>
                 </div>
               </div>
             </div>
 
-            <div className="mt-8 flex items-center justify-end gap-3 pt-4 border-t border-gray-100 text-gray-800">
-              <Button variant="ghost" onClick={() => setShowAddLabourModal(false)}>Cancel</Button>
-              <Button onClick={handleAddLabour} disabled={savingLabour}>
-                {savingLabour ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : 'Add Labourer'}
+            {/* Footer */}
+            <div className="sticky bottom-0 flex items-center justify-end gap-3 border-t border-gray-100 bg-white px-6 py-4">
+              <Button variant="ghost" onClick={cancelEditingEmployee} disabled={savingRow}>
+                Cancel
+              </Button>
+              <Button onClick={saveEditingEmployee} disabled={savingRow}>
+                {savingRow ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</>
+                ) : (
+                  'Save Changes'
+                )}
               </Button>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   )

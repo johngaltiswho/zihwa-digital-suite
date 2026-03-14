@@ -1,3 +1,5 @@
+import { redirect } from 'next/navigation'
+import { createClient } from '../lib/supabase-server'
 import Link from 'next/link'
 
 const benefits = [
@@ -15,16 +17,23 @@ const benefits = [
   },
 ]
 
-export default function MarketingHome() {
+export default async function Page() {
+  const supabase = await createClient()
+  const { data: { session } } = await supabase.auth.getSession()
+
+  if (session) {
+    redirect('/upload')
+  }
+
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
       <div className="mx-auto flex max-w-6xl flex-col gap-16 px-6 py-20">
         <section className="space-y-8 text-center">
           <p className="text-sm font-semibold uppercase tracking-wide text-sky-700">
-            Zihwa Ledger · AI accountant’s assistant
+            Zihwa Ledger · AI accountant's assistant
           </p>
           <h1 className="text-4xl font-semibold text-slate-900 md:text-5xl">
-            Finish today’s accounting with calm confidence.
+            Finish today's accounting with calm confidence.
           </h1>
           <p className="mx-auto max-w-2xl text-lg text-slate-600">
             Zihwa Ledger drafts purchase bills, receipts, and expenses using your own accounting context,
@@ -56,35 +65,6 @@ export default function MarketingHome() {
               <p className="mt-2 text-sm text-slate-600">{benefit.body}</p>
             </div>
           ))}
-        </section>
-
-        <section className="rounded-3xl border border-slate-100 bg-white p-8 shadow-sm">
-          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-            <div className="space-y-2">
-              <p className="text-sm font-semibold text-sky-700">How it works</p>
-              <h2 className="text-2xl font-semibold text-slate-900">
-                Upload → AI suggestion → Review → Post to Zoho
-              </h2>
-              <p className="text-slate-600">
-                Your data stays inside Supabase. Every step logs an audit trail so the GST auditor and your
-                CFO know what changed and why.
-              </p>
-            </div>
-            <div className="flex flex-col gap-3">
-              <Link
-                href="/upload"
-                className="rounded-lg bg-slate-900 px-5 py-3 text-center text-sm font-semibold text-white hover:bg-slate-800"
-              >
-                Go to the workspace
-              </Link>
-              <Link
-                href="/upload"
-                className="text-center text-sm font-semibold text-slate-700 hover:underline"
-              >
-                Already onboarded? Sign in
-              </Link>
-            </div>
-          </div>
         </section>
       </div>
     </main>

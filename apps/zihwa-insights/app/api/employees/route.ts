@@ -60,6 +60,16 @@ export async function GET() {
       coBalance: employee.coBalance,
       joiningDate: employee.joiningDate,
       company: employee.company,
+      // ── CTC fields ──
+      basicSalary:     employee.basicSalary,
+      hra:             employee.hra,
+      pfApplicable:    employee.pfApplicable,
+      pfAmount:        employee.pfAmount,
+      ptAmount:        employee.ptAmount,
+      totalDeductions: employee.totalDeductions,
+      annualCTC:       employee.annualCTC,
+      conveyance:      employee.conveyance,
+      specialAllowance: employee.specialAllowance,
       stats: {
         attendance: employee._count.attendanceRecords,
         payrollRuns: employee._count.payrollRecords,
@@ -103,6 +113,16 @@ export async function GET() {
           coBalance: employee.coBalance,
           joiningDate: employee.joiningDate,
           company: employee.company,
+          // ── CTC fields ──
+          basicSalary:     employee.basicSalary,
+          hra:             employee.hra,
+          pfApplicable:    employee.pfApplicable,
+          pfAmount:        employee.pfAmount,
+          ptAmount:        employee.ptAmount,
+          totalDeductions: employee.totalDeductions,
+          annualCTC:       employee.annualCTC,
+          conveyance:      employee.conveyance,
+          specialAllowance:    employee.specialAllowance,
           stats: {
             attendance: 0,
             payrollRuns: 0,
@@ -171,11 +191,11 @@ export async function POST(request: Request) {
       firstName,
       lastName,
       companyId,
-      email: email || null,
-      phone: phone || null,
+      email:       email       || null,
+      phone:       phone       || null,
       designation: designation || null,
-      department: department || null,
-      netSalary: typeof salary === 'number' ? salary : salary ? Number(salary) : null,
+      department:  department  || null,
+      netSalary:   typeof salary === 'number' ? salary : salary ? Number(salary) : null,
       joiningDate: joiningDate ? new Date(joiningDate) : null,
     }
 
@@ -223,6 +243,16 @@ export async function PATCH(request: Request) {
       elBalance,
       slBalance,
       coBalance,
+      // ── CTC fields ──
+      basicSalary,
+      hra,
+      pfApplicable,
+      pfAmount,
+      ptAmount,
+      totalDeductions,
+      annualCTC,
+      conveyance,
+      specialAllowance,
     } = body
 
     if (!id) {
@@ -230,14 +260,16 @@ export async function PATCH(request: Request) {
     }
 
     const data: Prisma.EmployeeUncheckedUpdateInput = {}
-    if (firstName !== undefined) data.firstName = firstName
-    if (lastName !== undefined) data.lastName = lastName
-    if (designation !== undefined) data.designation = designation || null
-    if (department !== undefined) data.department = department || null
-    if (netSalary !== undefined) data.netSalary = netSalary === null ? null : Number(netSalary)
-    if (grossSalary !== undefined) data.grossSalary = grossSalary === null ? null : Number(grossSalary)
+
+    // ── Core fields ──
+    if (firstName         !== undefined) data.firstName         = firstName
+    if (lastName          !== undefined) data.lastName          = lastName
+    if (designation       !== undefined) data.designation       = designation || null
+    if (department        !== undefined) data.department        = department  || null
+    if (netSalary         !== undefined) data.netSalary         = netSalary         === null ? null : Number(netSalary)
+    if (grossSalary       !== undefined) data.grossSalary       = grossSalary       === null ? null : Number(grossSalary)
     if (bankAccountNumber !== undefined) data.bankAccountNumber = bankAccountNumber || null
-    if (ifscCode !== undefined) data.ifscCode = ifscCode || null
+    if (ifscCode          !== undefined) data.ifscCode          = ifscCode          || null
     if (status && Object.values(EmployeeStatus).includes(status)) {
       data.status = status
     }
@@ -249,6 +281,35 @@ export async function PATCH(request: Request) {
     }
     if (coBalance !== undefined) {
       data.coBalance = coBalance === null || coBalance === '' ? 0 : Number(coBalance)
+    }
+
+    // ── CTC fields ──
+    if (basicSalary !== undefined) {
+      data.basicSalary = basicSalary === null || basicSalary === '' ? null : Number(basicSalary)
+    }
+    if (hra !== undefined) {
+      data.hra = hra === null || hra === '' ? null : Number(hra)
+    }
+    if (pfApplicable !== undefined) {
+      data.pfApplicable = Boolean(pfApplicable)
+    }
+    if (pfAmount !== undefined) {
+      data.pfAmount = pfAmount === null || pfAmount === '' ? null : Number(pfAmount)
+    }
+    if (ptAmount !== undefined) {
+      data.ptAmount = ptAmount === null || ptAmount === '' ? null : Number(ptAmount)
+    }
+    if (totalDeductions !== undefined) {
+      data.totalDeductions = totalDeductions === null || totalDeductions === '' ? null : Number(totalDeductions)
+    }
+    if (annualCTC !== undefined) {
+      data.annualCTC = annualCTC === null || annualCTC === '' ? null : Number(annualCTC)
+    }
+    if (conveyance !== undefined) {
+      data.conveyance = conveyance === null || conveyance === '' ? null : Number(conveyance)
+    }
+    if (specialAllowance !== undefined) {
+      data.specialAllowance = specialAllowance === null || specialAllowance === '' ? null : Number(specialAllowance)
     }
 
     const updated = await prisma.employee.update({

@@ -22,7 +22,7 @@ const permissionByTool: Record<CopilotToolName, Permission> = {
 export async function POST(
   request: NextRequest,
   context: { params: Promise<{ companyId: string }> }
-) {
+): Promise<NextResponse> { 
   const { companyId } = await context.params
 
   const body = await request.json()

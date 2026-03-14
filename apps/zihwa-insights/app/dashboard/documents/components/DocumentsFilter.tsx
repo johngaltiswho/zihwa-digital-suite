@@ -12,9 +12,10 @@ interface Company {
 
 interface DocumentsFilterProps {
   companies: Company[]
+  isReadOnly?: boolean
 }
 
-export default function DocumentsFilter({ companies }: DocumentsFilterProps) {
+export default function DocumentsFilter({ companies, isReadOnly = false }: DocumentsFilterProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '')
@@ -124,13 +125,16 @@ export default function DocumentsFilter({ companies }: DocumentsFilterProps) {
         </select>
       </div>
 
-      <Link
-        href="/dashboard/companies?action=add"
-        className="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-      >
-        <Building2 className="h-4 w-4 text-gray-500" />
-        New company
-      </Link>
+      {/* ✅ Hidden for both ACCOUNTANT and CONSULTANT — controlled by isReadOnly prop from parent */}
+      {!isReadOnly && (
+        <Link
+          href="/dashboard/companies?action=add"
+          className="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+        >
+          <Building2 className="h-4 w-4 text-gray-500" />
+          New company
+        </Link>
+      )}
     </div>
   )
 }

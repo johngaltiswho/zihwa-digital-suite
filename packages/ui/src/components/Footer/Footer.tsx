@@ -5,6 +5,7 @@ import React from "react";
 import { Tag, Heart, ShoppingCart, ChefHat, ArrowLeft, Store } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useCart } from "@/lib/vendure/cart-context";
 
 type LinkProps = {
   href: string;
@@ -108,6 +109,7 @@ export function Footer() {
 
 export function StalknSpiceFooter() {
   const router = useRouter();
+  const { itemCount } = useCart();
 
   return (
     <>
@@ -206,7 +208,12 @@ export function StalknSpiceFooter() {
         <Link href="/cart" className="flex flex-col items-center gap-1 w-16">
           <div className="relative">
             <ShoppingCart size={22} />
-            <span className="absolute -top-1 -right-1 bg-[#8B2323] text-white text-[8px] w-4 h-4 flex items-center justify-center rounded-full">0</span>
+            {/* AFTER — dynamic, only shows when items exist: */}
+{itemCount > 0 && (
+  <span className="absolute -top-1 -right-1 bg-[#8B2323] text-white text-[8px] w-4 h-4 flex items-center justify-center rounded-full">
+    {itemCount > 9 ? '9+' : itemCount}
+  </span>
+)}
           </div>
           <span className="text-[10px] font-bold uppercase tracking-tighter">Cart</span>
         </Link>

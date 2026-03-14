@@ -106,6 +106,67 @@ export async function POST(request: Request) {
         },
       }),
     ])
+    // REPLACE THIS:
+// ADD THESE DEBUG LINES:
+console.error('=== PAYROLL DEBUG ===')
+console.error('companyId:', companyId)
+console.error('employees found:', employees.length)
+console.error('employeeIds sample:', employeeIds.slice(0, 3))
+console.error('date range:', start.toISOString(), 'to', end.toISOString())
+console.error('attendanceRecords found:', attendanceRecords.length)
+console.error('holidays found:', holidays.length)
+if (attendanceRecords.length > 0) {
+  console.error('sample attendance:', attendanceRecords[0])
+}
+
+// WITH THIS:
+console.error('\n=== PAYROLL DEBUG ===')
+console.error('companyId:', companyId)
+console.error('month/year requested:', monthNumber, yearNumber)
+console.error('employees found:', employees.length)
+console.error('employeeIds sample:', employeeIds.slice(0, 5))
+console.error('date range:', start.toISOString(), 'to', end.toISOString())
+console.error('attendanceRecords found:', attendanceRecords.length)
+console.error('holidays found:', holidays.length)
+
+if (attendanceRecords.length === 0) {
+  console.error('⚠️  NO ATTENDANCE RECORDS FOUND - checking why...')
+  // Check if attendance exists for this company employees at ALL (any month)
+  const anyAttendance = await prisma.attendanceRecord.findMany({
+    where: { employeeId: { in: employeeIds } },
+    select: { employeeId: true, date: true, status: true },
+    take: 5,
+    orderBy: { date: 'desc' },
+  })
+  console.error('Most recent attendance for these employees (any month):', 
+    anyAttendance.map(r => ({ empId: r.employeeId, date: r.date.toISOString().split('T')[0], status: r.status }))
+  )
+  if (anyAttendance.length === 0) {
+    console.error('❌ ZERO attendance records exist for these employee IDs at any date.')
+    console.error('   This means attendance was imported under DIFFERENT employee IDs (duplicates exist).')
+    console.error('   Check for duplicate employees with the same short code (A8, ZI35, etc.)')
+  } else {
+    console.error('✅ Attendance EXISTS for these employees but NOT in the requested month/year.')
+    console.error('   Requested:', yearNumber, '-', monthNumber)
+    console.error('   Most recent attendance date found:', anyAttendance[0]?.date.toISOString().split('T')[0])
+    console.error('   ⚠️  You likely generated payroll for the WRONG month!')
+  }
+} else {
+  // Attendance found - show sample
+  console.error('✅ Attendance found. Sample records:')
+  attendanceRecords.slice(0, 3).forEach(r => {
+    console.error(' ', { empId: r.employeeId, date: (r.date as Date).toISOString().split('T')[0], status: r.status })
+  })
+  // Check if attendance employee IDs match our employee IDs
+  const attendanceEmpIds = new Set(attendanceRecords.map(r => r.employeeId))
+  const ourEmpIds = new Set(employeeIds)
+  const matched = [...attendanceEmpIds].filter(id => ourEmpIds.has(id))
+  const unmatched = [...attendanceEmpIds].filter(id => !ourEmpIds.has(id))
+  console.error(`Attendance empIds that match our employees: ${matched.length}/${attendanceEmpIds.size}`)
+  if (unmatched.length > 0) {
+    console.error('❌ Attendance empIds NOT in our employee list (orphaned):', unmatched.slice(0, 5))
+  }
+}
 
     const attendanceByEmployee = new Map<string, Map<string, AttendanceForCalc>>()
     for (const record of attendanceRecords) {
@@ -114,6 +175,51 @@ export async function POST(request: Request) {
       byDate.set(key, { id: record.id, status: record.status })
       attendanceByEmployee.set(record.employeeId, byDate)
     }
+   // REPLACE THIS:
+console.error('=== MAP DEBUG ===')
+console.error('map size (unique employees in attendance):', attendanceByEmployee.size)
+console.error('map keys sample:', [...attendanceByEmployee.keys()].slice(0, 3))
+console.error('employee ids sample:', employees.map(e => e.id).slice(0, 3))
+console.error('first employee in map?:', attendanceByEmployee.has(employees[0]?.id))
+
+// WITH THIS:
+console.error('\n=== MAP DEBUG ===')
+console.error('map size (unique employees with attendance):', attendanceByEmployee.size)
+
+if (attendanceByEmployee.size === 0 && attendanceRecords.length > 0) {
+  console.error('❌ CRITICAL: attendance records exist but map is empty!')
+  console.error('   This should never happen - likely a code bug in map building.')
+} else if (attendanceByEmployee.size === 0) {
+  console.error('❌ Map is empty because no attendance records were found (see above).')
+} else {
+  console.error('Map employee IDs (first 3):', [...attendanceByEmployee.keys()].slice(0, 3))
+  console.error('Our employee IDs   (first 3):', employees.map(e => e.id).slice(0, 3))
+  
+  let matchCount = 0
+  const missingList: string[] = []
+  for (const emp of employees) {
+    if (attendanceByEmployee.has(emp.id)) {
+      matchCount++
+    } else {
+      missingList.push(`${emp.id} (no attendance data)`)
+    }
+  }
+  console.error(`Employees WITH attendance in map: ${matchCount}/${employees.length}`)
+  if (missingList.length > 0) {
+    console.error('Employees MISSING from map (first 5):', missingList.slice(0, 5))
+  }
+}
+
+// === CROSS-CHECK ===
+console.error('\n=== CROSS-CHECK ===')
+const employeeIdSet = new Set(employeeIds)
+const orphanedAttendance = attendanceRecords.filter((r: { employeeId: string }) => !employeeIdSet.has(r.employeeId))
+console.error('Orphaned attendance records (belong to unknown employees):', orphanedAttendance.length)
+if (orphanedAttendance.length > 0) {
+  console.error('Sample orphaned empIds:', [...new Set(orphanedAttendance.map((r: { employeeId: string }) => r.employeeId))].slice(0, 5))
+}
+console.error('===================\n')
+
 
     const holidaySet = new Set(holidays.map((holiday) => toIsoDate(holiday.date)))
     const existingPayrollMap = new Map(existingPayroll.map((record) => [record.employeeId, record]))

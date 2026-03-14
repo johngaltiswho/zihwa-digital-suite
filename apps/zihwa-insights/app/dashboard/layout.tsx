@@ -1,7 +1,7 @@
 'use client'
-
+import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { Building2, Calendar, FileText, Users, Home, ChevronLeft, ChevronRight,UserPlus } from 'lucide-react'
+import { Building2, Calendar, FileText, Users, Home,HardHat, ChevronLeft, ChevronRight,UserPlus } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useSupabase } from '@/components/providers/SupabaseProvider'
@@ -13,16 +13,10 @@ const NAV_ITEMS = [
   { href: '/dashboard/deadlines',     label: 'Deadlines',         icon: Calendar,  roles: ['ADMIN', 'CONSULTANT', 'ACCOUNTANT', 'HR'] },
   { href: '/dashboard/documents',     label: 'Documents',         icon: FileText,  roles: ['ADMIN', 'CONSULTANT', 'ACCOUNTANT', 'HR'] },
   { href: '/dashboard/employees',     label: 'Employees',         icon: Users,     roles: ['ADMIN', 'CONSULTANT', 'ACCOUNTANT', 'HR'] },
+  { href: '/dashboard/labours',       label: 'Labours',           icon: HardHat,   roles: ['ADMIN', 'CONSULTANT', 'ACCOUNTANT', 'HR'] },
   { href: '/dashboard/users',         label: 'Users',             icon: Users,     roles: ['ADMIN', 'HR'] },
   { href: '/dashboard/hiring',        label: 'Hiring Candidates', icon: UserPlus,  roles: ['ADMIN', 'HR'] },
-  // { href: '/dashboard/vendor-payments', label: 'Vendor Payments', icon: CreditCard, roles: ['ADMIN', 'CONSULTANT', 'ACCOUNTANT'] },
 ]
-// // Read a cookie value by name (client-side)
-// function getCookie(name: string): string | null {
-//   if (typeof document === 'undefined') return null
-//   const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'))
-//   return match ? decodeURIComponent(match[2]) : null
-// }
 export default function DashboardLayout({
   children,
 }: {
@@ -31,6 +25,7 @@ export default function DashboardLayout({
   const [collapsed, setCollapsed] = useState(false)
   const [user, setUser] = useUserState<User | null>(null)
   const [userRole, setUserRole] = useState<string | null>(null)
+  const [roleLoaded, setRoleLoaded] = useState(false)
   const router = useRouter()
   const supabase = useSupabase()
   
@@ -41,6 +36,7 @@ export default function DashboardLayout({
       if (res.ok) {
         const data = await res.json()
         if (data.role) setUserRole(data.role)
+        setRoleLoaded(true)
       }
     } catch {
       // silently fail
@@ -109,10 +105,10 @@ export default function DashboardLayout({
 
  
 // Filter nav items by the user's role
-  const visibleNavItems = NAV_ITEMS.filter(item =>
-    !userRole || item.roles.includes(userRole)
-  )
-
+ const visibleNavItems = roleLoaded
+  ? NAV_ITEMS.filter(item => item.roles.includes(userRole ?? ''))
+  : []
+  const pathname = usePathname()
   return (
     <div className="min-h-screen bg-white">
       <div className="flex">
@@ -142,11 +138,19 @@ export default function DashboardLayout({
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center px-3 py-2 text-sm rounded-md transition-colors group text-gray-600 hover:text-gray-900 hover:bg-gray-50 ${
-                  collapsed ? 'justify-center' : ''
-                }`}
-              >
-                <Icon className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
+                className={`flex items-center px-3 py-2 text-sm rounded-md transition-colors group ${
+                collapsed ? 'justify-center' : ''
+                } ${
+                pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
+                ? 'bg-gray-100 text-gray-900 font-medium'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                <Icon className={`h-4 w-4 ${
+                pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
+                ? 'text-gray-700'
+                : 'text-gray-400 group-hover:text-gray-600'
+                }`} />
                 <span className={`${collapsed ? 'sr-only' : 'ml-3'} whitespace-nowrap`}>{label}</span>
               </Link>
             ))}

@@ -15,9 +15,12 @@ export default function SignInPage() {
     (searchParams?.get('view') as AuthView) ?? undefined
   )
   const [inviteProcessed, setInviteProcessed] = useState(false)
-  const nextRoute = searchParams?.get('redirectedFrom') || '/dashboard'
+
+  // Always redirect to /portal after login (portal handles role-based routing)
+  const nextRoute = '/portal'
+
   const redirectTo = useMemo(
-    () => (typeof window !== 'undefined' ? `${window.location.origin}/dashboard` : undefined),
+    () => (typeof window !== 'undefined' ? `${window.location.origin}/portal` : undefined),
     [],
   )
 
@@ -40,9 +43,7 @@ export default function SignInPage() {
         })
 
         if (!error) {
-          // Clear the hash from URL
           window.history.replaceState(null, '', window.location.pathname)
-          // Show update_password view so user sets their password
           setView('update_password')
           setInviteProcessed(true)
         }
@@ -60,8 +61,7 @@ export default function SignInPage() {
             setView('update_password')
             setInviteProcessed(true)
           } else {
-            // Regular code exchange — go to dashboard
-            router.push('/dashboard')
+            router.push('/portal')
           }
         }
         return
@@ -85,40 +85,36 @@ export default function SignInPage() {
     handleInvite()
   }, [searchParams, supabase, router])
 
-  // After password is updated → redirect to dashboard
+  // After sign-in or password update → redirect to /portal
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_IN' && !inviteProcessed) {
         router.push(nextRoute)
       }
       if (event === 'USER_UPDATED') {
-        // Password was set/updated — go to dashboard
-        router.push('/dashboard')
+        // Password was set/updated — go to portal
+        router.push('/portal')
       }
     })
-    
 
     return () => data.subscription.unsubscribe()
   }, [nextRoute, router, supabase, inviteProcessed])
-  // 3. INJECT SHOW/HIDE PASSWORD ICON (Bulletproof version)
+
+  // Inject show/hide password icon
   useEffect(() => {
     const eyeIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`
     const eyeOffIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>`
 
     const addPasswordToggle = () => {
-      // Find all password inputs, including ones we've already converted
       const inputs = document.querySelectorAll('input[type="password"], input[data-is-password="true"]')
 
       inputs.forEach((input) => {
-        // Tag it so we don't lose it when type changes to 'text'
         if (!input.getAttribute('data-is-password')) {
           input.setAttribute('data-is-password', 'true')
         }
 
         const parent = input.parentElement
         if (!parent) return
-
-        // Prevent adding multiple buttons if we already processed this input
         if (parent.querySelector('.password-toggle')) return
 
         parent.style.position = 'relative'
@@ -127,11 +123,11 @@ export default function SignInPage() {
         btn.type = 'button'
         btn.className = 'password-toggle'
         btn.innerHTML = input.getAttribute('type') === 'password' ? eyeIcon : eyeOffIcon
-        
-          Object.assign(btn.style, {
+
+        Object.assign(btn.style, {
           position: 'absolute',
           right: '12px',
-          bottom: '10px', 
+          bottom: '10px',
           background: 'transparent',
           border: 'none',
           color: '#6b7280',
@@ -148,29 +144,23 @@ export default function SignInPage() {
           const currentType = input.getAttribute('type')
           const newType = currentType === 'password' ? 'text' : 'password'
           input.setAttribute('type', newType)
-          // SWAPPED HERE TOO
           btn.innerHTML = newType === 'password' ? eyeOffIcon : eyeIcon
-        
         }
 
         parent.appendChild(btn)
       })
     }
 
-    // Run it once immediately
     addPasswordToggle()
 
-    // Create a relentless observer that fires whenever Supabase changes ANY part of the DOM
     const observer = new MutationObserver(() => {
       addPasswordToggle()
     })
 
-    // Observe the entire document body
     observer.observe(document.body, { childList: true, subtree: true })
 
-    // Cleanup when leaving the page entirely
     return () => observer.disconnect()
-  }, []) // <-- Empty dependency array means this observer STAYS ACTIVE through view changes
+  }, [])
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
@@ -180,7 +170,6 @@ export default function SignInPage() {
             ZI
           </div>
           <h1 className="text-3xl font-bold text-gray-900">Zihwa Insights</h1>
-          {/* Dynamic subtitle based on view */}
           {view === 'update_password' ? (
             <div className="space-y-1">
               <p className="text-gray-900 font-medium">Set your password</p>

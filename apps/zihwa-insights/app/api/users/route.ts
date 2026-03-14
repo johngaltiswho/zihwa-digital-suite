@@ -52,3 +52,56 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ success: false, error: 'Failed to update user role' }, { status: 500 })
   }
 }
+// ✅ DELETE — removes a user and all their company accesses
+export async function DELETE(request: NextRequest) {
+  try {
+    const { user } = await getRouteAuth()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json({ success: false, error: 'User id is required' }, { status: 400 })
+    }
+
+    // ✅ Fetch both the requester and target user roles
+    const [requestingUser, targetUser] = await Promise.all([
+      prisma.user.findUnique({ where: { id: user.id }, select: { role: true } }),
+      prisma.user.findUnique({ where: { id }, select: { role: true } }),
+    ])
+
+    if (!targetUser) {
+      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 })
+    }
+
+    // Nobody can delete an ADMIN
+    if (targetUser.role === 'ADMIN') {
+      return NextResponse.json({ success: false, error: 'Cannot delete an ADMIN user' }, { status: 403 })
+    }
+
+    // HR can only delete CONSULTANT and ACCOUNTANT
+    if (requestingUser?.role === 'HR' && targetUser.role !== 'CONSULTANT' && targetUser.role !== 'ACCOUNTANT') {
+      return NextResponse.json({ success: false, error: 'HR can only delete CONSULTANT or ACCOUNTANT users' }, { status: 403 })
+    }
+
+    // Delete company accesses first, then the user
+    await prisma.companyAccess.deleteMany({ where: { userId: id } })
+    await prisma.user.delete({ where: { id } })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Failed to delete user', error)
+    return NextResponse.json({ success: false, error: 'Failed to delete user' }, { status: 500 })
+  }
+}
+
+
+
+
+
+
+
+
+
+

@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { RefreshCw, Plus, Search, Users, Mail, Building2 } from 'lucide-react'
+import { useEffect, useMemo, useRef,useState } from 'react'
+import { RefreshCw, Plus, Search, Users, Mail, Building2, MoreHorizontal, Trash2, ArrowRightLeft, X } from 'lucide-react'
 import type { CompanyRole, UserRole } from '@prisma/client'
 
 type UserWithAccess = {
@@ -31,6 +31,7 @@ export default function UsersPage() {
   const [selectedCompany, setSelectedCompany] = useState('')
   const [selectedCompanyRole, setSelectedCompanyRole] = useState<CompanyRole>('VIEWER')
   const [updatingRole, setUpdatingRole] = useState<string | null>(null)
+  const [deletingUser, setDeletingUser] = useState<string | null>(null)
   const [inviting, setInviting] = useState(false)
   const [inviteForm, setInviteForm] = useState({ 
   email: '', 
@@ -40,7 +41,48 @@ export default function UsersPage() {
   companyRole: 'ACCOUNTANT' as CompanyRole,
 })
   const [syncing, setSyncing] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null)
 
+  // 3-dot menu
+  const [openMenuUserId, setOpenMenuUserId] = useState<string | null>(null)
+  const menuRef = useRef<HTMLDivElement | null>(null)
+
+  // Change company modal
+  const [changeCompanyModal, setChangeCompanyModal] = useState<{
+    userId: string
+    userName: string
+    newCompanyId: string
+    newCompanyRole: CompanyRole
+  } | null>(null)
+
+  // ✅ Custom delete confirm modal (replaces native confirm())
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
+    userId: string
+    userName: string
+    userRole: UserRole
+  } | null>(null)
+  // ✅ Fetch current logged-in user's role
+  useEffect(() => {
+    fetch('/api/users/user')
+      .then(r => r.json())
+      .then(d => { if (d.role) setCurrentUserRole(d.role) })
+      .catch(() => {})
+  }, [])
+
+  // ✅ Only ADMIN and HR can see the 3-dot menu
+  const canManageUsers = currentUserRole === 'ADMIN' || currentUserRole === 'HR'
+
+  // Close menu on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenuUserId(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
   const refreshData = async () => {
     setLoading(true)
     try {
@@ -94,6 +136,89 @@ setCompanies(
       alert('Failed to update role')
     } finally {
       setUpdatingRole(null)
+    }
+  }
+  // ✅ ADMIN can delete anyone except other ADMINs
+  // ✅ HR can only delete CONSULTANT and ACCOUNTANT
+  const handleDeleteUser = (userId: string, userName: string, userRole: UserRole) => {
+    setOpenMenuUserId(null)
+    if (userRole === 'ADMIN') return // nobody can delete ADMIN
+    if (currentUserRole === 'HR' && userRole !== 'CONSULTANT' && userRole !== 'ACCOUNTANT') return
+    setDeleteConfirmModal({ userId, userName, userRole })
+  }
+
+  // ✅ Confirmed delete
+  const confirmDeleteUser = async () => {
+    if (!deleteConfirmModal) return
+    setDeletingUser(deleteConfirmModal.userId)
+    setDeleteConfirmModal(null)
+    try {
+      const res = await fetch(`/api/users?id=${deleteConfirmModal.userId}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (data.success) {
+        setUsers((prev) => prev.filter((u) => u.id !== deleteConfirmModal.userId))
+      } else {
+        alert(data.error || 'Failed to delete user')
+      }
+    } catch (error) {
+      console.error('Failed to delete user', error)
+      alert('Failed to delete user')
+    } finally {
+      setDeletingUser(null)
+    }
+  }
+  // ✅ Open change company modal
+  const handleOpenChangeCompany = (user: UserWithAccess) => {
+    setOpenMenuUserId(null)
+    setChangeCompanyModal({
+      userId: user.id,
+      userName: user.name || user.email,
+      newCompanyId: '',
+      newCompanyRole: 'VIEWER',
+    })
+  }
+
+  // ✅ Submit change company
+  const handleChangeCompany = async () => {
+    if (!changeCompanyModal?.newCompanyId) {
+      alert('Please select a company')
+      return
+    }
+    setAssigning(true)
+    try {
+      const res = await fetch('/api/company-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: changeCompanyModal.userId,
+          companyId: changeCompanyModal.newCompanyId,
+          role: changeCompanyModal.newCompanyRole,
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setUsers((prev) =>
+          prev.map((u) =>
+            u.id === changeCompanyModal.userId
+              ? {
+                  ...u,
+                  companyAccesses: [
+                    ...u.companyAccesses.filter((ca) => ca.company.id !== changeCompanyModal.newCompanyId),
+                    { id: data.data.id, role: data.data.role, company: data.data.company },
+                  ],
+                }
+              : u
+          )
+        )
+        setChangeCompanyModal(null)
+      } else {
+        alert(data.error || 'Failed to assign company')
+      }
+    } catch (error) {
+      console.error('Failed to assign company', error)
+      alert('Failed to assign company')
+    } finally {
+      setAssigning(false)
     }
   }
 
@@ -180,6 +305,15 @@ setCompanies(
       setInviting(false)
     }
   }
+  const filteredUsers = useMemo(
+    () =>
+      sortedUsers.filter(
+        (u) =>
+          (u.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+          u.email.toLowerCase().includes(searchQuery.toLowerCase())
+      ),
+    [sortedUsers, searchQuery]
+  )
 
   return (
     <div className="-mt-5 space-y-4">
@@ -332,6 +466,8 @@ setCompanies(
             <input
               type="text"
               placeholder="Search users..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 pr-4 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-gray-300 focus:ring-2 focus:ring-gray-200"
             />
           </div>
@@ -408,12 +544,145 @@ setCompanies(
                       </div>
                     </div>
                   </div>
+                  {/* ✅ 3-dot menu — only visible for ADMIN and HR */}
+                  {canManageUsers && (
+                    <div className="relative ml-4" ref={openMenuUserId === user.id ? menuRef : null}>
+                      <button
+                        onClick={() => setOpenMenuUserId(openMenuUserId === user.id ? null : user.id)}
+                        disabled={deletingUser === user.id}
+                        className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all opacity-0 group-hover:opacity-100"
+                        title="More options"
+                      >
+                        <MoreHorizontal className="w-4 h-4" />
+                      </button>
+
+                      {/* Dropdown */}
+                      {openMenuUserId === user.id && (
+                        <div className="absolute right-0 top-9 w-48 bg-white border border-gray-100 rounded-xl shadow-lg z-50 overflow-hidden">
+                          <button
+                            onClick={() => handleOpenChangeCompany(user)}
+                            className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          >
+                            <ArrowRightLeft className="w-4 h-4 text-blue-500" />
+                            Change company
+                          </button>
+                          {/* ✅ ADMIN: can delete anyone except other ADMINs
+                               ✅ HR: can only delete CONSULTANT and ACCOUNTANT */}
+                          {user.role !== 'ADMIN' &&
+                            (currentUserRole === 'ADMIN' || (currentUserRole === 'HR' && (user.role === 'CONSULTANT' || user.role === 'ACCOUNTANT'))) && (
+                            <button
+                              onClick={() => handleDeleteUser(user.id, user.name || user.email, user.role)}
+                              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Delete user
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* ✅ Delete Confirm Modal */}
+      {deleteConfirmModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl border">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Delete User</h2>
+              <button
+                onClick={() => setDeleteConfirmModal(null)}
+                className="p-1 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 mb-1">
+              Are you sure you want to delete
+            </p>
+            <p className="text-sm font-semibold text-gray-900 mb-4">&ldquo;{deleteConfirmModal.userName}&rdquo;?</p>
+            <p className="text-xs text-rose-500 mb-5">This action cannot be undone.</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setDeleteConfirmModal(null)}
+                className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteUser}
+                disabled={deletingUser === deleteConfirmModal.userId}
+                className="flex-1 px-4 py-2 bg-rose-600 text-white rounded-lg text-sm font-medium hover:bg-rose-700 disabled:opacity-50 transition-colors"
+              >
+                {deletingUser ? 'Deleting...' : 'Yes, delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ Change Company Modal */}
+      {changeCompanyModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl border">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Change Company</h2>
+              <button
+                onClick={() => setChangeCompanyModal(null)}
+                className="p-1 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 mb-4">
+              Assign <span className="font-medium text-gray-800">{changeCompanyModal.userName}</span> to a company
+            </p>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Company</label>
+                <select
+                  value={changeCompanyModal.newCompanyId}
+                  onChange={(e) => setChangeCompanyModal((prev) => prev ? { ...prev, newCompanyId: e.target.value } : null)}
+                  className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:border-gray-400"
+                >
+                  <option value="">Select a company</option>
+                  {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Role</label>
+                <select
+                  value={changeCompanyModal.newCompanyRole}
+                  onChange={(e) => setChangeCompanyModal((prev) => prev ? { ...prev, newCompanyRole: e.target.value as CompanyRole } : null)}
+                  className="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:border-gray-400"
+                >
+                  {companyRoles.map((r) => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-5">
+              <button
+                onClick={() => setChangeCompanyModal(null)}
+                className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleChangeCompany}
+                disabled={assigning || !changeCompanyModal.newCompanyId}
+                className="flex-1 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 disabled:opacity-50 transition-colors"
+              >
+                {assigning ? 'Saving...' : 'Assign'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

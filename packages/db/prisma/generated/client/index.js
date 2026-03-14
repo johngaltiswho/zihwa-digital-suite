@@ -647,7 +647,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "/Users/uma/Documents/zihwa-digital-suite/packages/db/prisma/generated/client",
+      "value": "C:\\Insights\\zihwa-digital-suite\\packages\\db\\prisma\\generated\\client",
       "fromEnvVar": null
     },
     "config": {
@@ -656,19 +656,18 @@ const config = {
     "binaryTargets": [
       {
         "fromEnvVar": null,
-        "value": "darwin-arm64",
+        "value": "windows",
         "native": true
       }
     ],
     "previewFeatures": [
       "multiSchema"
     ],
-    "sourceFilePath": "/Users/uma/Documents/zihwa-digital-suite/packages/db/prisma/schema.prisma",
+    "sourceFilePath": "C:\\Insights\\zihwa-digital-suite\\packages\\db\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
-    "rootEnvPath": null,
-    "schemaEnvPath": "../../../.env"
+    "rootEnvPath": null
   },
   "relativePath": "../..",
   "clientVersion": "6.19.0",
@@ -726,8 +725,8 @@ exports.PrismaClient = PrismaClient
 Object.assign(exports, Prisma)
 
 // file annotations for bundling tools to include these files
-path.join(__dirname, "libquery_engine-darwin-arm64.dylib.node");
-path.join(process.cwd(), "prisma/generated/client/libquery_engine-darwin-arm64.dylib.node")
+path.join(__dirname, "query_engine-windows.dll.node");
+path.join(process.cwd(), "prisma/generated/client/query_engine-windows.dll.node")
 // file annotations for bundling tools to include these files
 path.join(__dirname, "schema.prisma");
 path.join(process.cwd(), "prisma/generated/client/schema.prisma")

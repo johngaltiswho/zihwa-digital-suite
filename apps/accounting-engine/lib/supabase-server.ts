@@ -1,7 +1,11 @@
-import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+import type { CookieOptions } from '@supabase/ssr'
 
-export async function createServerSupabaseClient() {
+const COOKIE_DOMAIN =
+  process.env.NODE_ENV === 'production' ? '.zihwainsights.com' : 'localhost'
+
+export async function createClient() {
   const cookieStore = await cookies()
 
   return createServerClient(
@@ -9,24 +13,29 @@ export async function createServerSupabaseClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
+        getAll() {
+          return cookieStore.getAll()
         },
-        set(name: string, value: string, options: Parameters<typeof cookieStore.set>[2]) {
-          cookieStore.set(name, value, options)
-        },
-        remove(name: string) {
-          cookieStore.delete(name)
+        setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, {
+                ...options,
+                domain: COOKIE_DOMAIN,
+              })
+            })
+          } catch {
+            // no-op — middleware handles session refresh
+          }
         },
       },
     }
   )
 }
 
+// ✅ ADD THIS — authz.ts needs it
 export async function getServerSession() {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-  return { supabase, session }
+  const client = await createClient()
+  const { data } = await client.auth.getSession()
+  return { session: data.session }
 }

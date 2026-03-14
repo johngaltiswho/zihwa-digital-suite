@@ -5,9 +5,10 @@ const PUBLIC_PATHS = ['/', '/sign-in', '/sign-up', '/reset-password']
 
 // Only truly restricted pages — ACCOUNTANT can visit all others (data filtered at API level)
 const ROLE_PROTECTED_ROUTES: { path: string; roles: string[] }[] = [
-  { path: '/dashboard/hiring', roles: ['ADMIN', 'CONSULTANT'] },
-  { path: '/dashboard/users',  roles: ['ADMIN', 'CONSULTANT'] },
+  { path: '/dashboard/hiring', roles: ['ADMIN', 'HR'] },
+  { path: '/dashboard/users',  roles: ['ADMIN', 'HR'] },
 ]
+const WRITE_METHODS = ['POST', 'PATCH', 'PUT', 'DELETE']
 export async function middleware(request: NextRequest) {
   
   const token = request.cookies.get('sb-access-token')
@@ -36,7 +37,7 @@ export async function middleware(request: NextRequest) {
   ) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
- const response = NextResponse.next()
+const response = NextResponse.next()
 
 
   if (hasValidSession && pathname.startsWith('/dashboard')) {
@@ -74,12 +75,23 @@ export async function middleware(request: NextRequest) {
       if (protectedRoute && !protectedRoute.roles.includes(role)) {
         return NextResponse.redirect(new URL('/dashboard', request.url))
       }
+      // 🔒 Block all write API calls for CONSULTANT
+      if (
+        role === 'CONSULTANT' &&
+        pathname.startsWith('/api/') &&
+        WRITE_METHODS.includes(request.method)
+      ) {
+        return NextResponse.json(
+          { success: false, error: 'Read-only access.' },
+          { status: 403 }
+        )
+      }
     }
   }
 
   return NextResponse.next()
 }
-const response = NextResponse.next()
+
 
 export const config = {
   matcher: [

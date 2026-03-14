@@ -65,14 +65,22 @@ export default async function DocumentsPage({ searchParams }: PageProps) {
   if (!user) {
     redirect('/sign-in')
   }
-
+  // ✅ CONSULTANT is read-only, ACCOUNTANT has full access
+  const isReadOnly = dbUser?.role === 'CONSULTANT'
+  const cannotAddCompany = dbUser?.role === 'CONSULTANT' || dbUser?.role === 'ACCOUNTANT'
   const params = await searchParams
   const showUploadForm = params.action === 'upload'
   const selectedCompanyId = params.company
   const searchQuery = params.search?.trim() ?? ''
 // Scope filter — ACCOUNTANT only sees their assigned companies
+// ✅ If CONSULTANT tries to access upload page directly via URL, redirect them
+  if (showUploadForm && isReadOnly) {
+    redirect('/dashboard/documents')
+  }
   const companyScopeFilter = await getCompanyWhereFilter(dbUser, 'id')
   const docScopeFilter = await getCompanyWhereFilter(dbUser)
+
+  
   // Get documents and companies
   let documents: DocumentWithCompany[] = []
   let companies: CompanyOption[] = []
@@ -146,7 +154,7 @@ export default async function DocumentsPage({ searchParams }: PageProps) {
     console.log('Error fetching documents:', error)
   }
 
-  if (showUploadForm) {
+ if (showUploadForm) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-3">
@@ -194,23 +202,28 @@ export default async function DocumentsPage({ searchParams }: PageProps) {
             <Building2 className="h-4 w-4 text-gray-500" />
             Companies
           </Link>
-          <Link
-            href="/dashboard/documents?action=upload"
-            className="inline-flex items-center gap-2 rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-800"
-          >
-            <Plus className="w-4 h-4" />
-            Upload
-          </Link>
+         {/* ✅ Hidden for CONSULTANT — ACCOUNTANT retains full access */}
+          {!isReadOnly && (
+            <Link
+              href="/dashboard/documents?action=upload"
+              className="inline-flex items-center gap-2 rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-800"
+            >
+              <Plus className="w-4 h-4" />
+              Upload
+            </Link>
+          )}
         </div>
       </div>
 
+
       {/* Filters */}
-      <DocumentsFilter companies={companies} />
+      <DocumentsFilter companies={companies} isReadOnly={cannotAddCompany} />
 
       {selectedCompanyId && (
         <CompanyDocumentChecklist
           companyId={selectedCompanyId}
           requirements={requirements}
+          isReadOnly={isReadOnly} 
         />
       )}
 
@@ -224,13 +237,16 @@ export default async function DocumentsPage({ searchParams }: PageProps) {
               : 'Upload your first document to get started'
             }
           </p>
-          <a
-            href="/dashboard/documents?action=upload"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Upload document
-          </a>
+          {/* ✅ Hidden for CONSULTANT */}
+          {!isReadOnly && (
+            <a
+              href="/dashboard/documents?action=upload"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Upload document
+            </a>
+          )}
         </div>
       ) : (
         <DocumentsList documents={documents} />
@@ -238,13 +254,14 @@ export default async function DocumentsPage({ searchParams }: PageProps) {
     </div>
   )
 }
-
 function CompanyDocumentChecklist({
   companyId,
   requirements,
+  isReadOnly,        // ← add this
 }: {
   companyId: string
   requirements: RequirementWithStatuses[]
+  isReadOnly: boolean  // ← add this
 }) {
   if (requirements.length === 0) {
     return (
@@ -254,18 +271,20 @@ function CompanyDocumentChecklist({
             <h2 className="text-lg font-semibold text-gray-900">Compliance checklist</h2>
             <p className="text-sm text-gray-500">No structured requirements yet for this company.</p>
           </div>
-          <a
-            href={`/dashboard/documents?action=upload&company=${companyId}`}
-            className="inline-flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-            <Upload className="h-4 w-4" />
-            Upload document
-          </a>
+           {/* ✅ Hidden for CONSULTANT */}
+          {!isReadOnly && (
+            <a
+              href={`/dashboard/documents?action=upload&company=${companyId}`}
+              className="inline-flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              <Upload className="h-4 w-4" />
+              Upload document
+            </a>
+          )}
         </div>
       </div>
     )
   }
-
   const formatPeriod = (periodYear?: number | null, periodMonth?: number | null) => {
     if (!periodYear || !periodMonth) return '—'
     return `${periodYear}-${String(periodMonth).padStart(2, '0')}`
@@ -299,13 +318,16 @@ function CompanyDocumentChecklist({
           <h2 className="text-lg font-semibold text-gray-900">Compliance checklist</h2>
           <p className="text-sm text-gray-500">Track required documents and monthly compliance for this company.</p>
         </div>
-        <a
-          href={`/dashboard/documents?action=upload&company=${companyId}`}
-          className="inline-flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-        >
-          <Upload className="h-4 w-4" />
-          Upload document
-        </a>
+       {/* ✅ Hidden for CONSULTANT */}
+        {!isReadOnly && (
+          <a
+            href={`/dashboard/documents?action=upload&company=${companyId}`}
+            className="inline-flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            <Upload className="h-4 w-4" />
+            Upload document
+          </a>
+        )}
       </div>
 
       <div className="mt-4 overflow-hidden rounded-xl border border-gray-100">
@@ -342,12 +364,15 @@ function CompanyDocumentChecklist({
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <a
-                        className="rounded-md border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                        href={uploadHref}
-                      >
-                        Upload
-                      </a>
+                       {/* ✅ Upload action hidden for CONSULTANT */}
+                      {!isReadOnly && (
+                        <a
+                          className="rounded-md border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                          href={uploadHref}
+                        >
+                          Upload
+                        </a>
+                      )}
                       {latestStatus?.document?.fileUrl && (
                         <a
                           href={latestStatus.document.fileUrl}

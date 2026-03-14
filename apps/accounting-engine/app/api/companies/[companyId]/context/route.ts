@@ -18,7 +18,7 @@ function getCompleteness(context: Record<string, unknown>) {
 export async function GET(
   _request: NextRequest,
   context: { params: Promise<{ companyId: string }> }
-) {
+): Promise<NextResponse> { 
   const { companyId } = await context.params
   const auth = await requireCompanyPermission(companyId, 'company.read')
   if (!('user' in auth)) return auth.error
@@ -40,7 +40,7 @@ export async function GET(
 export async function PUT(
   request: NextRequest,
   context: { params: Promise<{ companyId: string }> }
-) {
+): Promise<NextResponse> {
   const { companyId } = await context.params
   const auth = await requireCompanyPermission(companyId, 'settings.manage')
   if (!('user' in auth)) return auth.error

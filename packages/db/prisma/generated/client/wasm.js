@@ -646,7 +646,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "/Users/uma/Documents/zihwa-digital-suite/packages/db/prisma/generated/client",
+      "value": "C:\\Insights\\zihwa-digital-suite\\packages\\db\\prisma\\generated\\client",
       "fromEnvVar": null
     },
     "config": {
@@ -655,19 +655,18 @@ const config = {
     "binaryTargets": [
       {
         "fromEnvVar": null,
-        "value": "darwin-arm64",
+        "value": "windows",
         "native": true
       }
     ],
     "previewFeatures": [
       "multiSchema"
     ],
-    "sourceFilePath": "/Users/uma/Documents/zihwa-digital-suite/packages/db/prisma/schema.prisma",
+    "sourceFilePath": "C:\\Insights\\zihwa-digital-suite\\packages\\db\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
-    "rootEnvPath": null,
-    "schemaEnvPath": "../../../.env"
+    "rootEnvPath": null
   },
   "relativePath": "../..",
   "clientVersion": "6.19.0",

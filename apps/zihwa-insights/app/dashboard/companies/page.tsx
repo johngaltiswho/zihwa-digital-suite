@@ -30,6 +30,9 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
   const showAddForm = params.action === 'add'
   const scopeFilter = await getCompanyWhereFilter(dbUser, 'id')
   // Get companies for the current user
+  // ✅ Both ACCOUNTANT and CONSULTANT are read-only
+  const isReadOnly = dbUser?.role === 'ACCOUNTANT' || dbUser?.role === 'CONSULTANT'
+
   let companies: CompanyWithCounts[] = []
   try {
     companies = await prisma.company.findMany({
@@ -81,8 +84,8 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
           <h1 className="text-2xl font-semibold text-gray-900">Companies</h1>
           <p className="text-gray-500 text-sm">{companies.length} {companies.length === 1 ? 'company' : 'companies'}</p>
         </div>
-        {/* Only ADMIN/CONSULTANT can add companies */}
-        {dbUser?.role !== 'ACCOUNTANT' && (
+        {/* ✅ Hidden for ACCOUNTANT and CONSULTANT */}
+        {!isReadOnly && (
           <a
             href="/dashboard/companies?action=add"
             className="inline-flex items-center gap-2 px-3 py-2 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 transition-colors"
@@ -98,7 +101,8 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
           <Building2 className="w-8 h-8 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No companies yet</h3>
           <p className="text-gray-500 mb-6 text-sm">Get started by adding your first client company</p>
-          {dbUser?.role !== 'ACCOUNTANT' && (
+          {/* ✅ Hidden for ACCOUNTANT and CONSULTANT */}
+          {!isReadOnly && (
             <a
               href="/dashboard/companies?action=add"
               className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 transition-colors"
@@ -145,7 +149,8 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
                   </div>
                 </div>
                 
-                {dbUser?.role !== 'ACCOUNTANT' && (
+                {/* ✅ Hidden for ACCOUNTANT and CONSULTANT */}
+                {!isReadOnly && (
                   <button className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-200 transition-all">
                     <MoreHorizontal className="w-4 h-4 text-gray-500" />
                   </button>

@@ -380,7 +380,7 @@ export default function PaymentPage() {
   }
 
   return (
-    <section className="min-h-screen bg-gray-50 py-12 px-4 relative">
+    <section className="min-h-screen bg-gray-50 py-4 px-4 relative">
       {isCompletingOrder && (
         <div className="fixed inset-0 z-[300] bg-white/85 backdrop-blur-sm flex items-center justify-center px-4">
           <div className="w-full max-w-md bg-white rounded-2xl border border-gray-200 shadow-2xl p-8 text-center">
@@ -396,10 +396,10 @@ export default function PaymentPage() {
       )}
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-4">
           <Link
             href="/checkout/shipping"
-            className="inline-flex items-center gap-2 text-gray-600 hover:text-[#8B2323] transition-colors font-medium mb-4"
+            className="inline-flex items-center gap-2 text-gray-600 hover:text-[#8B2323] transition-colors font-medium mb-2"
           >
             <ArrowLeft size={18} />
             Back to Shipping Method

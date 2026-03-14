@@ -37,6 +37,17 @@ const DeadlinesPage = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
+  
+  // ✅ Role check — CONSULTANT is read-only, ACCOUNTANT has full access
+  const [userRole, setUserRole] = useState<string | null>(null)
+  useEffect(() => {
+    fetch('/api/users/user')
+      .then(r => r.json())
+      .then(d => { if (d.role) setUserRole(d.role) })
+      .catch(() => {})
+  }, [])
+  const isReadOnly = userRole === 'CONSULTANT'
+
 
   const [viewDate, setViewDate] = useState(new Date());
   const [hoveredDate, setHoveredDate] = useState<string | null>(null);
@@ -196,21 +207,24 @@ const DeadlinesPage = () => {
           <h1 className="text-3xl font-bold text-gray-800 tracking-tight">Compliance</h1>
           <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1">Audit Trail & Regulatory Monitoring</p>
         </div>
-        <div className="flex gap-3">
-          <Button
-            onClick={handleAutoSetMonthlyDeadlines}
-            className="h-10 border-indigo-100 text-indigo-700 bg-indigo-10 font-bold text-[10px] uppercase flex items-center gap-2"
-          >
-            <Zap className="w-3.5 h-3.5" /> Auto-Set PF/ESI (15th)
-          </Button>
-          <Button
-            onClick={() => { setEditingItem(null); setIsModalOpen(true); }}
-            className="bg-[#0f172a] text-white h-10 px-6 rounded-xl font-bold text-xs shadow-md"
-          >
-            <Plus className="w-4 h-4 mr-1" /> New Requirement
-          </Button>
-        </div>
+        {!isReadOnly && (
+          <div className="flex gap-3">
+            <Button
+              onClick={handleAutoSetMonthlyDeadlines}
+              className="h-10 border-indigo-100 text-indigo-700 bg-indigo-10 font-bold text-[10px] uppercase flex items-center gap-2"
+            >
+              <Zap className="w-3.5 h-3.5" /> Auto-Set PF/ESI (15th)
+            </Button>
+            <Button
+              onClick={() => { setEditingItem(null); setIsModalOpen(true); }}
+              className="bg-[#0f172a] text-white h-10 px-6 rounded-xl font-bold text-xs shadow-md"
+            >
+              <Plus className="w-4 h-4 mr-1" /> New Requirement
+            </Button>
+          </div>
+        )}
       </div>
+
 
       {/* Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
@@ -220,7 +234,7 @@ const DeadlinesPage = () => {
           { label: 'Compliance Readiness', val: `${stats.readiness}%`, color: 'text-emerald-600', icon: <ShieldCheck className="w-4 h-4" /> }
         ].map((s, i) => (
           <div key={i} className="bg-white px-5 py-3 rounded-2xl border border-gray-100 shadow-sm space-y-2">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex justify-between">{s.label} {s.icon}</p>
+            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest flex justify-between">{s.label} {s.icon}</p>
             <p className={`text-2xl font-semibold ${s.color}`}>{s.val.toString().padStart(2, '0')}</p>
           </div>
         ))}
@@ -358,12 +372,13 @@ const DeadlinesPage = () => {
           )}
 
           <table className="w-full text-left">
-            <thead className="bg-gray-50/50 text-[10px] text-gray-400 font-bold uppercase tracking-widest border-b">
+            <thead className="bg-gray-50/50 text-[12px] text-gray-400 font-bold uppercase tracking-widest border-b">
               <tr>
                 <th className="px-10 py-5">Filing Name</th>
                 <th className="px-10 py-5">Deadline</th>
                 <th className="px-10 py-5">Status</th>
-                <th className="px-10 py-5 text-right">Actions</th>
+                {/* ✅ Hide Actions column header for CONSULTANT */}
+                {!isReadOnly && <th className="px-10 py-5 text-right">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -412,12 +427,15 @@ const DeadlinesPage = () => {
                         {item.status}
                       </span>
                     </td>
-                    <td className="px-10 py-5 text-right">
-                      <div className={`flex justify-end gap-2 transition-opacity ${isHighlighted ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                        <button onClick={() => handleEdit(item)} className="p-2 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-all"><Pencil className="w-4 h-4"/></button>
-                        <button onClick={() => handleDelete(item.id)} className="p-2 text-gray-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-all"><Trash2 className="w-4 h-4"/></button>
-                      </div>
-                    </td>
+                     {/* ✅ Hide edit/delete actions for CONSULTANT */}
+                    {!isReadOnly && (
+                      <td className="px-10 py-5 text-right">
+                        <div className={`flex justify-end gap-2 transition-opacity opacity-0 group-hover:opacity-100`}>
+                          <button onClick={() => handleEdit(item)} className="p-2 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-all"><Pencil className="w-4 h-4"/></button>
+                          <button onClick={() => handleDelete(item.id)} className="p-2 text-gray-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-all"><Trash2 className="w-4 h-4"/></button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 );
               })}
@@ -427,7 +445,7 @@ const DeadlinesPage = () => {
       )}
 
       {/* Modal */}
-      {isModalOpen && (
+    {isModalOpen && !isReadOnly && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
           <div className="bg-white rounded-[2rem] w-full max-w-sm p-8 shadow-2xl border">
             <div className="flex justify-between items-center mb-6">
